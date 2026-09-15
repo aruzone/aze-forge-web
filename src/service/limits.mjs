@@ -65,7 +65,7 @@ export const KNOBS = Object.freeze({
     max: 5 * MINUTE_MS,
   },
   terminationGraceMs: { env: "TERMINATION_GRACE_MS", default: 5_000, min: 0, max: 5_000 },
-  pollAfterMs: { env: "POLL_AFTER_MS", default: 2_000, min: 250, max: 10_000 },
+  pollAfterMs: { env: "POLL_AFTER_MS", default: 2_000, min: 250, max: 2_000 },
 
   maxSourceBytes: { env: "MAX_SOURCE_BYTES", default: 1 * MIB, min: 1, max: 1 * MIB },
   maxJobBodyBytes: { env: "MAX_JOB_BODY_BYTES", default: 2 * MIB, min: 1, max: 2 * MIB },
@@ -80,7 +80,7 @@ export const KNOBS = Object.freeze({
 
   assetTtlMs: { env: "ASSET_TTL_MS", default: 24 * HOUR_MS, min: 1_000, max: 24 * HOUR_MS },
   resultTtlMs: { env: "RESULT_TTL_MS", default: HOUR_MS, min: 1_000, max: HOUR_MS },
-  maxRetainedJobs: { env: "MAX_RETAINED_JOBS", default: 256, min: 16, max: 1_024 },
+  maxRetainedJobs: { env: "MAX_RETAINED_JOBS", default: 256, min: 16, max: 256 },
   cacheMaxBytes: { env: "CACHE_MAX_BYTES", default: 256 * MIB, min: 0, max: 256 * MIB },
   cacheMaxAgeMs: { env: "CACHE_MAX_AGE_MS", default: 24 * HOUR_MS, min: 1_000, max: 24 * HOUR_MS },
   scratchMaxBytes: { env: "SCRATCH_MAX_BYTES", default: 2 * GIB, min: 1, max: 2 * GIB },

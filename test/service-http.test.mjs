@@ -19,6 +19,7 @@ import {
   runJob,
   startTestService,
   wait,
+  waitUntil,
 } from "./helpers/harness.mjs";
 
 /** @type {Awaited<ReturnType<typeof startTestService>>} */
@@ -312,7 +313,7 @@ describe("admission and cancellation", () => {
     try {
       const slow = { ...analyzeRequest("STUB:SLEEP:3000\n", "rev-slow"), requestId: "slow" };
       assert.equal((await call(limited.base, "POST", "/v1/jobs", { body: slow, contentType: "application/json" })).status, 202);
-      await wait(100);
+      await waitUntil(() => limited.application.jobs.stats().running === 1);
       assert.equal(
         (await call(limited.base, "POST", "/v1/jobs", { body: { ...slow, requestId: "queued" }, contentType: "application/json" })).status,
         202,
@@ -357,7 +358,7 @@ describe("admission and cancellation", () => {
     assert.equal(submitted.status, 202);
     const jobId = submitted.json.jobId;
 
-    await wait(150);
+    await waitUntil(async () => (await call(service.base, "GET", `/v1/jobs/${jobId}`)).json.startedAt !== null);
     const cancelled = await call(service.base, "POST", `/v1/jobs/${jobId}/cancel`);
     assert.equal(cancelled.status, 200);
     assert.ok(["cancelling", "cancelled"].includes(cancelled.json.status));
@@ -382,7 +383,7 @@ describe("admission and cancellation", () => {
         body: analyzeRequest("STUB:SLEEP:3000\n", "rev-run"),
         contentType: "application/json",
       });
-      await wait(100);
+      await waitUntil(() => limited.application.jobs.stats().running === 1);
       const queued = await call(limited.base, "POST", "/v1/jobs", {
         body: analyzeRequest("queued\n", "rev-queued"),
         contentType: "application/json",

@@ -87,8 +87,8 @@ and compiler diagnostics, never HTTP failures.
 Environment variables only, validated at startup, fail-closed. Missing or invalid
 configuration is a startup error, never a runtime surprise.
 
-Every knob has a built-in alpha ceiling. Configuration may **lower** a ceiling;
-any value above it is rejected at startup rather than silently clamped. Raising a
+Every limit knob's default is also its ceiling. Configuration may **lower** a
+ceiling; any value above it is rejected at startup rather than silently clamped. Raising a
 ceiling is an owner decision, not a configuration change.
 
 | Variable | Default (= ceiling) | Notes |

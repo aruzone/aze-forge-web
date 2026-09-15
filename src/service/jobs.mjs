@@ -12,6 +12,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
+import { deadlineForOperation } from "./config.mjs";
 import { ERROR_CODES, ServiceError, serviceFailure } from "./errors.mjs";
 import { canonicalJson, sha256BytesHex, sha256Hex } from "./hash.mjs";
 import { PROTOCOL_VERSION } from "./protocol.mjs";
@@ -746,9 +747,7 @@ export class JobManager {
 
   /** @param {import("./types.mjs").JobRecord} job @returns {number} */
   #deadlineFor(job) {
-    return job.operation === "compile"
-      ? this.#config.deadlineCompileMs
-      : this.#config.deadlineAnalyzeMs;
+    return deadlineForOperation(this.#config, job.operation);
   }
 
   /** @param {string} jobId */

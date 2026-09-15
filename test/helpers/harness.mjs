@@ -159,3 +159,13 @@ export function compileRequest(text, format = "html", revision = "rev-1") {
 }
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Poll until `predicate` holds, so tests never depend on a fixed sleep. */
+export async function waitUntil(predicate, { timeoutMs = 5_000, intervalMs = 10 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await predicate()) return;
+    if (Date.now() > deadline) throw new Error("condition was never satisfied");
+    await wait(intervalMs);
+  }
+}

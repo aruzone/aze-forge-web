@@ -99,7 +99,7 @@ const els = {
 /** @type {{ token: string, capabilities: any, examples: { id: string, name: string, source: string }[],
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
  *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
- *   artifact: { format: string, bytes: ArrayBuffer, revision: string } | null,
+ *   artifact: { format: string, bytes: ArrayBuffer, revision: string, theme: string } | null,
  *   debounceTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
   token: sessionStorage.getItem(TOKEN_KEY) ?? "",
@@ -246,6 +246,21 @@ function updateSourceMeta() {
  * the current revision.
  */
 function markPreviewStale() {
+  const artifact = state.artifact;
+  if (artifact !== null) {
+    // The download control always says which revision and Theme it would
+    // deliver, so a previous export is never mistaken for the current one.
+    const reason =
+      artifact.revision !== currentRevision()
+        ? `editor is at revision ${currentRevision()}`
+        : artifact.theme !== selectedTheme()
+          ? `Theme changed to ${selectedTheme()}`
+          : null;
+    els.downloadArtifact.textContent =
+      `Download ${artifact.format.toUpperCase()} · revision ${artifact.revision}` +
+      (reason === null ? "" : ` · stale (${reason})`);
+  }
+
   if (state.preview.revision === null) return;
   const reasons = [];
   if (state.preview.revision !== currentRevision()) {
@@ -455,7 +470,6 @@ async function exportFormat(format) {
   const revision = currentRevision();
   const source = els.source.value;
   const theme = els.theme.value;
-  const key = format;
   setActivity(`Compiling ${format.toUpperCase()}…`);
   setExporting(format, true);
 
@@ -489,9 +503,9 @@ async function exportFormat(format) {
 
     const bytes = await fetchArtifact(job.jobId);
     // Exports and previews are for the revision *and* Theme that were submitted.
-    state.artifact = { format, bytes, revision: job.revision };
+    state.artifact = { format, bytes, revision: job.revision, theme: selectedTheme() };
     els.downloadArtifact.hidden = false;
-    els.downloadArtifact.textContent = `Download ${format.toUpperCase()}`;
+    markPreviewStale();
 
     if (format === "html") {
       showPreview(job, bytes);
@@ -706,7 +720,10 @@ function bindEvents() {
     const artifact = state.artifact;
     if (artifact === null) return;
     downloadArtifact(artifact.format, artifact.bytes);
-    setActivity(`${artifact.format.toUpperCase()} downloaded (revision ${artifact.revision})`, "ok");
+    setActivity(
+      `${artifact.format.toUpperCase()} downloaded (revision ${artifact.revision})`,
+      artifact.revision === currentRevision() ? "ok" : "error",
+    );
   });
 
   for (const button of document.querySelectorAll("[data-format]")) {

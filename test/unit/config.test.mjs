@@ -44,6 +44,17 @@ test("refuses a configured value above the built-in ceiling instead of clamping"
   assert.throws(() => loadConfig({ ...minimal, AZEWEB_RESULT_TTL_MS: String(7 * 24 * 3600_000) }), ConfigurationError);
 });
 
+test("every documented default is also its ceiling", () => {
+  // The README states the rule; this keeps the knob table honest about it.
+  // Address and identity settings are not limits: a port may be any free port,
+  // and the scratch directory and token are not quantities to bound.
+  const notLimits = new Set(["port", "host", "scratchDir", "accessToken"]);
+  for (const [key, knob] of Object.entries(KNOBS)) {
+    if (notLimits.has(key) || knob.kind === "string" || knob.default === undefined) continue;
+    assert.equal(knob.max, knob.default, `${key} must not be raisable above its default`);
+  }
+});
+
 test("requires a token of at least 32 characters", () => {
   assert.throws(() => loadConfig({}), (error) => error instanceof ConfigurationError && /AZEWEB_ACCESS_TOKEN is required/.test(error.message));
   assert.throws(
