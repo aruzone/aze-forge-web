@@ -433,6 +433,59 @@ describe("admission and cancellation", () => {
   });
 });
 
+describe("capacity and readiness", () => {
+  test("an exhausted scratch budget refuses admission and reports not-ready", async () => {
+    const tiny = await startTestService({ env: { AZEWEB_SCRATCH_MAX_BYTES: "1" } });
+    try {
+      assert.equal((await call(tiny.base, "GET", "/readyz", { token: null })).status, 200, "nothing staged yet");
+
+      // One byte of budget admits nothing, so the first staged byte ends it.
+      const first = await call(tiny.base, "POST", "/v1/assets", {
+        body: Buffer.from("png"),
+        contentType: "image/png",
+      });
+      assert.equal(first.status, 201);
+
+      const second = await call(tiny.base, "POST", "/v1/assets", {
+        body: Buffer.from("png"),
+        contentType: "image/png",
+      });
+      assert.equal(second.status, 503);
+      assert.equal(second.json.error.code, "service-unavailable");
+
+      const job = await call(tiny.base, "POST", "/v1/jobs", {
+        body: analyzeRequest("x\n"),
+        contentType: "application/json",
+      });
+      assert.equal(job.status, 503);
+      assert.equal(job.json.error.data.scope, "scratch-bytes");
+
+      // Readiness reflects live capacity, not a startup verdict cached forever.
+      assert.equal((await call(tiny.base, "GET", "/readyz", { token: null })).status, 503);
+      assert.equal(tiny.application.service.evaluateReadiness().reason, "scratch");
+      assert.equal((await call(tiny.base, "GET", "/healthz", { token: null })).status, 200);
+    } finally {
+      await tiny.close();
+    }
+  });
+
+  test("the retained-result bound is reported as a capacity refusal, not a broken promise", async () => {
+    const bounded = await startTestService({ env: { AZEWEB_MAX_RETAINED_JOBS: "16" } });
+    try {
+      let refused = null;
+      for (let index = 0; index < 18 && refused === null; index += 1) {
+        const response = await runJob(bounded.base, analyzeRequest(`text ${index}\n`, `rev-${index}`));
+        if (response.job === null) refused = response.accepted;
+      }
+      assert.ok(refused, "admission is refused once the bound is reached");
+      assert.equal(refused.status, 503);
+      assert.equal(refused.json.error.data.scope, "retained-jobs");
+    } finally {
+      await bounded.close();
+    }
+  });
+});
+
 describe("uploaded assets", () => {
   test("an upload handle can be bound by a job, and revoking it cannot change that job", async () => {
     const upload = await call(service.base, "POST", "/v1/assets", {

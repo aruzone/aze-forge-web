@@ -86,6 +86,7 @@
  * @property {string} jobDir
  * @property {string | null} artifactPath
  * @property {number} artifactByteLength
+ * @property {number} diskBytes staged bytes this job holds (frozen assets and Artifact)
  * @property {number} submittedAt
  * @property {number | null} startedAt
  * @property {number | null} terminalAt

@@ -46,7 +46,7 @@ succeeds in an isolated child process.
 | Cancellation | Idempotent, and competes with completion at a single atomic terminal decision. A cancelled job never publishes an Artifact. |
 | Deadlines | Start at admission and include queue time. A service deadline produces `failed` with the stable `job-timeout` code, never a fabricated Source diagnostic. |
 | Artifacts | Delivered as bytes with their MIME type and byte-integrity hash, verified by the service before publication. Never base64 in JSON, never a partial Artifact. |
-| Retention | Assets, results and cache entries expire; terminal results advertise `expiresAt`. |
+| Retention | Assets, results and cache entries expire; terminal results advertise `expiresAt` and keep it — an unexpired result is never evicted. Reaching the retained-result bound refuses new work (`503`) instead of shortening an advertised lifetime. |
 | Logs | Metadata only. Source text, asset bytes, Artifact bytes and diagnostic messages never appear. |
 
 The frontend owns editing, examples, request scheduling and polling,
@@ -105,7 +105,7 @@ ceiling is an owner decision, not a configuration change.
 | `AZEWEB_MAX_SOURCE_BYTES`, `AZEWEB_MAX_JOB_BODY_BYTES` | `1 MiB`, `2 MiB` | |
 | `AZEWEB_MAX_ASSET_BYTES`, `AZEWEB_MAX_TOTAL_ASSET_BYTES`, `AZEWEB_MAX_ASSETS_PER_JOB` | `32 MiB`, `128 MiB`, `64` | |
 | `AZEWEB_ASSET_TTL_MS`, `AZEWEB_RESULT_TTL_MS` | `24 h`, `1 h` | |
-| `AZEWEB_MAX_RETAINED_JOBS` | `256` | in-memory job records |
+| `AZEWEB_MAX_RETAINED_JOBS` | `256` | unexpired terminal results held in memory; reaching it returns 503 rather than evicting a promised result |
 | `AZEWEB_CACHE_MAX_BYTES`, `AZEWEB_CACHE_MAX_AGE_MS` | `256 MiB`, `24 h` | completed successful results only |
 | `AZEWEB_SCRATCH_MAX_BYTES` | `2 GiB` | admission refuses with 503 when full |
 
@@ -152,6 +152,15 @@ rather than papering over it. They belong to the compiler repository:
 - **No Renderer selection.** `CompileOptions` accepts a format and a Theme, not
   a Renderer id, so the request boundary accepts exactly those two and rejects a
   `renderer` field rather than accepting one it cannot honour.
+- **Capabilities publish no per-capability support mode.** The registry holds
+  `pluginVersionRange`, `rendererVersionRange` and the source/data schemas, but
+  `buildCapabilities()` emits only `type`, `version`, `title`, `namespace` and
+  `bodySyntax` per Plugin, plus block-renderer ids and per-block limits. Native
+  versus delegated support, compatible Renderer routes and structured remedies
+  per capability are therefore absent from `/v1/capabilities`. The service
+  embeds exactly what the compiler publishes; deriving a parallel per-family
+  matrix here would duplicate compiler policy, which the boundary contract
+  forbids.
 
 ## Tests
 

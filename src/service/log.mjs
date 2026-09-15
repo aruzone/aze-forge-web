@@ -40,11 +40,3 @@ export function createLogger({ stream = process.stdout, level = "info", now = Da
     debug: (event, fields) => emit("debug", event, fields ?? {}),
   };
 }
-
-/**
- * 12-hex-character fingerprint of a bearer token, for log correlation only.
- * @param {string} tokenIdHash
- */
-export function tokenLogId(tokenIdHash) {
-  return tokenIdHash.slice(0, 12);
-}

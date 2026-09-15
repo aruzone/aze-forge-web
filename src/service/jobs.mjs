@@ -71,8 +71,9 @@ export class JobManager {
   /** @type {Map<string, NodeJS.Timeout>} */
   #deadlines = new Map();
 
+  /** Bytes this process staged for retained jobs: frozen assets and Artifacts. */
   /** @type {number} */
-  #jobBytes = 0;
+  #jobDiskBytes = 0;
 
   /** @type {NodeJS.Timeout | null} */
   #pruneTimer = null;
@@ -125,6 +126,13 @@ export class JobManager {
         { data: { scope: "scratch-bytes" } },
       );
     }
+    if (this.#retainedResults() >= this.#config.maxRetainedJobs) {
+      throw new ServiceError(
+        ERROR_CODES.serviceUnavailable,
+        "The service is retaining the maximum number of unexpired results; retry after they expire.",
+        { data: { limit: this.#config.maxRetainedJobs, scope: "retained-jobs" } },
+      );
+    }
 
     const jobId = randomUUID();
     const jobDir = join(this.jobsRoot(), jobId);
@@ -153,6 +161,7 @@ export class JobManager {
       jobDir,
       artifactPath: null,
       artifactByteLength: 0,
+      diskBytes: 0,
       submittedAt: this.#now(),
       startedAt: null,
       terminalAt: null,
@@ -173,9 +182,9 @@ export class JobManager {
     if (job.operation === "compile") {
       const fingerprint = this.#compileFingerprint(spec, assetDigests);
       const cached = this.#cache.lookup(contextId, fingerprint);
-      if (cached !== null) {
-        await this.#completeFromCache(job, cached);
-        this.#assertRetentionBound();
+      // A cache hit that cannot be read back is a miss, not a failure: the entry
+      // may have been evicted between the lookup and the read.
+      if (cached !== null && (await this.#completeFromCache(job, cached))) {
         return job;
       }
       job.fingerprint = fingerprint;
@@ -196,7 +205,6 @@ export class JobManager {
       );
     }
 
-    this.#assertRetentionBound();
     return job;
   }
 
@@ -259,7 +267,7 @@ export class JobManager {
   }
 
   get scratchBytesInUse() {
-    return this.#assets.bytesInUse + this.#cache.bytesInUse + this.#jobBytes;
+    return this.#assets.bytesInUse + this.#cache.bytesInUse + this.#jobDiskBytes;
   }
 
   stats() {
@@ -288,7 +296,6 @@ export class JobManager {
       if (job.expiresAt === null || job.expiresAt > now) continue;
       await this.#discard(job);
     }
-    this.#assertRetentionBound();
   }
 
   async close() {
@@ -341,6 +348,8 @@ export class JobManager {
       }
       await mkdir(join(target, ".."), { recursive: true });
       await writeFile(target, bytes, { mode: 0o600 });
+      job.diskBytes += bytes.byteLength;
+      this.#jobDiskBytes += bytes.byteLength;
       digests.push({ path, hash: sha256BytesHex(bytes), byteLength: bytes.byteLength });
     }
     digests.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
@@ -363,6 +372,9 @@ export class JobManager {
         theme: spec.theme,
         includeDocument: spec.includeDocument === true,
         sourceDigest: sha256Hex(spec.source.text),
+        // Diagnostic locations carry the Source name, so a cached result may
+        // only answer a job that submitted the same label.
+        sourceName: spec.source.name ?? null,
         assets: assetDigests,
       }),
     );
@@ -520,10 +532,21 @@ export class JobManager {
 
     if (raw.artifact !== undefined && raw.artifact !== null) {
       const artifactPath = join(job.jobDir, "artifact.bin");
-      let bytes;
+      /** @type {Buffer | null} */
+      let bytes = null;
       try {
         bytes = await readFile(artifactPath);
       } catch {
+        bytes = null;
+      }
+
+      // Cancellation and the deadline can be decided while the result and the
+      // Artifact are being read. Every terminal decision below is therefore
+      // taken after the awaits, so a job cancelled in the meantime cannot
+      // publish, and cannot be relabelled as a failure either.
+      if (!this.#mayPublish(job)) return false;
+
+      if (bytes === null) {
         this.#terminalize(
           job,
           JOB_STATES.failed,
@@ -536,6 +559,7 @@ export class JobManager {
         `sha256:${sha256BytesHex(bytes)}` !== raw.artifact.metadata.artifactHash
       ) {
         await rm(artifactPath, { force: true });
+        if (!this.#mayPublish(job)) return false;
         this.#terminalize(
           job,
           JOB_STATES.failed,
@@ -547,9 +571,10 @@ export class JobManager {
         });
         return false;
       }
+
       job.artifactPath = artifactPath;
       job.artifactByteLength = bytes.byteLength;
-      this.#jobBytes += bytes.byteLength;
+      this.#jobDiskBytes += bytes.byteLength;
       result.artifact = {
         format: raw.artifact.format,
         mimeType: raw.artifact.mimeType,
@@ -559,6 +584,7 @@ export class JobManager {
       };
     }
 
+    if (!this.#mayPublish(job)) return false;
     this.#terminalize(job, JOB_STATES.completed, null, result);
 
     if (job.operation === "compile" && result.ok && result.artifact !== undefined) {
@@ -607,16 +633,22 @@ export class JobManager {
   /**
    * @param {import("./types.mjs").JobRecord} job
    * @param {{ path: string, byteLength: number, result: any }} entry
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} false when the cached bytes are no longer readable
    */
   async #completeFromCache(job, entry) {
+    /** @type {Buffer} */
+    let bytes;
+    try {
+      bytes = await this.#cache.read(entry);
+    } catch {
+      return false;
+    }
     const artifactPath = join(job.jobDir, "artifact.bin");
-    const bytes = await this.#cache.read(entry);
     await writeFile(artifactPath, bytes, { mode: 0o600 });
 
     job.artifactPath = artifactPath;
     job.artifactByteLength = bytes.byteLength;
-    this.#jobBytes += bytes.byteLength;
+    this.#jobDiskBytes += bytes.byteLength;
     job.cacheHit = true;
 
     const cachedResult = entry.result;
@@ -641,6 +673,42 @@ export class JobManager {
       theme: job.theme,
       artifactBytes: bytes.byteLength,
     });
+    return true;
+  }
+
+  /**
+   * A job may only publish while it is still allowed to finish: not cancelled,
+   * not past its deadline. Checked after awaits, immediately before publishing.
+   * @param {import("./types.mjs").JobRecord} job
+   * @returns {boolean}
+   */
+  #mayPublish(job) {
+    if (job.state === JOB_STATES.cancelling) {
+      this.#terminalize(job, JOB_STATES.cancelled);
+      this.#log.info("job-cancelled", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        state: "publication",
+      });
+      return false;
+    }
+    if (job.timedOut) {
+      this.#terminalize(
+        job,
+        JOB_STATES.failed,
+        serviceFailure(ERROR_CODES.jobTimeout, "The job exceeded its execution deadline.", {
+          deadlineMs: this.#deadlineFor(job),
+          scope: "job-deadline",
+        }),
+      );
+      this.#log.warn("job-timeout", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        state: "publication",
+      });
+      return false;
+    }
+    return true;
   }
 
   /** @returns {object} */
@@ -723,7 +791,6 @@ export class JobManager {
     job.ok = state === JOB_STATES.completed && result !== null ? result.ok : null;
     job.terminalAt = this.#now();
     job.expiresAt = job.terminalAt + this.#config.resultTtlMs;
-    this.#assertRetentionBound();
   }
 
   #pump() {
@@ -735,22 +802,28 @@ export class JobManager {
     }
   }
 
-  #assertRetentionBound() {
-    const terminal = [...this.#jobs.values()]
-      .filter((job) => TERMINAL_STATES.has(job.state))
-      .sort((a, b) => (a.terminalAt ?? 0) - (b.terminalAt ?? 0));
-    const excess = terminal.length - this.#config.maxRetainedJobs;
-    for (let index = 0; index < excess; index += 1) {
-      const victim = terminal[index];
-      if (victim !== undefined) void this.#discard(victim);
+  /**
+   * Terminal results are retained for exactly as long as their advertised
+   * `expiresAt` promises: an unexpired result is never evicted to make room.
+   * The retained-record bound is therefore an admission bound, not an eviction
+   * policy, and refusing new work is the honest failure mode.
+   */
+  #retainedResults() {
+    const now = this.#now();
+    let retained = 0;
+    for (const job of this.#jobs.values()) {
+      if (!TERMINAL_STATES.has(job.state)) continue;
+      if (job.expiresAt !== null && job.expiresAt <= now) continue;
+      retained += 1;
     }
+    return retained;
   }
 
   /** @param {import("./types.mjs").JobRecord} job */
   async #discard(job) {
     if (!TERMINAL_STATES.has(job.state)) return;
     this.#jobs.delete(job.jobId);
-    if (job.artifactByteLength > 0) this.#jobBytes -= job.artifactByteLength;
+    this.#jobDiskBytes -= job.diskBytes;
     await rm(job.jobDir, { recursive: true, force: true });
   }
 }

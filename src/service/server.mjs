@@ -64,6 +64,19 @@ export function createService(deps) {
   /** @type {{ ok: boolean, checks: { name: string, ok: boolean, detail?: string }[] }} */
   let readiness = { ok: false, checks: [] };
 
+  /**
+   * Readiness is the startup verdict *and* live capacity. Docker's HEALTHCHECK
+   * depends on this being honest: a service that cannot stage another byte is
+   * not ready, however healthy its startup checks were.
+   *
+   * @returns {{ ok: boolean, reason: "startup" | "scratch" | null }}
+   */
+  function evaluateReadiness() {
+    if (!readiness.ok) return { ok: false, reason: "startup" };
+    if (jobs.scratchBytesInUse >= config.scratchMaxBytes) return { ok: false, reason: "scratch" };
+    return { ok: true, reason: null };
+  }
+
   const server = createServer((req, res) => {
     const startedAt = now();
     handle(req, res)
@@ -140,7 +153,8 @@ export function createService(deps) {
     }
     if (pathname === "/readyz") {
       if (method !== "GET") throw methodNotAllowed("GET");
-      sendText(res, readiness.ok ? 200 : 503, readiness.ok ? "ready" : "not ready");
+      const live = evaluateReadiness();
+      sendText(res, live.ok ? 200 : 503, live.ok ? "ready" : "not ready");
       return;
     }
     if (webAssets.has(pathname)) {
@@ -242,6 +256,13 @@ export function createService(deps) {
   async function uploadAsset(req, res, tokenIdHash) {
     const limit = limiter.take(`asset:${tokenIdHash}`, config.assetUploadsPerMinute, now());
     if (!limit.allowed) throw rateLimited(limit.retryAfterMs, "asset-uploads");
+    if (jobs.scratchBytesInUse >= config.scratchMaxBytes) {
+      throw new ServiceError(
+        ERROR_CODES.serviceUnavailable,
+        "Scratch storage is at capacity; retry shortly.",
+        { data: { scope: "scratch-bytes" } },
+      );
+    }
 
     const body = await readBody(req, config.maxAssetBytes);
     const record = await assets.put(body, {
@@ -344,6 +365,7 @@ export function createService(deps) {
     getReadiness() {
       return readiness;
     },
+    evaluateReadiness,
   };
 }
 

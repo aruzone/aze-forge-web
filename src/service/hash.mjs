@@ -13,15 +13,6 @@ export function sha256BytesHex(bytes) {
 }
 
 /**
- * `sha256:<hex>` — the compiler-facing hash spelling.
- * @param {Uint8Array} bytes
- * @returns {string}
- */
-export function sha256Tagged(bytes) {
-  return `sha256:${sha256BytesHex(bytes)}`;
-}
-
-/**
  * Canonical JSON: object keys sorted, no insignificant whitespace.
  * @param {unknown} value
  * @returns {string}

@@ -94,7 +94,7 @@ export class JobExecutor {
  * @param {number} pid
  * @param {NodeJS.Signals} signal
  */
-export function signalGroup(pid, signal) {
+function signalGroup(pid, signal) {
   try {
     // Negative pid addresses the group the detached child leads.
     process.kill(-pid, signal);

@@ -51,12 +51,3 @@ export async function loadWebAssets(directory) {
   assets.set("/", { body: index.body, contentType: index.contentType });
   return assets;
 }
-
-/**
- * @param {Map<string, unknown>} assets
- * @param {string} pathname
- * @returns {boolean}
- */
-export function isKnownStaticPath(assets, pathname) {
-  return assets.has(pathname);
-}

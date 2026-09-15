@@ -103,14 +103,6 @@ export function knownEnvNames() {
 }
 
 /**
- * Envelope ceiling for a knob, or `undefined` for unconstrained knobs.
- * @param {string} key
- */
-export function ceilingFor(key) {
-  return KNOBS[key].max;
-}
-
-/**
  * @typedef {object} PublishedLimit
  * @property {string} id
  * @property {string} unit

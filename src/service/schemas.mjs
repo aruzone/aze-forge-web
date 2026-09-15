@@ -114,6 +114,9 @@ function jobRequestSchema({ documentSchemaIds }) {
     description:
       "One immutable Source snapshot plus operation choices. Unknown fields are rejected.",
     type: "object",
+    // The runtime validator is strict, so the published schema must be too:
+    // unknown fields are rejected, not ignored.
+    additionalProperties: false,
     required: ["protocolVersion", "requestId", "revision", "operation", "source"],
     properties: {
       protocolVersion: { const: PROTOCOL_VERSION },
@@ -157,7 +160,18 @@ function jobRequestSchema({ documentSchemaIds }) {
       {
         if: { properties: { operation: { const: "compile" } }, required: ["operation"] },
         then: { required: ["format"] },
-        else: { not: { required: ["format"] } },
+        else: { not: { anyOf: [{ required: ["format"] }, { required: ["theme"] }, { required: ["assets"] }] } },
+      },
+      {
+        // Source-only operations carry no Artifact request.
+        if: { properties: { operation: { const: "format" } }, required: ["operation"] },
+        then: { not: { required: ["includeDocument"] } },
+      },
+      {
+        // `migrate` is named by the boundary but unavailable in the pinned
+        // compiler; the service rejects it, so it is not a request the schema
+        // admits.
+        not: { properties: { operation: { const: "migrate" } }, required: ["operation"] },
       },
     ],
   };

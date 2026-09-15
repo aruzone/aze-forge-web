@@ -48,6 +48,7 @@ const els = {
   previewFrame: element("preview-frame"),
   previewPlaceholder: element("preview-placeholder"),
   previewStatus: element("preview-status"),
+  downloadArtifact: /** @type {HTMLButtonElement} */ (element("download-artifact", HTMLButtonElement)),
   serviceMeta: element("service-meta"),
 };
 
@@ -97,7 +98,8 @@ const els = {
 
 /** @type {{ token: string, capabilities: any, examples: { id: string, name: string, source: string }[],
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
- *   preview: { objectUrl: string | null, revision: string | null },
+ *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
+ *   artifact: { format: string, bytes: ArrayBuffer, revision: string } | null,
  *   debounceTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
   token: sessionStorage.getItem(TOKEN_KEY) ?? "",
@@ -106,7 +108,8 @@ const state = {
   revision: 0,
   analyzeController: null,
   analyzeJobId: null,
-  preview: { objectUrl: null, revision: null },
+  preview: { objectUrl: null, revision: null, theme: null },
+  artifact: null,
   debounceTimer: undefined,
 };
 
@@ -237,13 +240,26 @@ function updateSourceMeta() {
   els.sourceMeta.textContent = `revision ${currentRevision()} · ${bytes} bytes`;
 }
 
+/**
+ * A preview represents the revision *and* the Theme it was rendered with. It
+ * may be kept after a change, but only while it is visibly stale and never as
+ * the current revision.
+ */
 function markPreviewStale() {
   if (state.preview.revision === null) return;
-  if (state.preview.revision === currentRevision()) return;
-  setPreviewStatus(
-    `Stale preview: showing revision ${state.preview.revision}, the editor is at revision ${currentRevision()}.`,
-    "stale",
-  );
+  const reasons = [];
+  if (state.preview.revision !== currentRevision()) {
+    reasons.push(`showing revision ${state.preview.revision}, the editor is at revision ${currentRevision()}`);
+  }
+  if (state.preview.theme !== selectedTheme()) {
+    reasons.push(`rendered with theme ${state.preview.theme ?? "default"}, the toolbar selects ${selectedTheme()}`);
+  }
+  if (reasons.length === 0) return;
+  setPreviewStatus(`Stale preview: ${reasons.join("; ")}.`, "stale");
+}
+
+function selectedTheme() {
+  return els.theme.value === "" ? "default" : els.theme.value;
 }
 
 function scheduleAnalyze() {
@@ -472,6 +488,11 @@ async function exportFormat(format) {
     }
 
     const bytes = await fetchArtifact(job.jobId);
+    // Exports and previews are for the revision *and* Theme that were submitted.
+    state.artifact = { format, bytes, revision: job.revision };
+    els.downloadArtifact.hidden = false;
+    els.downloadArtifact.textContent = `Download ${format.toUpperCase()}`;
+
     if (format === "html") {
       showPreview(job, bytes);
       setActivity(`Preview updated (revision ${job.revision})`, "ok");
@@ -501,7 +522,7 @@ function showPreview(job, bytes) {
   const blob = new Blob([bytes], { type: artifact.mimeType });
   const url = URL.createObjectURL(blob);
   if (state.preview.objectUrl !== null) URL.revokeObjectURL(state.preview.objectUrl);
-  state.preview = { objectUrl: url, revision: job.revision };
+  state.preview = { objectUrl: url, revision: job.revision, theme: selectedTheme() };
   els.preview.src = url;
   els.preview.hidden = false;
   els.previewPlaceholder.hidden = true;
@@ -681,6 +702,12 @@ function bindEvents() {
   els.format.addEventListener("click", () => void formatSource());
   els.example.addEventListener("change", () => loadExample(els.example.value));
   els.theme.addEventListener("change", markPreviewStale);
+  els.downloadArtifact.addEventListener("click", () => {
+    const artifact = state.artifact;
+    if (artifact === null) return;
+    downloadArtifact(artifact.format, artifact.bytes);
+    setActivity(`${artifact.format.toUpperCase()} downloaded (revision ${artifact.revision})`, "ok");
+  });
 
   for (const button of document.querySelectorAll("[data-format]")) {
     const control = /** @type {HTMLButtonElement} */ (button);
