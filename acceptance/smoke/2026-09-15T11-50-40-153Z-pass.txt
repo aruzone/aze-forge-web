@@ -1,0 +1,92 @@
+staging the deployment profile…
+staging the probe profile (lowered compile deadline and result retention)…
+AzeForge Web deployment acceptance smoke suite
+  started     2026-09-15T11:50:40.153Z
+  image       aze-forge-web:dev-amd64 (sha256:75b08396e07c63166056f4b38bc3662769cf2e52345c34822e9853640c40d9b8)
+  staged      http://127.0.0.1:49823 (container azeweb-smoke-15850-a)
+  probe       http://127.0.0.1:49824 (container azeweb-smoke-15850-b)
+  compiler    0.3.1 (pinned by package.json)
+  browser     chrome-headless-shell 152.0.7977.75 (pinned by the compiler)
+  token       sha256:6b01b97a2e0b… (hashed; never printed)
+  wedge       100 diagrams
+  docker run  docker run -d --name azeweb-smoke-15850-a --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -p 127.0.0.1:49823:8080 aze-forge-web:dev-amd64
+  docker run  docker run -d --name azeweb-smoke-15850-b --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -e AZEWEB_DEADLINE_COMPILE_MS=5000 -e AZEWEB_RESULT_TTL_MS=1000 -p 127.0.0.1:49824:8080 aze-forge-web:dev-amd64
+  hardening   --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512
+  deviation   --security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place.
+
+[1/9] token-401 · Access boundary
+    · /healthz without a token → 200 ok
+    · /readyz without a token → 200 ready
+    · /v1/capabilities without a token → 401 unauthorized
+    · /v1/capabilities with a wrong token → 401 unauthorized
+    · /v1/capabilities with the deployment token → 200
+    PASS (0.0s)
+
+[2/9] capabilities · Capabilities, policy and effective limits
+    · compiler release 0.3.1
+    · capability fingerprint sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1
+    · chrome-headless-shell 152.0.7977.75 available
+    · policy rawMath=unavailable rawHtml=denied remoteAssets=denied persistence=none accounts=false
+    · formats html, svg, png, pdf
+    · all 19 advertised limits are within their built-in alpha ceilings
+    · deadlines compile=300000ms analyze=60000ms grace=5000ms result-retention=3600000ms
+    PASS (0.0s)
+
+[3/9] golden-report · Golden report: analyze, compile to four formats, verify every hash
+    · analyze → valid, contentHash not computed
+    · html: 805333 bytes, sha256:0c91329b023f9c4… verified
+    · svg: 806399 bytes, sha256:2a3360cc9f0c7e6… verified
+    · png: 316493 bytes, sha256:02609ac25eb753a… verified
+    · pdf: 61362 bytes, sha256:f1f0fec432c8470… verified
+    · contentHash identical across all four formats: sha256:16efdada81537d99ac1265ddfe95b3803838bf9d8561591236b4e2d8c762ca2f
+    PASS (21.6s)
+
+[4/9] asset-roundtrip · Asset upload, job binding, render, handle revocation
+    · uploaded 717 bytes as image/svg+xml → handle 311359a9-d779-448c-bf86-bfe579c291fd
+    · job bound figure.svg → Artifact 691852 bytes, asset manifest sha256:864c2251e231194…
+    · DELETE /v1/assets/311359a9-d779-448c-bf86-bfe579c291fd → 204
+    · binding the revoked handle → 404 not-found
+    PASS (0.8s)
+
+[5/9] cancel · Cancellation of a running job
+    · admitted wedge compile fb6c6f52-c1a7-4f21-9f6f-46765d669394 (100 diagrams)
+    · observed 4 browser process(es) before cancelling: 693, 697, 698, 700
+    · POST /v1/jobs/fb6c6f52-c1a7-4f21-9f6f-46765d669394/cancel → cancelling
+    · cancelled job fb6c6f52-c1a7-4f21-9f6f-46765d669394: terminal state cancelled, Artifact 404
+    PASS (5.9s)
+
+[6/9] limits · Size ceilings, admission limits and retention expiry
+    · asset upload of 33554433 bytes (ceiling 33554432) → 413
+    · Source of 1048577 bytes (ceiling 1048576) → 413
+    · admitted 10 jobs (2 running, 8 queued), the 11th → 429 queue-depth retry-after=1s
+    · cancelled the 10 admitted flood jobs
+    · Artifact read 0.8s after its advertised expiry (retention 1000 ms) → 404 not-found
+    PASS (2.9s)
+
+[7/9] deadline-kill · Deadline kill with no orphaned browser
+    · probe compile deadline 5000 ms, termination grace 5000 ms
+    · browser processes before the wedge: 0
+    · admitted wedge compile f583be9e-779f-4b34-96e2-9952fb4448bf (100 diagrams)
+    · observed peak 7 browser process(es) and 1 worker process(es) while running
+    · terminated failed job-timeout (deadlineMs=5000)
+    · after termination plus grace: 0 browser processes, 0 worker processes
+    PASS (19.4s)
+
+[8/9] privacy-canary · Privacy: no Source text or token in the container logs
+    · canary job completed with diagnostics: azeforge.source#unknown-directive
+    · canary (which must never appear in a log line): azeweb-canary-22350738ebd7e1450c126dc7
+    · 238 log lines inspected: neither the canary nor the token appears
+    PASS (5.4s)
+
+[9/9] image-manifest · Image dependency manifest
+    · base node:24.21.0-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+    · compiler @aruzone/aze-forge@0.3.1 sha512-O9yhBVVI1PbBmg+3S…
+    · browser chrome-headless-shell 152.0.7977.75 sha256:6e81bf177c886f8…
+    · browser archive chrome-headless-shell-linux64 (runtime linux-x64)
+    · fonts inter@5.3.0 jetbrains-mono@5.2.8
+    · runtime node v24.21.0 (linux-x64)
+    · 148 resolved dependencies, all exact pins
+    PASS (0.1s)
+
+9 checks, 9 passed, 0 failed
+  finished    2026-09-15T11:51:44.917Z (64.8s)

@@ -22,6 +22,8 @@
   },
   "include": [
     "src/**/*.mjs",
-    "src/**/*.js"
+    "src/**/*.js",
+    "scripts/**/*.mjs",
+    "docker/**/*.mjs"
   ]
 }

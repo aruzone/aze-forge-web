@@ -10,10 +10,13 @@ compiler source is copied, and there is no monorepo coupling.
 
 ## Scope
 
-This repository implements the service and the edit-preview-export frontend, per
-[Build the AzeForge Web service and edit-preview-export frontend](https://github.com/aruzone/aze-forge-web/issues/1).
-The deployable image, the documented environment schema and the deployment
-acceptance smoke suite are [Packaging work](https://github.com/aruzone/aze-forge-web/issues/2).
+This repository implements the service, the edit-preview-export frontend, and —
+per [Package the AzeForge Web image, env schema, and smoke suite](https://github.com/aruzone/aze-forge-web/issues/2)
+and the [operating envelope](https://github.com/aruzone/aze-forge/issues/54) it
+packages — the deployable image, the documented environment schema and the
+deployment acceptance smoke suite. [Build the AzeForge Web service and
+edit-preview-export frontend](https://github.com/aruzone/aze-forge-web/issues/1)
+is the service and frontend work itself.
 
 Explicitly out of scope, by decision: accounts, signup, saved cloud projects,
 collaboration, LLM integration, durable storage, cross-client sharing, remote
@@ -42,7 +45,7 @@ succeeds in an isolated child process.
 | Access | One deployment-issued bearer token; `/v1` is closed without it. The token's digest is the client context that scopes asset handles, jobs and cache entries. |
 | Protocol | `/v1`, `protocolVersion: 1`, strict request validation. Unknown fields, unadvertised Themes/formats and unsupported operations are errors. |
 | Snapshots | A job is one immutable Source snapshot plus frozen asset bindings and render choices. There is no server-side editable project and no patch protocol. |
-| Isolation | Every job runs in its own child process and process group, so the browser the compiler launches dies with it. |
+| Isolation | Every job runs in its own child process, and termination signals the worker's group *and* every process group its descendants lead — the pinned browser calls `setsid()`, so its own group is not the worker's. |
 | Cancellation | Idempotent, and competes with completion at a single atomic terminal decision. A cancelled job never publishes an Artifact. |
 | Deadlines | Start at admission and include queue time. A service deadline produces `failed` with the stable `job-timeout` code, never a fabricated Source diagnostic. |
 | Artifacts | Delivered as bytes with their MIME type and byte-integrity hash, verified by the service before publication. Never base64 in JSON, never a partial Artifact. |
@@ -97,6 +100,7 @@ ceiling is an owner decision, not a configuration change.
 | `AZEWEB_HOST`, `AZEWEB_PORT` | `0.0.0.0`, `8080` | |
 | `AZEWEB_SCRATCH_DIR` | `$TMPDIR/aze-forge-web` | uploads, job snapshots, cache |
 | `AZEWEB_MAX_RUNNING_JOBS`, `AZEWEB_QUEUE_DEPTH` | `2`, `8` | admission beyond either returns 429 |
+| `AZEWEB_NODE_HEAP_MB` | `1024` | the Node heap ceiling the image pins for the service and every job worker |
 | `AZEWEB_JOB_SUBMISSIONS_PER_MINUTE`, `AZEWEB_ASSET_UPLOADS_PER_MINUTE` | `30`, `60` | per client context |
 | `AZEWEB_RATE_LIMIT_WINDOW_MS` | `60000` | |
 | `AZEWEB_DEADLINE_ANALYZE_MS`, `AZEWEB_DEADLINE_COMPILE_MS` | `60000`, `300000` | measured from admission, queue time included |
@@ -111,6 +115,115 @@ ceiling is an owner decision, not a configuration change.
 
 An unrecognised `AZEWEB_*` variable is a startup error: a typo must not be
 silently ignored.
+
+## Deployment
+
+One container on an owner-controlled VM: a single instance, no horizontal
+scaling, no PaaS. The image is immutable and offline at runtime — the pinned
+compiler release, the pinned `chrome-headless-shell` and the woff2 fonts the
+compiler inlines are baked at build time, so provisioning is verified once per
+image instead of at runtime on a foreign host.
+
+```bash
+docker build --platform linux/amd64 -t aze-forge-web:"$(git rev-parse --short HEAD)" .
+```
+
+The base image is `node:24-bookworm-slim`, pinned by manifest-list digest inside
+the `Dockerfile`, so it cannot move under a rebuild. `/app/image-manifest.json`
+records the exact pins the built image contains — compiler release, resolved
+dependency tree, fonts, and the browser's build, digest and archive.
+
+**Target platform.** `linux/amd64`. The pinned `chrome-headless-shell`
+152.0.7977.75 is only published for `linux64` on Linux (Chrome for Testing began
+publishing `linux-arm64` headless shells at 153.0.8001.0), so an arm64 image
+would bake a browser it cannot execute. The manifest records both the runtime
+platform and the browser archive it baked, and the smoke suite refuses the pair
+when they disagree.
+
+```bash
+docker run -d --name azeweb \
+  --read-only \
+  --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 \
+  --cap-drop=ALL --security-opt=no-new-privileges --security-opt=seccomp=unconfined \
+  --memory=6g --memory-swap=6g --pids-limit=512 \
+  --log-driver=local --log-opt max-size=50m --log-opt max-file=8 \
+  -e AZEWEB_ACCESS_TOKEN="$(openssl rand -hex 24)" \
+  -p 127.0.0.1:8080:8080 \
+  aze-forge-web:"$(git rev-parse --short HEAD)"
+```
+
+- **Read-only rootfs, two writable volumes.** `/scratch` is the tmpfs mounted at
+  `AZEWEB_SCRATCH_DIR`: uploads, job snapshots, cache and Artifacts live there
+  and die with the container. `/tmp` is a smaller tmpfs because a read-only
+  rootfs leaves the runtime nowhere to write — the pinned browser refuses to
+  start without a writable temporary directory. Neither survives the container.
+- **No capabilities, no privilege escalation.** `--cap-drop=ALL` with
+  `no-new-privileges`: nothing in the container can gain a capability, and the
+  browser's setuid sandbox does not exist, so Chrome runs as the non-root `node`
+  user on its namespace sandbox alone.
+- **Browser sandbox — the one deviation from the envelope's hardening list.**
+  `--security-opt=seccomp=unconfined` is load-bearing and is *not* in the
+  envelope's hardening list, so it is recorded here as a deviation for the owner
+  to accept or reject rather than as ordinary hardening. Docker's default seccomp
+  profile refuses `clone(CLONE_NEWUSER)` to a container without `CAP_SYS_ADMIN`,
+  and Chrome refuses to start without a usable sandbox; the pinned compiler owns
+  the browser's launch arguments, so `--no-sandbox` is not available to this
+  deployment. The choice is therefore the browser's own namespace sandbox with
+  Docker's syscall filter relaxed, or an image that cannot render at all.
+  Every other isolation flag above stays, and every acceptance run prints this
+  deviation with its evidence.
+  Two host notes: Ubuntu 23.10+ hosts additionally restrict unprivileged user
+  namespaces through AppArmor (`kernel.apparmor_restrict_unprivileged_userns`),
+  which the owner must relax for the container's namespace sandbox to be
+  permitted; and without a namespace sandbox the render checks fail loudly with
+  `azeforge.renderer#adapter-missing` rather than rendering something else.
+- **Bounded.** `--memory`/`--memory-swap` cap the container; `--pids-limit`
+  bounds process count; the image pins the Node heap ceiling
+  (`AZEWEB_NODE_HEAP_MB`) for the service *and* for each job worker, so a
+  runaway job dies inside its own process group rather than at the OOM killer.
+- **No egress, and the port is the ingress.** The published port is bound to the
+  loopback interface, so the only way in is the TLS terminator on the host; TLS
+  never happens inside the container. Nothing the service or the compiler runs
+  opens an outbound connection — the compiler's request fence admits only
+  `about:blank` and `data:font/woff2`, and remote assets are denied at the
+  request boundary — and the container can be denied egress at the host's
+  firewall for defence in depth. That block belongs to the host, not to this
+  image, and not to `docker network create --internal`: an internal network also
+  removes the container's route back to the host, so the published port stops
+  working with it. The smoke suite stages the deployment profile on the default
+  bridge for that reason, and does not claim to verify host-level egress.
+- **Logs stay local.** The service logs metadata-only JSON to stdout and writes
+  no files, so the container's log driver is the whole story: it must go to
+  local disk with rotation (for example `--log-driver=local
+  --log-opt max-size=50m --log-opt max-file=8`, about the fourteen-day window
+  the envelope asks for) and never to a remote or third-party driver. There is
+  no telemetry and no analytics anywhere in the image.
+- **Rollout.** Build a new immutable tag → run the acceptance suite against the
+  staged container → stop the old container, start the new one. Rollback is
+  redeploying the previous tag; tags are never mutated. Cache never survives
+  cutover because it is on the scratch tmpfs.
+
+### Deployment acceptance smoke suite
+
+```bash
+npm run smoke -- --image aze-forge-web:"$(git rev-parse --short HEAD)"
+```
+The suite stages the image twice — the deployment profile, and a probe profile
+with a lowered compile deadline and result retention — and runs the nine
+acceptance checks of the operating envelope against them, collecting its
+container-level evidence (browser processes, log lines, the image manifest)
+through `docker exec`. It writes its recorded output to
+`acceptance/smoke/<timestamp>-<pass|fail>.txt` and the same run as structured
+JSON next to it; that output is the evidence artifact of the cutover decision,
+and it exits non-zero if any check fails.
+
+Nothing about the suite is a stub: it compiles a real golden report
+(`acceptance/golden-report.aze.md`) to all four formats and verifies each
+downloaded Artifact against its advertised byte-integrity hash. It can also run
+against an already-deployed URL when the container name is reachable
+(`--base-url … --container …`); the checks that need process or log access fail
+rather than pass vacuously when no container is given.
 
 ## Caching
 
@@ -169,6 +282,7 @@ npm test              # everything
 npm run test:unit     # configuration, protocol, stores, coordinates
 npm run test:service  # HTTP policy against a stubbed worker, real HTTP
 npm run test:compiler # the real pinned compiler, real Artifacts
+npm run smoke         # the deployment acceptance suite (needs a built image)
 npm run typecheck
 ```
 
@@ -177,7 +291,9 @@ admission, isolation, deadlines, cancellation, retention, Artifact delivery and
 log privacy — and stub the worker so they need no browser. The compiler tests run
 the real loop: every curated example validates and previews, all four formats
 produce bytes whose advertised hash matches, and an unavailable required engine
-fails with a truthful diagnostic instead of a silent fallback.
+fails with a truthful diagnostic instead of a silent fallback. The acceptance
+golden report is analyzed there too, so a document the smoke suite compiles
+cannot rot unnoticed.
 
 ## Architecture
 
@@ -189,7 +305,7 @@ src/service/
   server.mjs          routing, envelopes, access boundary, rate limits
   protocol.mjs        strict request validation
   jobs.mjs            admission, queue, deadlines, cancellation, retention
-  executor.mjs        process-group isolation and termination
+  executor.mjs        worker launch, process-group termination
   worker-entry.mjs    the per-job child process
   runner.mjs          the compiler operations, on the child side
   assets.mjs          upload handles
@@ -198,4 +314,10 @@ src/service/
   capabilities.mjs    the compiler's capabilities plus this deployment's policy
   schemas.mjs         the published schema registry
 src/web/              the frontend: no build step, no runtime dependencies
+Dockerfile            the deployable image (Node LTS + pinned browser + fonts)
+docker/               the image entrypoint and the build-time browser provisioning
+scripts/smoke.mjs     the deployment acceptance suite (nine checks, recorded output)
+scripts/smoke/        its checks, Sources, HTTP client and container evidence
+scripts/image-manifest.mjs  the image's exact pins, generated at build time
+acceptance/           the golden report, the upload fixture, and recorded smoke output
 ```

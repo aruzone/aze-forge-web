@@ -70,7 +70,12 @@ export async function createApplication({
     maxAgeMs: config.cacheMaxAgeMs,
   });
   await cache.init();
-  const executor = new JobExecutor({ workerEntry, nodePath, graceMs: config.terminationGraceMs });
+  const executor = new JobExecutor({
+    workerEntry,
+    nodePath,
+    graceMs: config.terminationGraceMs,
+    nodeHeapMb: config.nodeHeapMb,
+  });
   const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now });
   await jobs.init();
 
