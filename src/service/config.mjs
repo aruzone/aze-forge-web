@@ -18,6 +18,7 @@ import { KNOBS, envNameFor, knownEnvNames } from "./limits.mjs";
  * @property {number} port
  * @property {number} maxRunningJobs
  * @property {number} queueDepth
+ * @property {number} nodeHeapMb
  * @property {number} jobSubmissionsPerMinute
  * @property {number} assetUploadsPerMinute
  * @property {number} rateLimitWindowMs

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
+  <!--
+    The uploaded asset the asset round-trip check binds to a job. Static, no
+    script, no external reference, positive viewBox: exactly what the compiler's
+    project-image rules admit. The SVG element must follow the XML declaration
+    directly — the compiler sniffs the media type from the leading bytes.
+  -->
+  <rect width="120" height="40" fill="#f2f4f7"/>
+  <rect x="4" y="4" width="112" height="32" fill="none" stroke="#344054" stroke-width="2"/>
+  <text x="60" y="25" font-family="Inter" font-size="12" fill="#344054" text-anchor="middle">acceptance figure</text>
+</svg>

@@ -43,6 +43,9 @@ export const KNOBS = Object.freeze({
 
   maxRunningJobs: { env: "MAX_RUNNING_JOBS", default: 2, min: 1, max: 2 },
   queueDepth: { env: "QUEUE_DEPTH", default: 8, min: 0, max: 8 },
+  // The ceiling the image entrypoint and every job worker are launched with.
+  // Not an envelope number: the image owns it, the deployment may only lower it.
+  nodeHeapMb: { env: "NODE_HEAP_MB", default: 1_024, min: 64, max: 1_024 },
   jobSubmissionsPerMinute: {
     env: "JOB_SUBMISSIONS_PER_MINUTE",
     default: 30,
@@ -126,6 +129,7 @@ export function publishedLimits(config) {
     limit("assets-per-job", "count", "job", config.maxAssetsPerJob),
     limit("concurrent-jobs", "count", "deployment", config.maxRunningJobs),
     limit("queue-depth", "count", "deployment", config.queueDepth),
+    limit("node-heap", "bytes", "process", config.nodeHeapMb * MIB),
     limit("job-submissions", "requests", "per-token-per-minute", config.jobSubmissionsPerMinute),
     limit("asset-uploads", "requests", "per-token-per-minute", config.assetUploadsPerMinute),
     limit("job-deadline", "ms", "analyze|format", config.deadlineAnalyzeMs),

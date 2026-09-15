@@ -100,6 +100,27 @@ describe("the edit-preview-export loop", () => {
     });
   }
 
+  test("the acceptance golden report analyzes cleanly", async () => {
+    // The deployment acceptance smoke suite compiles this document to every
+    // Artifact format, so a document that no longer validates must fail here,
+    // where the compiler is being changed, rather than at a cutover.
+    const text = await readFile(new URL("../acceptance/golden-report.aze.md", import.meta.url), "utf8");
+    const { job } = await runJob(service.base, {
+      protocolVersion: 1,
+      requestId: "analyze-acceptance-golden",
+      revision: "rev-1",
+      operation: "analyze",
+      source: { text, name: "golden-report.aze.md" },
+    });
+    assert.equal(job.status, "completed");
+    assert.equal(
+      job.result.ok,
+      true,
+      `acceptance golden report: ${job.result.diagnostics.map((diagnostic) => diagnostic.code).join(", ")}`,
+    );
+    assert.equal(job.result.semantic.valid, true);
+  });
+
   test("the diagnostics example completes with real compiler diagnostics, not a server error", async () => {
     const example = examples.find((entry) => entry.id === "diagnostics");
     const { job } = await runJob(service.base, {
