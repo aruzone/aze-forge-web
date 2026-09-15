@@ -1,0 +1,52 @@
+[
+  {
+    "id": "prose",
+    "name": "Prose and lists",
+    "source": "---\nazemark: 2\ntitle: Engineering notation sampler\nauthor:\n  - AzeForge Web\n---\n\n# Introduction\n\nSubstantive prose with *emphasis*, **strong** text and `inline code`,\nplus one retained [safe reference](https://example.com/notation).\n\nMeasurement notes:\n\n- inspect the setup before recording\n- correct unsafe conditions immediately\n- record the ambient conditions\n\n## Method\n\nThe procedure is deliberately boring: prepare, measure, record, repeat.\n"
+  },
+  {
+    "id": "equations",
+    "name": "Equations and derivations",
+    "source": "---\nazemark: 2\ntitle: Readable mathematics\n---\n\n# Mathematics\n\nA numbered equation and a numbered derivation, both written in readable\nnotation rather than LaTeX.\n\n:::: equation\nid: gaussian-integral\nnumber: true\n----\nintegral x=-infinity..infinity of exp(-x^2) dx = sqrt(pi)\n::::\n\n:::: derivation\nid: geometric-series\nnumber: true\n----\n- expression: S_n = sum i=0..n of r^i\n  annotation: partial sum of the first n + 1 powers\n- expression: r * S_n = sum i=1..n+1 of r^i\n  annotation: multiply every term by r\n- expression: S_n - r * S_n = 1 - r^(n+1)\n  annotation: subtraction telescopes the interior terms\n- expression: S_n = (1 - r^(n+1)) / (1 - r)\n  annotation: closed form, valid for r != 1\n::::\n"
+  },
+  {
+    "id": "table-callout",
+    "name": "Table and callout",
+    "source": "---\nazemark: 2\ntitle: Tables and callouts\n---\n\n# Materials\n\n:::: callout\nvariant: note\ntitle: Determinism\n----\nArtifacts are self-contained and deterministic: the same Source always\nproduces byte-identical output.\n::::\n\n:::: table\ncaption: Representative material properties\nid: materials\n----\ncolumns:\n  - key: material\n    name: Material\n    type: text\n  - key: density\n    name: Density [kg/m^3]\n    type: quantity\n    unit: kg/m^3\n  - key: conductivity\n    name: Conductivity [W/(m K)]\n    type: quantity\n    unit: W/(m K)\nrows:\n  - material: Aluminum\n    density: 2700\n    conductivity: 205\n  - material: Steel\n    density: 7850\n    conductivity: 50\n  - material: Glass\n    density: 2500\n    conductivity: 1.0\n::::\n"
+  },
+  {
+    "id": "diagram",
+    "name": "Mermaid diagram",
+    "source": "---\nazemark: 2\ntitle: Measurement flow\n---\n\n# Measurement flow\n\nThe diagram renders through the pinned browser engine, exactly as it does\nfor the SVG, PNG and PDF exports.\n\n:::: mermaid\nid: safety-flow\ntitle: Measurement safety flow\n----\nflowchart LR\n  start[Start] --> inspect[Inspect setup]\n  inspect --> safe{Safe?}\n  safe -- No --> correct[Correct setup]\n  correct --> inspect\n  safe -- Yes --> record[Record measurement]\n  record --> finish[Finish]\n::::\n"
+  },
+  {
+    "id": "plot",
+    "name": "Plot with uncertainties",
+    "source": "---\nazemark: 2\ntitle: RC step response\n---\n\n# RC step response\n\nAn analytic curve and measured points with uncertainties in one coordinate\nsystem. Samples in undefined regions gap; error bars render.\n\n:::: plot\nid: rc-step-response\nnumber: true\nparameters:\n  V0: 5\n  R: 1000\n  C: 1e-6\nx-axis:\n  label: time (s)\n  min: 0\n  max: 0.005\ny-axis:\n  label: voltage (V)\n  min: 0\n----\n- kind: function\n  label: analytic step response\n  variable: t\n  expression: V0 * (1 - exp(-t / (R * C)))\n  domain:\n    min: 0\n    max: 0.005\n  samples: 400\n- kind: scatter\n  label: measured points\n  points:\n    - x: 0.0005\n      y: 1.99\n      error: 0.08\n    - x: 0.001\n      y: 3.11\n      error: 0.10\n    - x: 0.002\n      y: 4.36\n      error-low: 0.14\n      error-high: 0.09\n    - x: 0.003\n      y: 4.71\n      error: 0.12\n::::\n"
+  },
+  {
+    "id": "chart",
+    "name": "Grouped bar chart",
+    "source": "---\nazemark: 2\ntitle: Benchmark charts\n---\n\n# Benchmark charts\n\nGrouped bars with symmetric and asymmetric error bars; categories keep\ntheir authored order.\n\n:::: chart\nid: bench-scores\nnumber: true\ntype: grouped-bar\nx-label: suite\ny-label: score\n----\n- label: alpha\n  bars:\n    - category: parse\n      value: 12\n      error: 0.5\n    - category: render\n      value: 19\n- label: beta\n  bars:\n    - category: parse\n      value: 9\n    - category: render\n      value: 22\n      error-low: 1\n      error-high: 2\n::::\n"
+  },
+  {
+    "id": "geometry",
+    "name": "Geometry construction",
+    "source": "---\nazemark: 2\ntitle: Geometry constructions\n---\n\n# Isosceles triangle\n\nA coordinate triangle with an altitude, equal marks and a right-angle mark.\n\n:::: geometry\nid: isosceles-altitude\nnumber: true\ncaption: Isosceles triangle with altitude\n----\n- kind: point\n  name: base-left\n  label: B\n  x: -3\n  y: 0\n- kind: point\n  name: base-right\n  label: C\n  x: 3\n  y: 0\n- kind: point\n  name: apex\n  label: A\n  x: 0\n  y: 4\n- kind: segment\n  name: left-side\n  from: apex\n  to: base-left\n- kind: segment\n  name: right-side\n  from: apex\n  to: base-right\n- kind: segment\n  name: base\n  from: base-left\n  to: base-right\n- kind: point\n  name: foot\n  label: D\n  x: 0\n  y: 0\n- kind: segment\n  name: altitude\n  from: apex\n  to: foot\n  style: dashed\n- kind: equal-marks\n  group: legs\n  segments:\n    - left-side\n    - right-side\n- kind: right-angle-mark\n  first: apex\n  second: foot\n  third: base-right\n- kind: length-mark\n  from: apex\n  to: foot\n  label: h\n::::\n"
+  },
+  {
+    "id": "chemistry",
+    "name": "Chemistry",
+    "source": "---\nazemark: 2\ntitle: Chemistry information\n---\n\n# Chemistry\n\nA formula, a skeletal reaction with explicitly unspecified coefficients,\nand a small structure with an isotope and a wedge bond.\n\n:::: formula\nid: water\nnumber: true\n----\nH2O\n::::\n\n:::: reaction\nid: silver-chloride-balanced\nnumber: true\nbalance: check\n----\nAg+(aq) + Cl-(aq) -> AgCl(s)\n::::\n\n:::: reaction\nid: aluminum-oxide-skeletal\nnumber: true\n----\n? Al + ? O2 -> ? Al2O3\n::::\n\n:::: structure\nid: chloroethane\nnumber: true\n----\n- atom: c1\n  element: C\n  isotope: 14\n  at: [0.0, 0.0]\n- atom: c2\n  element: C\n  at: [1.2, -0.7]\n- atom: cl\n  element: Cl\n  at: [2.4, 0.0]\n- atom: h\n  element: H\n  at: [-1.2, -0.7]\n- bond:\n  from: c1\n  to: c2\n  order: 1\n- bond:\n  from: c2\n  to: cl\n  order: 1\n  stereo: wedge\n- bond:\n  from: c1\n  to: h\n  order: 1\n::::\n"
+  },
+  {
+    "id": "circuit",
+    "name": "Analog circuit",
+    "source": "---\nazemark: 2\ntitle: RC low-pass filter\nx-circuit-symbol-convention: iec\n---\n\n# RC low-pass filter\n\nThe filter uses one resistor and one capacitor. Connectivity is stated\nterminal by terminal; declaration order and visual placement carry no\nelectrical meaning.\n\n:::: circuit\nid: rc-low-pass\nnumber: true\ntitle: RC low-pass filter\nflow: left-to-right\n----\n- kind: node\n  ref: gnd\n  role: reference\n- kind: node\n  ref: vin\n  label: Input\n- kind: node\n  ref: vout\n  label: Output\n- kind: voltage-source\n  ref: V1\n  mode: dc\n  value: 5 V\n  orientation: top-to-bottom\n- kind: resistor\n  ref: R1\n  value: 1 kohm\n  orientation: left-to-right\n- kind: capacitor\n  ref: C1\n  value: 100 nF\n  orientation: top-to-bottom\n- kind: connect\n  terminal: V1.positive\n  node: vin\n- kind: connect\n  terminal: V1.negative\n  node: gnd\n- kind: connect\n  terminal: R1.a\n  node: vin\n- kind: connect\n  terminal: R1.b\n  node: vout\n- kind: connect\n  terminal: C1.a\n  node: vout\n- kind: connect\n  terminal: C1.b\n  node: gnd\n- kind: voltage-label\n  positive: vout\n  negative: gnd\n::::\n"
+  },
+  {
+    "id": "diagnostics",
+    "name": "Diagnostics sample (invalid)",
+    "source": "---\nazemark: 2\ntitle: Diagnostics sample\n---\n\n# This revision does not compile\n\nAn unknown directive and a duplicated Block id.\n\n:::: mystery\nbody\n::::\n\n:::: equation\nid: duplicate\n----\nF(omega) = integral x=0..infinity of x^2 dx\n::::\n\n:::: equation\nid: duplicate\n----\nF(omega) = integral x=0..infinity of x^2 dx\n::::\n"
+  }
+]

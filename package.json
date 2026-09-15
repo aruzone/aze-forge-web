@@ -1,0 +1,26 @@
+{
+  "name": "aze-forge-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AzeForge Web: ephemeral Node compiler service plus edit-preview-export frontend.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <23 || >=24 <25"
+  },
+  "scripts": {
+    "start": "node src/service/main.mjs",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "test:unit": "node --test \"test/unit/*.test.mjs\"",
+    "test:service": "node --test test/service-http.test.mjs",
+    "test:compiler": "node --test test/compiler-integration.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aruzone/aze-forge": "0.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AzeForge Web</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="toolbar">
+  <span class="brand">AzeForge</span>
+  <label class="field">Example
+    <select id="example"></select>
+  </label>
+  <label class="field">Theme
+    <select id="theme"></select>
+  </label>
+  <span class="actions">
+    <button id="analyze" type="button">Analyze</button>
+    <button id="format" type="button">Format Source</button>
+  </span>
+  <span class="actions exports">
+    <span class="label">Export</span>
+    <button type="button" data-format="html">HTML</button>
+    <button type="button" data-format="svg">SVG</button>
+    <button type="button" data-format="png">PNG</button>
+    <button type="button" data-format="pdf">PDF</button>
+  </span>
+  <span id="activity" class="activity" role="status" aria-live="polite"></span>
+  <button id="signout" type="button" class="ghost" hidden>Sign out</button>
+</header>
+
+<main id="workspace" hidden>
+  <section class="pane">
+    <h2 class="pane-title">Source <span id="source-meta" class="meta"></span></h2>
+    <textarea id="source" spellcheck="false" aria-label="AzeMark Source"></textarea>
+  </section>
+
+  <section class="pane split">
+    <div class="diagnostics">
+      <h2 class="pane-title">Diagnostics <span id="diagnostics-summary" class="meta"></span></h2>
+      <div id="diagnostics-list" class="diagnostic-list"></div>
+    </div>
+    <div class="preview">
+      <h2 class="pane-title">Preview</h2>
+      <div class="preview-frame" id="preview-frame">
+        <p class="placeholder" id="preview-placeholder">Run an HTML export to preview the current revision.</p>
+        <iframe id="preview" sandbox="" referrerpolicy="no-referrer" title="Artifact preview" hidden></iframe>
+      </div>
+      <p class="preview-status" id="preview-status"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span id="service-meta">Connecting…</span>
+</footer>
+
+<div class="gate" id="gate">
+  <form class="gate-card" id="gate-form">
+    <h1>AzeForge Web</h1>
+    <p>The alpha service accepts one deployment-issued bearer token. Paste it to continue. It is kept in this tab's session storage only.</p>
+    <label class="field">Access token
+      <input id="gate-token" type="password" autocomplete="off" spellcheck="false" required>
+    </label>
+    <p class="gate-error" id="gate-error" role="alert"></p>
+    <button type="submit">Continue</button>
+  </form>
+</div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
