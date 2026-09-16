@@ -225,6 +225,106 @@ against an already-deployed URL when the container name is reachable
 (`--base-url … --container …`); the checks that need process or log access fail
 rather than pass vacuously when no container is given.
 
+### The owner walkthrough (Checkpoint B)
+
+`acceptance/walkthrough.aze.md` is the alpha's representative Source: one
+document spanning all ten native capability families plus the composition layer
+around them — a numbered equation and derivation, a plot and a chart, two
+geometry constructions, a flowchart and an architecture, a sequence, a state
+machine, an entity schema and a class hierarchy, a circuit, both timing scales,
+a formula, a reaction and a structure, a control loop and a free body, a typed
+table, an algorithm, a proved statement and a worked example, a wrapped figure,
+a citation, an endnote and a bibliography.
+
+```bash
+npm run walkthrough -- --image aze-forge-web:"$(git rev-parse --short HEAD)"
+npm run walkthrough -- --base-url https://alpha.example --container azeweb
+```
+
+The walkthrough performs the acceptance-decision pass (`aruzone/aze-forge#53`
+§6) against the deployment: it opens that Source and reads the live diagnostics,
+checks the Document against the ten families, asserts the advertised canonical
+runtime is the approved matrix and the capability fingerprint is the pinned
+release's, toggles every advertised Theme (asserting one semantic identity and
+one distinct layout per Theme), exports HTML, SVG, PNG and PDF and verifies each
+download against the Artifact's advertised MIME type, length and byte-integrity
+hash, and spot-checks the acceptance golden in two ways — two renders must be
+byte-identical, and the render must match the identity recorded in
+`acceptance/golden-identity.json`. A record that is absent, or a render that has
+drifted from it, fails the step rather than passing on self-agreement; both are
+re-recorded deliberately from a green run:
+
+```bash
+npm run walkthrough -- --image aze-forge-web:"$(git rev-parse --short HEAD)" --record-golden
+```
+
+The exported Artifacts are written to `acceptance/walkthrough/<stamp>-artifacts/`
+for the owner to open; the recorded run goes to `acceptance/walkthrough/`.
+
+The owner records the binary decision on the same deployment:
+
+```bash
+npm run walkthrough -- --image aze-forge-web:"$(git rev-parse --short HEAD)" \
+  --approve owner@example.com
+```
+
+That writes one manual-evidence entry,
+`acceptance/manual-evidence/alpha-walkthrough-001.json`, against the compiler
+repository's existing manual-evidence schema (`azeforge.acceptance-manual-evidence/v1`):
+`participantRole`, `consentedIdentifier`, the fixture's `contentHash`, the four
+`artifactHashes`, the commands, the binary `result`, unresolved notes, the date,
+the compiler fingerprint and the OS. Until the owner decides, the entry stays
+`pending-owner-approval`. `--approve` is refused when an automated step failed,
+so a broken run cannot be signed off.
+
+**Prerequisite.** The ten-family Source needs a compiler release that carries
+all ten families. The pinned `@aruzone/aze-forge` release currently ships
+mathematics, plots, geometry, circuits, chemistry and typed tables; digital
+timing, general diagrams, the software and data models, the engineering diagrams
+and the composition layer are not in it, so the walkthrough fails closed and
+names the families it could not find rather than approving a narrower document.
+The fixture is authored against the approved AzeMark 2 language contract rather
+than against the installed release: analyzing it with the compiler's
+`origin/main` build — parse plus validate, no browser required — reports an
+error-free Document covering every family. The cutover's catalog clause has the
+same prerequisite from the other side: it requires a green automated catalog
+entry for every family, and the pinned release's catalog publishes none for
+digital timing, general diagrams, the software and data models, the engineering
+diagrams, the circuit family or the composition layer. Cut over once the
+compiler publishes a release containing the families, with catalog entries to
+match, and this repository's exact pin moves to it.
+
+### Cutover
+
+```bash
+npm run cutover -- --image aze-forge-web:"$(git rev-parse --short HEAD)" \
+  --catalog-report /path/to/aze-forge-acceptance-report.json \
+  --approve owner@example.com
+```
+
+`cutover` runs the smoke suite and the walkthrough against the one image, reads
+the compiler repository's automated acceptance report (`scripts/acceptance.mjs
+--json` in `aze-forge`, schema `azeforge.acceptance-report/v1`), and decides the
+alpha pass/fail rule of `aruzone/aze-forge#53` §8: every automated semantic and
+deterministic-render catalog entry green with no unpending drift (the approved
+`azemark:2` re-baseline is the only pre-approved exception — `--accept-drift`
+accepts that id and no other), the deployability suite green, and the owner's
+Approve recorded — all three against the same image digest, because deployable
+means the staged image is the cutover image. It writes
+`acceptance/cutover/<stamp>-<approved|not-approved>.{txt,json}` with the three
+clauses, the conflicting digests or the missing report spelled out. Any one
+blocking failure withholds approval; there is no partial approval.
+
+The catalog clause reads the report against the catalog the *pinned* release
+publishes (`ACCEPTANCE_ENTRIES` from `@aruzone/aze-forge/contracts`): an entry
+the pinned release does not publish means the report describes another build,
+and a green report that covers no entry for a family — because the release
+publishes none, or because the family failed — withholds approval and names the
+family. That is deliberate: the acceptance decision requires the catalog to
+carry a per-family entry for every approved native family plus composition, so
+the clause holds the compiler's own catalog to that coverage as well as to its
+results.
+
 ## Caching
 
 Two identities are kept deliberately distinct:
@@ -283,12 +383,15 @@ npm run test:unit     # configuration, protocol, stores, coordinates
 npm run test:service  # HTTP policy against a stubbed worker, real HTTP
 npm run test:compiler # the real pinned compiler, real Artifacts
 npm run smoke         # the deployment acceptance suite (needs a built image)
+npm run walkthrough   # the owner walkthrough against a staged image
+npm run cutover       # both suites plus the alpha pass/fail decision
 npm run typecheck
 ```
 
 The service tests own what the service is responsible for — access, envelopes,
 admission, isolation, deadlines, cancellation, retention, Artifact delivery and
-log privacy — and stub the worker so they need no browser. The compiler tests run
+log privacy — and stub the worker so they need no browser; the walkthrough's own
+steps are tested there too. The compiler tests run
 the real loop: every curated example validates and previews, all four formats
 produce bytes whose advertised hash matches, and an unavailable required engine
 fails with a truthful diagnostic instead of a silent fallback. The acceptance
@@ -316,8 +419,17 @@ src/service/
 src/web/              the frontend: no build step, no runtime dependencies
 Dockerfile            the deployable image (Node LTS + pinned browser + fonts)
 docker/               the image entrypoint and the build-time browser provisioning
+scripts/cli.mjs       the flags, recorder and failure vocabulary the suites share
+scripts/http.mjs      the HTTP client: hard timeouts, bytes, hashes
+scripts/jobs.mjs      the job protocol client: submit, poll, download, verify
+scripts/containers.mjs      staging under the deployment's hardening flags
 scripts/smoke.mjs     the deployment acceptance suite (nine checks, recorded output)
-scripts/smoke/        its checks, Sources, HTTP client and container evidence
+scripts/smoke/        its checks and Sources
+scripts/walkthrough.mjs     the owner walkthrough (Checkpoint B, recorded evidence)
+scripts/walkthrough/  its steps, family coverage, golden identity and the evidence entry
+scripts/cutover.mjs   the cutover: runs both suites, decides the alpha pass/fail rule
+scripts/cutover/      the catalog accessor and the rule itself
 scripts/image-manifest.mjs  the image's exact pins, generated at build time
-acceptance/           the golden report, the upload fixture, and recorded smoke output
+acceptance/           the walkthrough Source, the golden report and its identity,
+                      the upload fixture, and the recorded suite output
 ```

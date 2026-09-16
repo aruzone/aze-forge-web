@@ -12,9 +12,11 @@
     "start": "node src/service/main.mjs",
     "test": "node --test \"test/**/*.test.mjs\"",
     "test:unit": "node --test \"test/unit/*.test.mjs\"",
-    "test:service": "node --test test/service-http.test.mjs",
+    "test:service": "node --test test/service-http.test.mjs test/walkthrough-http.test.mjs",
     "test:compiler": "node --test test/compiler-integration.test.mjs",
     "smoke": "node scripts/smoke.mjs",
+    "walkthrough": "node scripts/walkthrough.mjs",
+    "cutover": "node scripts/cutover.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

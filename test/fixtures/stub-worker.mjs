@@ -96,6 +96,14 @@ if (spec.operation === "format") {
 }
 
 const invalid = marker("INVALID") !== null;
+
+// The Document a real worker returns for `includeDocument`: the outer directive
+// fences of the Source, in authored order. A stub that always reported an empty
+// Block list could not tell a suite anything about what the Source contains.
+const blockKinds = [...text.matchAll(/^:{4}[ \t]*([a-z][a-z0-9-]*)[ \t]*$/gm)].map(
+  (match) => match[1],
+);
+
 const base = {
   operation: spec.operation,
   ok: !invalid && marker("DIAGNOSTICS") === null,
@@ -104,7 +112,15 @@ const base = {
     : {
         valid: true,
         contentHash: `sha256:${"a".repeat(64)}`,
-        ...(spec.includeDocument ? { document: { azemarkVersion: 2, schemaVersion: 2, blocks: [] } } : {}),
+        ...(spec.includeDocument
+          ? {
+              document: {
+                azemarkVersion: 2,
+                schemaVersion: 2,
+                blocks: blockKinds.map((kind) => ({ kind })),
+              },
+            }
+          : {}),
       },
   diagnostics,
   proposal: null,
@@ -112,7 +128,13 @@ const base = {
 };
 
 if (spec.operation === "compile" && base.ok) {
-  const bytes = Buffer.from(`stub-artifact:${spec.format}:${text.length}`, "utf8");
+  // The Theme is a layout input, so it has to reach the bytes: a stub that
+  // ignored it would let a suite claim the Theme toggle was exercised when it
+  // was not.
+  const bytes = Buffer.from(
+    `stub-artifact:${spec.format}:${spec.theme ?? "front-matter"}:${text.length}`,
+    "utf8",
+  );
   await writeFile(join(dirname(resultPath), "artifact.bin"), bytes);
   const artifactHash =
     marker("TAMPER") === null

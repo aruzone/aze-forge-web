@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto";
 
 /**
- * @typedef {object} SmokeResponse
+ * @typedef {object} HttpResponse
  * @property {number} status
  * @property {Headers} headers
  * @property {Buffer} bytes
@@ -23,7 +23,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
  * @param {string} base
  * @param {{ method?: string, path: string, token?: string | null, body?: string | Uint8Array | object,
  *           contentType?: string, timeoutMs?: number }} input
- * @returns {Promise<SmokeResponse>}
+ * @returns {Promise<HttpResponse>}
  */
 export async function request(base, input) {
   /** @type {Record<string, string>} */
@@ -66,21 +66,21 @@ export function sha256(bytes) {
 }
 
 /** `code` of an error envelope, or `null` when the body was not one. */
-/** @param {SmokeResponse} response */
+/** @param {HttpResponse} response */
 export function errorCode(response) {
   const code = response.json?.error?.code;
   return typeof code === "string" ? code : null;
 }
 
 /** `scope` of an error envelope's data, or `null`. */
-/** @param {SmokeResponse} response */
+/** @param {HttpResponse} response */
 export function errorScope(response) {
   const scope = response.json?.error?.data?.scope;
   return typeof scope === "string" ? scope : null;
 }
 
 /** A compact rendering of a response body for evidence lines. */
-/** @param {SmokeResponse} response @param {number} [limit] */
+/** @param {HttpResponse} response @param {number} [limit] */
 export function describe(response, limit = 160) {
   const text = response.text.replace(/\s+/g, " ").trim();
   return text.length <= limit ? text : `${text.slice(0, limit)}…`;

@@ -11,7 +11,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
-import { GIB, KNOBS } from "../../src/service/limits.mjs";
+import { GIB, KNOBS } from "../src/service/limits.mjs";
 
 /** The scratch tmpfs has to hold the deployment's advertised scratch ceiling. */
 const SCRATCH_TMPFS = `${Math.ceil(Number(KNOBS.scratchMaxBytes.default) / GIB)}g`;

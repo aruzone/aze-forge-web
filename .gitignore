@@ -1,3 +1,8 @@
 node_modules/
 *.log
 .DS_Store
+
+# Artifacts exported by the owner walkthrough for the owner to open, wherever
+# the run recorded them. They are reproducible from the Source, and their hashes
+# are the evidence that is kept.
+acceptance/**/*-artifacts/

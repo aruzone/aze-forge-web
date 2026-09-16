@@ -15,10 +15,19 @@
  * probe profile changes configuration only — it is the same image.
  */
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  createRecorder,
+  evidenceStamp,
+  numberOption,
+  parseArgs,
+  redact,
+  stringOption,
+  tokenDigest,
+} from "./cli.mjs";
 import { CHECKS, CheckFailure } from "./smoke/checks.mjs";
 import {
   CONTAINER_DEVIATIONS,
@@ -28,7 +37,7 @@ import {
   imageIdentity,
   startContainer,
   stopContainer,
-} from "./smoke/containers.mjs";
+} from "./containers.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..");
@@ -55,44 +64,13 @@ Options
   --help
 `;
 
-/** @param {string[]} argv */
-function parseArgs(argv) {
-  /** @type {Record<string, string | boolean>} */
-  const options = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
-    if (argument === undefined) continue;
-    if (argument === "--help" || argument === "-h") return { help: true };
-    if (argument === "--keep") {
-      options.keep = true;
-      continue;
-    }
-    if (argument === "--no-evidence") {
-      options.evidence = false;
-      continue;
-    }
-    if (!argument.startsWith("--")) throw new Error(`unexpected argument ${argument}`);
-    const value = argv[index + 1];
-    if (value === undefined) throw new Error(`${argument} needs a value`);
-    options[argument.slice(2)] = value;
-    index += 1;
-  }
-  return options;
-}
-
-/** @param {Record<string, string | boolean>} options @param {string} name @param {number} fallback */
-function numberOption(options, name, fallback) {
-  const raw = options[name];
-  if (raw === undefined) return fallback;
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value <= 0) throw new Error(`--${name} must be a positive integer`);
-  return value;
-}
-
-/** @param {Record<string, string | boolean>} options @param {string} name */
-function stringOption(options, name) {
-  const raw = options[name];
-  return typeof raw === "string" ? raw : null;
+/** @type {Record<string, string | boolean>} */
+let options;
+try {
+  options = parseArgs(process.argv.slice(2), { booleans: ["keep"] });
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n\n${USAGE}`);
+  process.exit(2);
 }
 
 async function repoPins() {
@@ -107,32 +85,7 @@ async function repoPins() {
 
 const startedAt = new Date();
 
-/** @param {string[]} command @param {string} secret */
-function redact(command, secret) {
-  return command.map((part) => part.split(secret).join("<redacted>")).join(" ");
-}
-
-/** @type {string[]} */
-const lines = [];
-/** @param {string} line */
-function emit(line) {
-  lines.push(line);
-  process.stdout.write(`${line}\n`);
-}
-
-/** @param {string} text */
-function heading(text) {
-  emit(`${text}`);
-}
-
-/** @type {Record<string, string | boolean>} */
-let options;
-try {
-  options = parseArgs(process.argv.slice(2));
-} catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n\n${USAGE}`);
-  process.exit(2);
-}
+const { lines, emit, heading } = createRecorder();
 
 if (options.help === true) {
   process.stdout.write(USAGE);
@@ -274,7 +227,7 @@ try {
     if (report.includes(token)) {
       throw new Error("the smoke report contains the access token; refusing to record it");
     }
-    const stamp = startedAt.toISOString().replace(/[:.]/g, "-").replace(/-Z$/, "Z");
+    const stamp = evidenceStamp(startedAt);
     const base = join(evidenceDir, `${stamp}-${failed === 0 ? "pass" : "fail"}`);
     await mkdir(evidenceDir, { recursive: true });
     await writeFile(`${base}.txt`, `${report}\n`);
@@ -319,9 +272,4 @@ try {
   } else if (staged.length > 0) {
     for (const name of staged) process.stdout.write(`kept container ${name}\n`);
   }
-}
-
-/** @param {string} token */
-function tokenDigest(token) {
-  return createHash("sha256").update(token, "utf8").digest("hex").slice(0, 12);
 }

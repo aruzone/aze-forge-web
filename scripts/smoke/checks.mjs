@@ -7,10 +7,21 @@
  * still reports everything it saw before it failed.
  */
 
-import { randomUUID } from "node:crypto";
 import { KNOBS, MIB } from "../../src/service/limits.mjs";
-import { containerLogs, probeProcesses, readContainerFile } from "./containers.mjs";
-import { describe, errorCode, errorScope, poll, request, sha256 } from "./http.mjs";
+import { CheckFailure, expect } from "../cli.mjs";
+import {
+  TERMINAL,
+  capabilitiesOf,
+  diagnosticCodes,
+  diagnosticList,
+  jobRequest,
+  readJob,
+  requireJson,
+  runToTerminal,
+  submit,
+} from "../jobs.mjs";
+import { containerLogs, probeProcesses, readContainerFile } from "../containers.mjs";
+import { describe, errorCode, errorScope, poll, request, sha256 } from "../http.mjs";
 import {
   FIGURE_ASSET_PATH,
   canarySource,
@@ -53,98 +64,9 @@ import {
  */
 
 /** A failed expectation. The runner reports the message as the check's verdict. */
-export class CheckFailure extends Error {
-  /** @param {string} message */
-  constructor(message) {
-    super(message);
-    this.name = "CheckFailure";
-  }
-}
-
-/** @param {unknown} condition @param {string} message */
-function expect(condition, message) {
-  if (condition !== true) throw new CheckFailure(message);
-}
-const TERMINAL = new Set(["completed", "failed", "cancelled"]);
-
-/** @param {string} operation @param {{ text: string, name: string }} source @param {object} [extra] */
-function jobRequest(operation, source, extra = {}) {
-  return {
-    protocolVersion: 1,
-    requestId: `smoke-${operation}-${randomUUID().slice(0, 8)}`,
-    revision: "smoke-revision-1",
-    operation,
-    source,
-    ...extra,
-  };
-}
-
-/** @param {any} job */
-function diagnosticList(job) {
-  return /** @type {string[]} */ ((job?.result?.diagnostics ?? []).map((/** @type {any} */ diagnostic) => diagnostic.code));
-}
-
-/** @param {any} job */
-function diagnosticCodes(job) {
-  const codes = diagnosticList(job);
-  return codes.join(", ") || "none";
-}
-
-/** @param {import("./http.mjs").SmokeResponse} response */
-function requireJson(response) {
-  if (response.json === null || typeof response.json !== "object") {
-    throw new CheckFailure(`expected a JSON body, got: ${describe(response)}`);
-  }
-  return response.json;
-}
+export { CheckFailure };
 
 const sleep = (/** @type {number} */ ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** @param {string} base @param {string} token */
-async function capabilitiesOf(base, token) {
-  const response = await request(base, { path: "/v1/capabilities", token });
-  if (response.status !== 200) {
-    throw new CheckFailure(`GET /v1/capabilities returned ${response.status}: ${describe(response)}`);
-  }
-  return requireJson(response);
-}
-
-/**
- * Submit a job, and refuse to continue unless it was admitted.
- *
- * @param {string} base @param {string} token @param {{ operation: string } & Record<string, unknown>} spec
- */
-async function submit(base, token, spec) {
-  const accepted = await request(base, { method: "POST", path: "/v1/jobs", token, body: spec, contentType: "application/json" });
-  if (accepted.status !== 202) {
-    throw new CheckFailure(`submitting ${spec.operation} was refused with ${accepted.status}: ${describe(accepted)}`);
-  }
-  return requireJson(accepted);
-}
-
-/** @param {string} base @param {string} token @param {string} jobId */
-async function readJob(base, token, jobId) {
-  const polled = await request(base, { path: `/v1/jobs/${jobId}`, token });
-  if (polled.status !== 200) {
-    throw new CheckFailure(`polling job ${jobId} returned ${polled.status}: ${describe(polled)}`);
-  }
-  return requireJson(polled);
-}
-
-/**
- * Submit and poll until the job reaches a terminal state.
- *
- * @param {string} base @param {string} token @param {{ operation: string } & Record<string, unknown>} spec
- * @param {{ timeoutMs?: number, intervalMs?: number, onPoll?: () => void }} [options]
- */
-async function runToTerminal(base, token, spec, options = {}) {
-  const accepted = await submit(base, token, spec);
-  return poll(
-    () => readJob(base, token, accepted.jobId),
-    (job) => TERMINAL.has(job.status),
-    { timeoutMs: options.timeoutMs ?? 120_000, intervalMs: options.intervalMs ?? 250, onPoll: options.onPoll },
-  );
-}
 
 /** @param {any} capabilities @param {string} id @param {string} scope */
 function limitValue(capabilities, id, scope) {
@@ -565,7 +487,7 @@ export const CHECKS = [
       const flood = concurrent + queueDepth + 1;
       /** @type {string[]} */
       const admitted = [];
-      /** @type {import("./http.mjs").SmokeResponse | null} */
+      /** @type {import("../http.mjs").HttpResponse | null} */
       let refusal = null;
       for (let index = 0; index < flood; index += 1) {
         const response = await request(context.base, {

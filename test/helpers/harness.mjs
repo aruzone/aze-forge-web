@@ -29,6 +29,11 @@ export function fakeCompilerFacts(overrides = {}) {
       { id: "default", version: "1.0.0", title: "Default", colorScheme: "light" },
     ],
     engines: { browser: { name: "chrome-headless-shell", pinnedVersion: "0.0.0", availability: "available" } },
+    runtime: {
+      node: { supported: [22, 24], canonical: 24 },
+      os: { supported: ["ubuntu", "macos"], canonical: "ubuntu" },
+      canonical: { os: "ubuntu", arch: "x64", node: 24 },
+    },
     ...overrides.capabilities,
   };
   return {
