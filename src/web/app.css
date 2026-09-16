@@ -47,7 +47,20 @@ button.ghost { border-color: transparent; color: var(--ink-soft); }
   border-bottom: 1px solid var(--line);
   background: var(--surface-soft);
 }
-.brand { font-weight: 700; letter-spacing: 0.02em; }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.brand-logo {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.25rem;
+  object-fit: contain;
+}
 .field { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; color: var(--ink-soft); }
 .field select { border: 1px solid var(--line); border-radius: 0.3rem; padding: 0.25rem 0.35rem; background: var(--surface); }
 .field input { border: 1px solid var(--line); border-radius: 0.3rem; padding: 0.3rem 0.4rem; background: var(--surface); }

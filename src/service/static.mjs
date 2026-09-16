@@ -13,9 +13,17 @@ const CONTENT_TYPES = Object.freeze({
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".jpg": "image/jpeg",
 });
 
-const FILES = Object.freeze(["index.html", "app.js", "app.css", "coordinates.js", "examples.json"]);
+const FILES = Object.freeze([
+  "index.html",
+  "app.js",
+  "app.css",
+  "coordinates.js",
+  "examples.json",
+  "azeforge-logo-03-2.jpg",
+]);
 
 /**
  * The frontend is inert by construction: no remote origins, no inline scripts
