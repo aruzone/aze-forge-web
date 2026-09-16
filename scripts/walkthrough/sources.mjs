@@ -9,11 +9,10 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, join } from "node:path";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-export const REPO = join(HERE, "..", "..");
+import { REPO } from "../pins.mjs";
+
 export const ACCEPTANCE = join(REPO, "acceptance");
 
 /** The representative ten-family Source. */

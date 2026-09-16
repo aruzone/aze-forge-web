@@ -32,7 +32,7 @@ import {
 } from "./cli.mjs";
 import { imageIdentity } from "./containers.mjs";
 import { APPROVED, DRIFT_REBASELINE, evaluateCatalog, evaluateCutover } from "./cutover/decision.mjs";
-import { REPO } from "./walkthrough/sources.mjs";
+import { REPO } from "./pins.mjs";
 import { spawnSync } from "node:child_process";
 
 const USAGE = `AzeForge Web alpha cutover

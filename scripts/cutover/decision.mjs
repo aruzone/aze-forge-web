@@ -12,7 +12,7 @@
  * returns a decision, so the decision can be reviewed without running docker.
  */
 
-import { areaOfEntry } from "./catalog.mjs";
+import { areaOfEntry, publishesAutomatedEntry, publishesEntry } from "./catalog.mjs";
 import { COVERAGE_UNITS } from "../walkthrough/families.mjs";
 import { OWNER_APPROVED, entryViolations } from "../walkthrough/record.mjs";
 
@@ -30,21 +30,34 @@ export const DRIFT_REBASELINE = {
 
 /**
  * @param {{ report: any, sha256: string, path: string, acceptedDrift?: string[] } | null} input
- * @param {(id: string) => string | null} [areaOf] the pinned release's catalog, injectable so the rule can be tested against a complete one
- * @returns {{ ok: boolean, detail: string, failures: string[], areas: string[], path: string | null, sha256: string | null }}
+ * @param {{ areaOf?: (id: string) => string | null, publishingAutomated?: (area: string) => boolean,
+ *           publishing?: (area: string) => boolean }} [catalog]
+ *   the pinned release's catalog, injectable so the rule can be tested against
+ *   a complete one
+ * @returns {{ ok: boolean, detail: string, failures: string[], areas: string[], manual: string[], path: string | null, sha256: string | null }}
  */
-export function evaluateCatalog(input, areaOf = areaOfEntry) {
+export function evaluateCatalog(
+  input,
+  catalog = { areaOf: areaOfEntry, publishingAutomated: publishesAutomatedEntry },
+) {
   if (input === null) {
     return {
       ok: false,
       detail: "no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced",
       failures: [],
       areas: [],
+      manual: [],
       path: null,
       sha256: null,
     };
   }
 
+  const { areaOf, publishingAutomated, publishing } = {
+    areaOf: areaOfEntry,
+    publishingAutomated: publishesAutomatedEntry,
+    publishing: publishesEntry,
+    ...catalog,
+  };
   const { report } = input;
   if (report?.schema !== CATALOG_REPORT_SCHEMA) {
     return {
@@ -52,6 +65,7 @@ export function evaluateCatalog(input, areaOf = areaOfEntry) {
       detail: `the catalog report is not ${CATALOG_REPORT_SCHEMA}`,
       failures: [],
       areas: [],
+      manual: [],
       path: input.path,
       sha256: input.sha256,
     };
@@ -91,10 +105,26 @@ export function evaluateCatalog(input, areaOf = areaOfEntry) {
       .map((/** @type {any} */ result) => areaOf(result.id))
       .filter((/** @type {string | null} */ area) => area !== null),
   );
+  // A unit is covered when an automated entry in one of its areas is green.
+  // When none is, the catalog itself says why: an area with automated entries
+  // that produced nothing green is a gap in the run, an area the compiler
+  // evidences only manually (the Circuit family) is not this clause's business,
+  // and an area with no entry at all is a gap in the catalog — the acceptance
+  // decision requires a per-family entry for every approved family.
+  /** @type {string[]} */
+  const manual = [];
   for (const unit of COVERAGE_UNITS) {
-    if (!unit.areas.some((area) => green.has(area))) {
+    if (unit.areas.some((area) => green.has(area))) continue;
+    if (unit.areas.some((area) => publishingAutomated(area))) {
       failures.push(
-        `no green automated catalog entry covers ${unit.id}: the pinned release publishes no executed entry in ${unit.areas.join("/")}`,
+        `no green automated catalog entry covers ${unit.id}: the pinned release publishes automated entries in ${unit.areas.join("/")}`,
+      );
+    } else if (unit.areas.some((area) => publishing(area))) {
+      manual.push(unit.id);
+    } else {
+      failures.push(
+        `the pinned release's catalog publishes no entry for ${unit.id}: ` +
+          "the acceptance decision requires a per-family entry for every approved family",
       );
     }
   }
@@ -116,10 +146,12 @@ export function evaluateCatalog(input, areaOf = areaOfEntry) {
     ok: failures.length === 0,
     detail:
       failures.length === 0
-        ? `every automated catalog entry is green (${results.length} checks over ${areas.length} areas, no unpending drift)`
+        ? `every automated catalog entry is green (${results.length} checks over ${areas.length} areas, ` +
+          `no unpending drift${manual.length === 0 ? "" : `; ${manual.join(", ")} evidenced manually by the catalog`})`
         : `${failures.length} catalog clause failure(s)`,
     failures,
     areas,
+    manual,
     path: input.path,
     sha256: input.sha256,
   };
@@ -175,10 +207,12 @@ export function evaluateCutover(input) {
   if (!approved) reasons.push("owner: Approve is not recorded on the walkthrough entry");
   for (const violation of violations) reasons.push(`owner: ${violation}`);
 
-  const digests = new Set(
-    [input.image?.id, smoke?.imageId, walkthrough?.imageId].filter((id) => typeof id === "string"),
-  );
-  const stagedOk = digests.size === 1 && input.image !== null;
+  // "Deployable means the staged image is the cutover image": every run has to
+  // name a digest, and they all have to be the same one. A run that names none
+  // (a walkthrough pointed at a URL) is not evidence that the staged image is
+  // what was cut over.
+  const digests = [input.image?.id, smoke?.imageId, walkthrough?.imageId];
+  const stagedOk = digests.every((id) => typeof id === "string" && id.length > 0) && new Set(digests).size === 1;
   if (!stagedOk) {
     reasons.push(
       "staged image: the smoke run, the walkthrough run and the cutover image are not the same image digest",

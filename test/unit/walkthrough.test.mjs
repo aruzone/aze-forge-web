@@ -159,8 +159,12 @@ const COMPLETE_CATALOG = new Map();
 for (const unit of COVERAGE_UNITS) {
   for (const area of unit.areas) COMPLETE_CATALOG.set(`X-${area}`, area);
 }
-/** @param {string} id */
-const areaIn = (id) => COMPLETE_CATALOG.get(id) ?? null;
+/** The injected catalog: every unit publishes an automated entry. */
+const COMPLETE_CATALOG_RULE = {
+  areaOf: (/** @type {string} */ id) => COMPLETE_CATALOG.get(id) ?? null,
+  publishingAutomated: () => true,
+  publishing: () => true,
+};
 
 const CATALOG_REPORT = {
   schema: "azeforge.acceptance-report/v1",
@@ -176,15 +180,15 @@ function catalogInput(report, extra = {}) {
 test("the catalog clause needs a green report, not an absent one", () => {
   assert.equal(evaluateCatalog(null).ok, false);
 
-  const missing = evaluateCatalog(catalogInput({ schema: "something-else" }), areaIn);
+  const missing = evaluateCatalog(catalogInput({ schema: "something-else" }), COMPLETE_CATALOG_RULE);
   assert.equal(missing.ok, false);
   assert.match(missing.detail, /azeforge\.acceptance-report\/v1/);
 
-  const empty = evaluateCatalog(catalogInput({ schema: "azeforge.acceptance-report/v1", failures: 0, results: [] }), areaIn);
+  const empty = evaluateCatalog(catalogInput({ schema: "azeforge.acceptance-report/v1", failures: 0, results: [] }), COMPLETE_CATALOG_RULE);
   assert.equal(empty.ok, false);
   assert.ok(empty.failures.some((failure) => failure.includes("lists no results")), empty.failures.join("; "));
 
-  const green = evaluateCatalog(catalogInput(CATALOG_REPORT), areaIn);
+  const green = evaluateCatalog(catalogInput(CATALOG_REPORT), COMPLETE_CATALOG_RULE);
   assert.equal(green.ok, true, green.failures.join("; "));
   assert.equal(green.areas.length, COMPLETE_CATALOG.size);
 
@@ -194,15 +198,45 @@ test("the catalog clause needs a green report, not an absent one", () => {
       failures: 1,
       results: [...CATALOG_REPORT.results, { id: "X-timing", name: "timing", pass: false, detail: "" }],
     }),
-    areaIn,
+    COMPLETE_CATALOG_RULE,
   );
   assert.equal(failing.ok, false);
   assert.deepEqual(failing.failures, ["X-timing: timing"]);
 });
 
+test("a family the pinned catalog evidences manually is not demanded as an automated entry", () => {
+  const manualOnly = {
+    areaOf: (/** @type {string} */ id) => (id === "X-chemistry" ? "chemistry" : COMPLETE_CATALOG.get(id) ?? null),
+    publishingAutomated: (/** @type {string} */ area) => area !== "chemistry",
+    publishing: () => true,
+  };
+  // The report carries no green automated entry for chemistry, because the
+  // pinned catalog publishes none: the family is evidenced another way.
+  const withoutChemistry = CATALOG_REPORT.results.filter((result) => result.id !== "X-chemistry");
+  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, results: withoutChemistry }), manualOnly);
+  assert.equal(clause.ok, true, clause.failures.join("; "));
+  assert.deepEqual(clause.manual, ["chemistry"]);
+  assert.match(clause.detail, /chemistry evidenced manually/);
+});
+
+test("a family with no catalog entry at all is a gap in the catalog, not coverage", () => {
+  const unpublishing = {
+    areaOf: (/** @type {string} */ id) => COMPLETE_CATALOG.get(id) ?? null,
+    publishingAutomated: (/** @type {string} */ area) => area !== "timing",
+    publishing: (/** @type {string} */ area) => area !== "timing",
+  };
+  const withoutTiming = CATALOG_REPORT.results.filter((result) => result.id !== "X-timing");
+  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, results: withoutTiming }), unpublishing);
+  assert.equal(clause.ok, false);
+  assert.ok(
+    clause.failures.some((failure) => failure.includes("publishes no entry for timing")),
+    clause.failures.join("; "),
+  );
+});
+
 test("a green report still has to cover the ten families and composition", () => {
   const withoutTiming = CATALOG_REPORT.results.filter((result) => !result.id.startsWith("X-timing"));
-  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, results: withoutTiming }), areaIn);
+  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, results: withoutTiming }), COMPLETE_CATALOG_RULE);
   assert.equal(clause.ok, false);
   assert.ok(clause.failures.some((failure) => failure.includes("covers timing")), clause.failures.join("; "));
 });
@@ -219,7 +253,7 @@ test("a report naming entries the pinned release does not publish is not this bu
 });
 
 test("a report that declares more failures than it lists is not evidence", () => {
-  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, failures: 2 }), areaIn);
+  const clause = evaluateCatalog(catalogInput({ ...CATALOG_REPORT, failures: 2 }), COMPLETE_CATALOG_RULE);
   assert.equal(clause.ok, false);
   assert.ok(clause.failures.some((failure) => failure.includes("declares 2 failures")), clause.failures.join("; "));
 });
@@ -230,9 +264,9 @@ test("only the approved azemark:2 re-baseline may be accepted", () => {
     failures: 1,
     results: [{ id: "X-equation", name: "azemark:2 baseline", pass: false, detail: "drift" }],
   };
-  assert.equal(evaluateCatalog(catalogInput(drifted), areaIn).ok, false);
+  assert.equal(evaluateCatalog(catalogInput(drifted), COMPLETE_CATALOG_RULE).ok, false);
 
-  const unforgiven = evaluateCatalog(catalogInput(drifted, { acceptedDrift: ["X-equation"] }), areaIn);
+  const unforgiven = evaluateCatalog(catalogInput(drifted, { acceptedDrift: ["X-equation"] }), COMPLETE_CATALOG_RULE);
   assert.equal(unforgiven.ok, false);
   assert.ok(
     unforgiven.failures.some((failure) => failure.includes("is not the approved azemark:2 re-baseline")),
@@ -244,28 +278,32 @@ test("only the approved azemark:2 re-baseline may be accepted", () => {
     failures: 1,
     results: [...CATALOG_REPORT.results, { id: "azemark:2", name: "corpus re-baseline", pass: false, detail: "re-baselined" }],
   };
-  assert.equal(evaluateCatalog(catalogInput(approved), areaIn).ok, false);
-  assert.equal(evaluateCatalog(catalogInput(approved, { acceptedDrift: ["azemark:2"] }), areaIn).ok, true);
+  assert.equal(evaluateCatalog(catalogInput(approved), COMPLETE_CATALOG_RULE).ok, false);
+  assert.equal(evaluateCatalog(catalogInput(approved, { acceptedDrift: ["azemark:2"] }), COMPLETE_CATALOG_RULE).ok, true);
 });
 
-/** @param {Partial<import("../../scripts/cutover/decision.mjs").CutoverInput>} overrides */
-function cutoverInput(overrides = {}) {
-  const image = { reference: "aze-forge-web:abc1234", id: "sha256:image" };
-  const approvedEntry = buildEntry(
+/** The entry a recorded owner Approve produces. */
+function approvedEntry() {
+  return buildEntry(
     AUTOMATED,
     { result: OWNER_APPROVED, consentedIdentifier: "owner@example.com" },
     { note: "walkthrough" },
   );
+}
+
+/** @param {Partial<import("../../scripts/cutover/decision.mjs").CutoverInput>} overrides */
+function cutoverInput(overrides = {}) {
+  const image = { reference: "aze-forge-web:abc1234", id: "sha256:image" };
   return {
     image,
-    catalog: evaluateCatalog(catalogInput(CATALOG_REPORT), areaIn),
+    catalog: evaluateCatalog(catalogInput(CATALOG_REPORT), COMPLETE_CATALOG_RULE),
     smoke: { path: "acceptance/cutover/smoke/x.json", passed: 9, failed: 0, imageId: "sha256:image" },
     walkthrough: {
       path: "acceptance/cutover/walkthrough/x.json",
       passed: 5,
       failed: 0,
       imageId: "sha256:image",
-      entry: approvedEntry,
+      entry: approvedEntry(),
     },
     ...overrides,
   };
@@ -303,6 +341,14 @@ test("a missing owner decision, a failed suite or a different image withholds ap
   );
   assert.equal(restaged.decision, NOT_APPROVED);
   assert.ok(restaged.reasons.some((reason) => reason.includes("same image digest")));
+
+  // A run that names no image at all cannot show the staged image is the one
+  // that was cut over, however green it is.
+  const unlisted = evaluateCutover(
+    cutoverInput({ walkthrough: { path: "p", passed: 5, failed: 0, imageId: null, entry: approvedEntry() } }),
+  );
+  assert.equal(unlisted.decision, NOT_APPROVED);
+  assert.ok(unlisted.reasons.some((reason) => reason.includes("same image digest")));
 });
 
 test("an owner rejection is recorded, and is not an approval", () => {

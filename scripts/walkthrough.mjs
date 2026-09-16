@@ -19,9 +19,8 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
   createRecorder,
@@ -34,7 +33,7 @@ import {
   tokenDigest,
 } from "./cli.mjs";
 import { CONTAINER_DEVIATIONS, CONTAINER_FLAGS, awaitReady, freePort, imageIdentity, startContainer, stopContainer } from "./containers.mjs";
-import { collectCompilerFacts } from "../src/service/compiler-facts.mjs";
+import { pinnedCapabilityFingerprint, REPO, repoPins } from "./pins.mjs";
 import { GOLDEN_IDENTITY_SCHEMA, goldenIdentityFrom, readGoldenIdentity } from "./walkthrough/golden.mjs";
 import { runWalkthrough } from "./walkthrough/checks.mjs";
 import {
@@ -43,7 +42,7 @@ import {
   WALKTHROUGH_ACCEPTANCE_ID,
   buildEntry,
 } from "./walkthrough/record.mjs";
-import { GOLDEN_REPORT, REPO, WALKTHROUGH_SOURCE, readSource } from "./walkthrough/sources.mjs";
+import { GOLDEN_REPORT, WALKTHROUGH_SOURCE, readSource } from "./walkthrough/sources.mjs";
 
 const USAGE = `AzeForge Web owner walkthrough (Checkpoint B)
 
@@ -105,6 +104,7 @@ const goldenPaths = goldenArguments.length === 0 ? [GOLDEN_REPORT] : goldenArgum
 const goldenIdentityPath = pathOption("golden-identity", join(REPO, "acceptance", "golden-identity.json"));
 const approve = stringOption(options, "approve");
 const reject = stringOption(options, "reject");
+const note = stringOption(options, "note");
 const keep = options.keep === true;
 const recordGolden = options["record-golden"] === true;
 
@@ -113,23 +113,10 @@ if (approve !== null && reject !== null) {
   process.exit(2);
 }
 
-/** The exact release this repository pins; a walkthrough against another build
- * would approve something that does not ship. */
-async function repoPins() {
-  const packageJson = JSON.parse(await readFile(join(REPO, "package.json"), "utf8"));
-  const { CHROME_HEADLESS_SHELL_VERSION } = await import("@aruzone/aze-forge/adapters");
-  const compilerPin = packageJson.dependencies["@aruzone/aze-forge"];
-  if (typeof compilerPin !== "string" || !/^\d+\.\d+\.\d+/.test(compilerPin)) {
-    throw new Error(`package.json must pin an exact @aruzone/aze-forge release; found ${compilerPin}`);
-  }
-  // The fingerprint the pinned release computes over its own registry: a
-  // deployment advertising another set of capabilities is not this build, even
-  // when it advertises the same release string.
-  const { capabilityFingerprint } = await collectCompilerFacts();
-  return { compiler: compilerPin, browser: CHROME_HEADLESS_SHELL_VERSION, capabilityFingerprint };
-}
-
-const pins = await repoPins();
+// The release and browser this repository pins, plus the fingerprint the pinned
+// release computes over its own registry: a walkthrough against another build
+// would approve something that does not ship.
+const pins = { ...(await repoPins()), capabilityFingerprint: await pinnedCapabilityFingerprint() };
 const token = stringOption(options, "token") ?? process.env.AZEWEB_ACCESS_TOKEN ?? randomBytes(24).toString("hex");
 
 /** @type {{ id: string, digests: string[] } | null} */
@@ -266,9 +253,10 @@ try {
   const entry = buildEntry(automated, decision, {
     note:
       "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
-    unresolvedNotes: results
-      .filter((result) => !result.ok)
-      .map((result) => `${result.id}: ${result.detail}`),
+    unresolvedNotes: [
+      ...results.filter((result) => !result.ok).map((result) => `${result.id}: ${result.detail}`),
+      ...(note === null ? [] : [note]),
+    ],
   });
 
   const finishedAt = new Date();

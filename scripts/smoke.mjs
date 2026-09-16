@@ -9,16 +9,15 @@
  *     --container <name> --probe-container <name>
  *
  * The image is staged the way it is deployed (hardening flags in
- * `smoke/containers.mjs`, documented in README.md), twice: the deployment
+ * `containers.mjs`, documented in README.md), twice: the deployment
  * profile, and a probe profile whose compile deadline and result retention are
  * lowered so the deadline and expiry checks have something to interrupt. The
  * probe profile changes configuration only — it is the same image.
  */
 
 import { randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, relative } from "node:path";
 import {
   createRecorder,
   evidenceStamp,
@@ -28,6 +27,7 @@ import {
   stringOption,
   tokenDigest,
 } from "./cli.mjs";
+import { REPO, repoPins } from "./pins.mjs";
 import { CHECKS, CheckFailure } from "./smoke/checks.mjs";
 import {
   CONTAINER_DEVIATIONS,
@@ -38,9 +38,6 @@ import {
   startContainer,
   stopContainer,
 } from "./containers.mjs";
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = join(HERE, "..");
 
 const USAGE = `AzeForge Web deployment acceptance smoke suite
 
@@ -71,16 +68,6 @@ try {
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n\n${USAGE}`);
   process.exit(2);
-}
-
-async function repoPins() {
-  const packageJson = JSON.parse(await readFile(join(REPO, "package.json"), "utf8"));
-  const { CHROME_HEADLESS_SHELL_VERSION } = await import("@aruzone/aze-forge/adapters");
-  const compilerPin = packageJson.dependencies["@aruzone/aze-forge"];
-  if (typeof compilerPin !== "string" || !/^\d+\.\d+\.\d+/.test(compilerPin)) {
-    throw new Error(`package.json must pin an exact @aruzone/aze-forge release; found ${compilerPin}`);
-  }
-  return { compiler: compilerPin, browser: CHROME_HEADLESS_SHELL_VERSION };
 }
 
 const startedAt = new Date();

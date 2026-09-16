@@ -281,8 +281,10 @@ so a broken run cannot be signed off.
 all ten families. The pinned `@aruzone/aze-forge` release currently ships
 mathematics, plots, geometry, circuits, chemistry and typed tables; digital
 timing, general diagrams, the software and data models, the engineering diagrams
-and the composition layer are not in it, so the walkthrough fails closed and
-names the families it could not find rather than approving a narrower document.
+and the composition layer are not in it — and its typed table predates the
+composition header contract, so it also rejects `number:` on a table — so the
+walkthrough fails closed and names the families it could not find rather than
+approving a narrower document.
 The fixture is authored against the approved AzeMark 2 language contract rather
 than against the installed release: analyzing it with the compiler's
 `origin/main` build — parse plus validate, no browser required — reports an
@@ -316,14 +318,16 @@ clauses, the conflicting digests or the missing report spelled out. Any one
 blocking failure withholds approval; there is no partial approval.
 
 The catalog clause reads the report against the catalog the *pinned* release
-publishes (`ACCEPTANCE_ENTRIES` from `@aruzone/aze-forge/contracts`): an entry
-the pinned release does not publish means the report describes another build,
-and a green report that covers no entry for a family — because the release
-publishes none, or because the family failed — withholds approval and names the
-family. That is deliberate: the acceptance decision requires the catalog to
-carry a per-family entry for every approved native family plus composition, so
-the clause holds the compiler's own catalog to that coverage as well as to its
-results.
+publishes (`ACCEPTANCE_ENTRIES` from `@aruzone/aze-forge/contracts`), so an
+entry the pinned release does not publish means the report describes another
+build. For each of the ten families and composition it then asks the catalog
+which evidence that family has: automated entries that must be green (a family
+whose entries ran and failed is named), an area the compiler evidences only
+manually — the Circuit family — which is recorded as such rather than demanded
+as an automated entry no release will publish, or no entry at all, which
+withholds approval and names the family, because the acceptance decision
+requires the catalog to carry a per-family entry for every approved native
+family plus composition.
 
 ## Caching
 
