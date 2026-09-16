@@ -57,6 +57,23 @@ stale-result rejection, Theme and format controls, explicit replacement
 application and downloads. It does not reproduce compiler policy: what a
 diagnostic means, what may be fixed and what renders all come from the compiler.
 
+The preloaded examples are the compiler's own reference library
+(`docs/language/*.aze.md`), reused verbatim: thirteen complete Sources spanning
+every family, graded within each section from the minimal idiomatic form to the
+deepest feature the directive registers, plus the deliberately invalid
+diagnostics sampler. The library is not on the installed path — the published
+package ships `dist`, `schemas` and its logo — so it is vendored into
+`src/web/examples.json`, and moving to a new compiler release re-runs the
+generator that produced it:
+
+```bash
+node scripts/examples.mjs --library ../aze-forge-3/docs/language
+```
+
+The compiler integration suite compiles every example through the real service,
+so a vendored document that no longer parses or renders fails there rather than
+in a browser.
+
 ## HTTP surface
 
 | Method and path | Contract |
@@ -289,24 +306,18 @@ the compiler fingerprint and the OS. Until the owner decides, the entry stays
 `pending-owner-approval`. `--approve` is refused when an automated step failed,
 so a broken run cannot be signed off.
 
-**Prerequisite.** The ten-family Source needs a compiler release that carries
-all ten families. The pinned `@aruzone/aze-forge` release currently ships
-mathematics, plots, geometry, circuits, chemistry and typed tables; digital
-timing, general diagrams, the software and data models, the engineering diagrams
-and the composition layer are not in it — and its typed table predates the
-composition header contract, so it also rejects `number:` on a table — so the
-walkthrough fails closed and names the families it could not find rather than
-approving a narrower document.
-The fixture is authored against the approved AzeMark 2 language contract rather
-than against the installed release: analyzing it with the compiler's
-`origin/main` build — parse plus validate, no browser required — reports an
-error-free Document covering every family. The cutover's catalog clause has the
-same prerequisite from the other side: it requires a green automated catalog
-entry for every family, and the pinned release's catalog publishes none for
-digital timing, general diagrams, the software and data models, the engineering
-diagrams, the circuit family or the composition layer. Cut over once the
-compiler publishes a release containing the families, with catalog entries to
-match, and this repository's exact pin moves to it.
+**The fixture is the pinned release's own evidence.** The ten-family Source
+needs a compiler release that carries all ten families plus the composition
+layer, and the pinned `@aruzone/aze-forge` release now ships them: analyzing
+`acceptance/walkthrough.aze.md` with the installed package reports an
+error-free Document that covers every family, and the compiler integration
+suite asserts the same document analyzes cleanly before any image is built.
+Until a release carried all of them, the walkthrough failed closed and named
+the families it could not find rather than approving a narrower document; that
+gate is the same one to re-check when the pin moves.
+The cutover's catalog clause reads the same prerequisite from the other side —
+a green automated catalog entry for every family — so a release that adds a
+family without catalog entries to match fails there instead of passing here.
 
 ### Cutover
 
@@ -374,10 +385,13 @@ rather than papering over it. They belong to the compiler repository:
   without Document or hash. The worker therefore validates first, so a failed
   render still reports `semantic.valid: true`; a semantic `contentHash` is
   reported when, and only when, the compiler produced one.
-- **Some advertised schemas are not published.** `publicSchemaVersions()` lists
-  ids such as `azeforge.event/v1` and `azeforge.formula/source/v1` for which the
-  `contracts` entry point ships no schema document. Those ids return 404 and are
-  logged as `schema-advertised-but-not-published` at startup.
+- **Some advertised schemas are not published.** `publicSchemaVersions()`
+  advertises 50 ids, and the `contracts` entry point ships no schema document
+  for 35 of them: the watch event, and both the source and data schema of every
+  family added after the typed table — formula, reaction, structure, circuit,
+  timing, diagram, sequence, state, entity, class, control, free-body,
+  algorithm, statement, example, figure and bibliography. Those ids return 404
+  and are logged as `schema-advertised-but-not-published` at startup.
 - **No Renderer selection.** `CompileOptions` accepts a format and a Theme, not
   a Renderer id, so the request boundary accepts exactly those two and rejects a
   `renderer` field rather than accepting one it cannot honour.
@@ -408,7 +422,7 @@ The service tests own what the service is responsible for — access, envelopes,
 admission, isolation, deadlines, cancellation, retention, Artifact delivery and
 log privacy — and stub the worker so they need no browser; the walkthrough's own
 steps are tested there too. The compiler tests run
-the real loop: every curated example validates and previews, all four formats
+the real loop: every preloaded example validates and previews, all four formats
 produce bytes whose advertised hash matches, and an unavailable required engine
 fails with a truthful diagnostic instead of a silent fallback. The acceptance
 golden report is analyzed there too, so a document the smoke suite compiles
@@ -446,6 +460,7 @@ scripts/walkthrough/  its steps, family coverage, golden identity and the eviden
 scripts/cutover.mjs   the cutover: runs both suites, decides the alpha pass/fail rule
 scripts/cutover/      the catalog accessor and the rule itself
 scripts/image-manifest.mjs  the image's exact pins, generated at build time
+scripts/examples.mjs        regenerates src/web/examples.json from the compiler's library
 acceptance/           the walkthrough Source, the golden report and its identity,
                       the upload fixture, and the recorded suite output
 ```

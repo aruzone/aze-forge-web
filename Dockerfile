@@ -24,7 +24,11 @@ RUN apt-get update \
 # pin has exactly one source and the platform mapping is the one the compiler
 # will itself use when it launches the browser.
 RUN PUPPETEER_SKIP_DOWNLOAD=true npm ci --omit=dev --no-audit --no-fund
-RUN npx --no-install puppeteer browsers install \
+# Puppeteer keeps a partial archive after an interrupted download and will not
+# replace it on a later install. Start this cache-owning stage clean so the
+# browser copied into the runtime image is always extracted and executable.
+RUN rm -rf /root/.cache/puppeteer \
+ && npx --no-install puppeteer browsers install \
       "chrome-headless-shell@$(node --input-type=module -e 'const pin = await import("@aruzone/aze-forge/adapters"); process.stdout.write(pin.CHROME_HEADLESS_SHELL_VERSION)')"
 
 FROM node:24.21.0-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553

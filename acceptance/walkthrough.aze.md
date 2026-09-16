@@ -122,7 +122,6 @@ branch with an explicit pick, because the construction admits two.
 :::: geometry
 id: coordinate-triangle
 number: true
-caption: Coordinate triangle with an explicit altitude
 ----
 - kind: point
   name: a
@@ -174,7 +173,6 @@ caption: Coordinate triangle with an explicit altitude
 :::: geometry
 id: constructed-tangent
 number: true
-caption: Constructed circle tangent with an explicit branch
 ----
 - kind: point
   name: center

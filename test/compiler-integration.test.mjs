@@ -24,7 +24,15 @@ let engineAvailable;
 
 before(async () => {
   // The real worker entry: no stubbing, real compiler, real (isolated) browser.
-  service = await startTestService({ realWorker: true, env: { AZEWEB_DEADLINE_COMPILE_MS: "300000" } });
+  // The suite submits the whole example library in a few seconds, which is far
+  // above the alpha's interactive budget of 30 submissions a minute. Admission
+  // throttling is the subject of the service suite, so the window this
+  // deployment measures over is shortened — a ceiling cannot be raised by
+  // configuration — rather than the suite quietly staying under the limit.
+  service = await startTestService({
+    realWorker: true,
+    env: { AZEWEB_DEADLINE_COMPILE_MS: "300000", AZEWEB_RATE_LIMIT_WINDOW_MS: "1000" },
+  });
   const capabilities = await call(service.base, "GET", "/v1/capabilities");
   engineAvailable = capabilities.json.compiler.engines.browser.availability === "available";
 });
@@ -132,15 +140,21 @@ describe("the edit-preview-export loop", () => {
     });
     assert.equal(job.status, "completed");
     assert.equal(job.result.ok, false);
+    assert.equal(job.result.semantic.valid, false);
     assert.equal(job.result.semantic.contentHash, null);
 
-    const codes = job.result.diagnostics.map((diagnostic) => diagnostic.code);
-    assert.ok(codes.includes("azeforge.source#unknown-directive"), codes.join(", "));
-    assert.ok(codes.includes("azeforge.reference#duplicate-id"), codes.join(", "));
-    const ranged = job.result.diagnostics.find((diagnostic) => diagnostic.location?.range);
-    assert.ok(ranged, "diagnostics carry Source ranges for the editor adapter");
-    assert.equal(ranged.location.range.start.line, 10);
-    assert.equal(ranged.location.range.start.offset >= 0, true, "byte offsets are present");
+    // The sampler documents one expected code beside every broken Block, so
+    // the pair of multisets is the contract: the compiler reports exactly what
+    // the authored remedy comments claim, no more and no fewer.
+    const expected = [...example.source.matchAll(/^\/\/ Expected: (\S+)/gm)].map((match) => match[1]);
+    assert.ok(expected.length > 0, "the sampler still documents its expected codes");
+    const diagnostics = job.result.diagnostics;
+    assert.deepEqual([...diagnostics.map((diagnostic) => diagnostic.code)].sort(), [...expected].sort());
+    for (const diagnostic of diagnostics) {
+      const range = diagnostic.location?.range;
+      assert.ok(range, `${diagnostic.code} carries a Source range for the editor adapter`);
+      assert.equal(Number.isInteger(range.start.offset) && range.start.offset >= 0, true, "byte offsets are present");
+    }
   });
 
   test("every advertised format produces a verifiable Artifact, or tells the truth about why not", async () => {
@@ -215,10 +229,11 @@ describe("the edit-preview-export loop", () => {
   });
 
   test("raw LaTeX cannot be enabled through the request boundary", async () => {
-    const raw = examples[1].source.replace(
-      "integral x=-infinity..infinity of exp(-x^2) dx = sqrt(pi)",
-      "\\frac{\\partial u}{\\partial t} = \\alpha \\nabla^2 u",
-    );
+    // One readable relation swapped for its TeX spelling: the boundary the
+    // service owns is that the request carries no option that admits it.
+    const relation = "V = I * R";
+    assert.ok(examples[1].source.includes(relation), "the mathematics sample authors a readable relation");
+    const raw = examples[1].source.replace(relation, "\\frac{\\partial u}{\\partial t} = \\alpha \\nabla^2 u");
     const { job } = await runJob(service.base, {
       protocolVersion: 1,
       requestId: "raw",

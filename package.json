@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@aruzone/aze-forge": "0.3.1"
+    "@aruzone/aze-forge": "0.3.3"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
