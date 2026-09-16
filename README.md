@@ -261,6 +261,18 @@ npm run walkthrough -- --image aze-forge-web:"$(git rev-parse --short HEAD)" --r
 The exported Artifacts are written to `acceptance/walkthrough/<stamp>-artifacts/`
 for the owner to open; the recorded run goes to `acceptance/walkthrough/`.
 
+The recorded golden is the *canonical image's* rendering, and the pinned
+browser is deterministic per platform rather than across them: the same Source
+rendered by a service running on macOS differs from the linux/x64 image in
+bytes while agreeing on `contentHash`. That is the gate working — a walkthrough
+against a deployment that is not the canonical one reports the drift and names
+where the recording came from — so `--record-golden` belongs on the cutover
+image, not on a developer's machine, where overwriting the recording would
+quietly move the reference to a platform the alpha does not ship.
+(To exercise the loop locally anyway, point `--golden-identity` at your own
+recording, or run the walkthrough with `--golden` over a Source whose identity
+you have recorded.)
+
 The owner records the binary decision on the same deployment:
 
 ```bash

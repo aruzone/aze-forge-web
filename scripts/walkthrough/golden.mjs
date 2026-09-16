@@ -103,5 +103,13 @@ export function goldenDifferences(identity, render, recorded) {
   if (expected.byteLength !== render.byteLength) {
     differences.push(`byteLength ${render.byteLength} ≠ recorded ${expected.byteLength}`);
   }
+  if (differences.length > 0) {
+    // Where the recording came from is the first thing a reader needs: the same
+    // Document renders differently on another platform or browser build, and
+    // the recording is the deployment that ships.
+    differences.push(
+      `the recording is from ${identity.image} (${identity.compilerRelease}, ${identity.recordedAt})`,
+    );
+  }
   return differences;
 }
