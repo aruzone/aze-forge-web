@@ -1,16 +1,16 @@
 {
   "schema": "azeforge.web.golden-identity/v1",
-  "recordedAt": "2026-09-16T02:06:50.078Z",
-  "image": "sha256:05acd89101e66dabaaa06760f4f329f50da10aece1c92f346acbf6122a36f496",
-  "compilerRelease": "0.3.1",
-  "capabilityFingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+  "recordedAt": "2026-09-16T09:03:59.421Z",
+  "image": "sha256:3f49f4b664f8b47f1f6911819d5033afce4e48ea21f1d1eb86a7130db9dffd2a",
+  "compilerRelease": "0.3.3",
+  "capabilityFingerprint": "sha256:9cde67ee31029e604461db331bb0fbe5aa5375398740df705abe5deae2b4e2bd",
   "entries": {
     "golden-report.aze.md": {
       "source": "golden-report.aze.md",
       "format": "html",
-      "contentHash": "sha256:16efdada81537d99ac1265ddfe95b3803838bf9d8561591236b4e2d8c762ca2f",
-      "artifactHash": "sha256:0c91329b023f9c4bf304e5d61e5c2a1abfc156cc5fddab6b3e601e1c1dbf5d75",
-      "byteLength": 805333
+      "contentHash": "sha256:1456a20fab919ced7377909ae71600f2b4bc3062566ff76d794e276a98de2299",
+      "artifactHash": "sha256:9992a1f795a6e9a70b5c7d3c6c6e51a54ecce1a9cf2600b30a79c7b9bc202720",
+      "byteLength": 812893
     }
   }
 }
