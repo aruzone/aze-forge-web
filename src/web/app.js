@@ -465,8 +465,12 @@ function applyFix(fix) {
 
 // ------------------------------------------------------------------- exports
 
-/** @param {string} format @returns {Promise<void>} */
-async function exportFormat(format) {
+/**
+ * @param {string} format
+ * @param {{ previewLabel?: string }} [options]
+ * @returns {Promise<void>}
+ */
+async function exportFormat(format, { previewLabel } = {}) {
   const revision = currentRevision();
   const source = els.source.value;
   const theme = els.theme.value;
@@ -508,8 +512,9 @@ async function exportFormat(format) {
     markPreviewStale();
 
     if (format === "html") {
-      showPreview(job, bytes);
-      setActivity(`Preview updated (revision ${job.revision})`, "ok");
+      showPreview(job, bytes, previewLabel);
+      const action = previewLabel === undefined ? "Preview updated" : `Preview refreshed for ${previewLabel}`;
+      setActivity(`${action} (revision ${job.revision})`, "ok");
     } else {
       downloadArtifact(format, bytes);
       setActivity(`${format.toUpperCase()} downloaded (revision ${job.revision})`, "ok");
@@ -530,8 +535,8 @@ function setExporting(format, busy) {
   }
 }
 
-/** @param {Job} job @param {ArrayBuffer} bytes */
-function showPreview(job, bytes) {
+/** @param {Job} job @param {ArrayBuffer} bytes @param {string} [previewLabel] */
+function showPreview(job, bytes, previewLabel) {
   const artifact = /** @type {ArtifactInfo} */ (job.result?.artifact);
   const blob = new Blob([bytes], { type: artifact.mimeType });
   const url = URL.createObjectURL(blob);
@@ -541,8 +546,11 @@ function showPreview(job, bytes) {
   els.preview.hidden = false;
   els.previewPlaceholder.hidden = true;
   const metadata = artifact.metadata ?? {};
+  const revision = previewLabel === undefined
+    ? `Revision ${job.revision}`
+    : `Example: ${previewLabel} · revision ${job.revision}`;
   setPreviewStatus(
-    `Revision ${job.revision} · ${bytes.byteLength} bytes · ${shortHash(artifact.artifactHash)}${
+    `${revision} · ${bytes.byteLength} bytes · ${shortHash(artifact.artifactHash)}${
       job.cacheHit ? " · cache hit" : ""
     }${metadata.theme === undefined ? "" : ` · theme ${metadata.theme.id} ${metadata.theme.version}`}`,
   );
@@ -669,7 +677,9 @@ function loadExample(id) {
   const example = state.examples.find((entry) => entry.id === id) ?? state.examples[0];
   if (example === undefined) return;
   setSource(example.source);
-  void analyze();
+  // Selecting an example is an explicit replacement, so refresh the HTML
+  // preview rather than leaving the previous document visibly stale.
+  void exportFormat("html", { previewLabel: example.name });
 }
 
 /** @param {string} [message] */
