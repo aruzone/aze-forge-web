@@ -1,0 +1,39 @@
+staging the deployment profile…
+AzeForge Web owner walkthrough (Checkpoint B)
+  started     2026-09-16T02:27:00.057Z
+  image       aze-forge-web:5af61b6 (sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9)
+  staged      http://127.0.0.1:58074 (container azeweb-walkthrough-2306)
+  compiler    0.3.1 (pinned by package.json)
+  browser     chrome-headless-shell 152.0.7977.75 (pinned by the compiler)
+  token       sha256:b855dda90584… (hashed; never printed)
+  source      acceptance/walkthrough.aze.md
+  golden      acceptance/golden-report.aze.md
+  docker run  docker run -d --name azeweb-walkthrough-2306 --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -p 127.0.0.1:58074:8080 aze-forge-web:5af61b6
+  hardening   --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512
+  deviation   --security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place.
+
+[1/5] capabilities · Capabilities: the exact build, the three Themes and the four exports
+    · compiler 0.3.1 · fingerprint sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1
+    · themes academic, dark-presentation, default
+    · formats html, svg, png, pdf
+    · canonical runtime ubuntu/x64 · node 24
+    PASS (0.0s)
+
+[2/5] source · The representative Source: live diagnostics and ten-family coverage
+    · warning azeforge.metadata#unknown-key: Unknown front matter key "citation-style".
+    FAIL (0.8s): walkthrough.aze.md must open without errors; saw azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.table#unknown-header, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive
+
+[3/5] themes · Theme toggle: one semantic identity, three layouts
+    FAIL (0.8s): theme academic: the compile failed
+
+[4/5] exports · Export: HTML, SVG, PNG and PDF from one Document
+    FAIL (0.8s): export html: the compile failed with azeforge.metadata#unknown-key, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.table#unknown-header, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive
+
+[5/5] golden · Golden spot-check: a re-render is byte-identical and matches the recording
+    · golden-report.aze.md: two renders byte-identical at sha256:0c91329b023f9c4…
+    · golden-report.aze.md: matches the identity recorded on sha256:05acd89101e66dabaaa06760f4f329f50da10aece1c92f346acbf6122a36f496 at sha256:0c91329b023f9c4…
+    PASS (3.3s)
+
+5 steps, 2 passed, 3 failed
+  owner       owner decision not recorded in this run
+  finished    2026-09-16T02:27:07.944Z (7.9s)

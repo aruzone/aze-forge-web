@@ -1,0 +1,103 @@
+{
+  "schema": "azeforge.web.cutover-evidence/v1",
+  "startedAt": "2026-09-16T02:26:04.126Z",
+  "finishedAt": "2026-09-16T02:27:08.170Z",
+  "image": {
+    "reference": "aze-forge-web:5af61b6",
+    "id": "sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9",
+    "digests": [
+      "aze-forge-web@sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9"
+    ]
+  },
+  "catalog": {
+    "report": null,
+    "ok": false,
+    "detail": "no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced",
+    "failures": [],
+    "areas": [],
+    "manual": [],
+    "path": null,
+    "sha256": null
+  },
+  "smoke": {
+    "evidence": "acceptance/cutover/smoke/2026-09-16T02-26-04-126Z/2026-09-16T02-26-04-277Z-pass.json",
+    "status": 0,
+    "passed": 9,
+    "failed": 0
+  },
+  "walkthrough": {
+    "evidence": "acceptance/cutover/walkthrough/2026-09-16T02-26-04-126Z/2026-09-16T02-27-00-057Z-fail.json",
+    "passed": 2,
+    "failed": 3,
+    "manualEvidence": {
+      "schema": "azeforge.acceptance-manual-evidence/v1",
+      "acceptanceId": "ALPHA-WALKTHROUGH-001",
+      "status": "pending-owner-approval",
+      "note": "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
+      "required": [
+        "participantRole",
+        "consentedIdentifier",
+        "fixtureContentHash",
+        "fixtureArtifactHashes",
+        "commands",
+        "result",
+        "unresolvedNotes",
+        "date",
+        "compilerFingerprint",
+        "os"
+      ],
+      "automated": {
+        "date": "2026-09-16T02:27:00.057Z",
+        "os": "darwin arm64 · node v26.8.2",
+        "canonicalRuntime": {
+          "os": "ubuntu",
+          "arch": "x64",
+          "node": 24
+        },
+        "containerDeviations": [
+          "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+        ],
+        "compilerRelease": "0.3.1",
+        "compilerFingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+        "fixture": {
+          "name": "walkthrough.aze.md",
+          "contentHash": null
+        },
+        "fixtureArtifactHashes": {},
+        "commands": [
+          "npm run walkthrough -- --image aze-forge-web:5af61b6"
+        ]
+      },
+      "record": null
+    }
+  },
+  "approvedDriftExceptions": [],
+  "preApprovedBaseline": {
+    "id": "azemark:2",
+    "reason": "The corpus proved azemark:1 while the alpha replaces it with azemark:2; the single reviewed canonical-host re-baseline is pre-approved by aruzone/aze-forge#53 §3."
+  },
+  "decision": "not-approved",
+  "clauses": {
+    "catalog": {
+      "ok": false,
+      "detail": "no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced"
+    },
+    "deployability": {
+      "ok": true,
+      "detail": "9 passed, 0 failed"
+    },
+    "walkthrough": {
+      "ok": false,
+      "detail": "automated steps failed"
+    },
+    "stagedImage": {
+      "ok": true,
+      "detail": "sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9"
+    }
+  },
+  "reasons": [
+    "catalog: no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced",
+    "walkthrough: 3 of 5 automated walkthrough steps failed",
+    "owner: Approve is not recorded on the walkthrough entry"
+  ]
+}

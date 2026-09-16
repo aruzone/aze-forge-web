@@ -1,0 +1,24 @@
+AzeForge Web alpha cutover
+  started     2026-09-16T02:26:04.126Z
+  image       aze-forge-web:5af61b6 (sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9)
+  digest      aze-forge-web@sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9
+
+[1/2] deployability smoke suite
+  smoke exited 0
+
+[2/2] owner walkthrough (Checkpoint B)
+  walkthrough exited 1
+
+AzeForge Web alpha cutover result
+  smoke       9 passed, 0 failed (acceptance/cutover/smoke/2026-09-16T02-26-04-126Z/2026-09-16T02-26-04-277Z-pass.json)
+  walkthrough 2 passed, 3 failed (acceptance/cutover/walkthrough/2026-09-16T02-26-04-126Z/2026-09-16T02-27-00-057Z-fail.json)
+  catalog     no report supplied
+  clause catalog      not ok · no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced
+  clause deployability ok · 9 passed, 0 failed
+  clause walkthrough  not ok · automated steps failed
+  clause stagedImage  ok · sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9
+  decision    not-approved
+  reason      catalog: no automated catalog report was supplied; the semantic and deterministic-render clause is not evidenced
+  reason      walkthrough: 3 of 5 automated walkthrough steps failed
+  reason      owner: Approve is not recorded on the walkthrough entry
+  finished    2026-09-16T02:27:08.170Z (64.0s)

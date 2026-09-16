@@ -1,0 +1,191 @@
+{
+  "schema": "azeforge.web.walkthrough-evidence/v1",
+  "startedAt": "2026-09-16T02:27:00.057Z",
+  "finishedAt": "2026-09-16T02:27:07.944Z",
+  "image": {
+    "reference": "aze-forge-web:5af61b6",
+    "id": "sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9",
+    "digests": [
+      "aze-forge-web@sha256:7eb1fabe58ac708749dccb5033b65e0617dfa4af9151f057179a327d44555af9"
+    ]
+  },
+  "target": {
+    "base": "http://127.0.0.1:58074",
+    "container": "azeweb-walkthrough-2306"
+  },
+  "pins": {
+    "compiler": "0.3.1",
+    "browser": "152.0.7977.75",
+    "capabilityFingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1"
+  },
+  "containerFlags": [
+    "--read-only",
+    "--tmpfs",
+    "/scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777",
+    "--tmpfs",
+    "/tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777",
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--security-opt",
+    "seccomp=unconfined",
+    "--memory",
+    "6g",
+    "--memory-swap",
+    "6g",
+    "--pids-limit",
+    "512"
+  ],
+  "containerDeviations": [
+    "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+  ],
+  "sources": {
+    "walkthrough": "acceptance/walkthrough.aze.md",
+    "goldens": [
+      "acceptance/golden-report.aze.md"
+    ]
+  },
+  "outDir": "acceptance/cutover/walkthrough/2026-09-16T02-26-04-126Z/2026-09-16T02-27-00-057Z-artifacts",
+  "passed": 2,
+  "failed": 3,
+  "steps": [
+    {
+      "id": "capabilities",
+      "title": "Capabilities: the exact build, the three Themes and the four exports",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "compiler 0.3.1 · fingerprint sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+        "themes academic, dark-presentation, default",
+        "formats html, svg, png, pdf",
+        "canonical runtime ubuntu/x64 · node 24"
+      ]
+    },
+    {
+      "id": "source",
+      "title": "The representative Source: live diagnostics and ten-family coverage",
+      "ok": false,
+      "detail": "walkthrough.aze.md must open without errors; saw azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.table#unknown-header, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive",
+      "evidence": [
+        "warning azeforge.metadata#unknown-key: Unknown front matter key \"citation-style\"."
+      ]
+    },
+    {
+      "id": "themes",
+      "title": "Theme toggle: one semantic identity, three layouts",
+      "ok": false,
+      "detail": "theme academic: the compile failed",
+      "evidence": []
+    },
+    {
+      "id": "exports",
+      "title": "Export: HTML, SVG, PNG and PDF from one Document",
+      "ok": false,
+      "detail": "export html: the compile failed with azeforge.metadata#unknown-key, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.table#unknown-header, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive, azeforge.source#unknown-directive",
+      "evidence": []
+    },
+    {
+      "id": "golden",
+      "title": "Golden spot-check: a re-render is byte-identical and matches the recording",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "golden-report.aze.md: two renders byte-identical at sha256:0c91329b023f9c4…",
+        "golden-report.aze.md: matches the identity recorded on sha256:05acd89101e66dabaaa06760f4f329f50da10aece1c92f346acbf6122a36f496 at sha256:0c91329b023f9c4…"
+      ]
+    }
+  ],
+  "findings": {
+    "capabilities": {
+      "release": "0.3.1",
+      "fingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+      "themes": [
+        {
+          "id": "academic",
+          "title": "Academic"
+        },
+        {
+          "id": "dark-presentation",
+          "title": "Dark Presentation"
+        },
+        {
+          "id": "default",
+          "title": "Default"
+        }
+      ],
+      "formats": [
+        "html",
+        "svg",
+        "png",
+        "pdf"
+      ],
+      "runtime": {
+        "os": "ubuntu",
+        "arch": "x64",
+        "node": 24
+      }
+    },
+    "source": null,
+    "themes": [],
+    "formats": [],
+    "determinism": [
+      {
+        "source": "golden-report.aze.md",
+        "format": "html",
+        "contentHash": "sha256:16efdada81537d99ac1265ddfe95b3803838bf9d8561591236b4e2d8c762ca2f",
+        "artifactHash": "sha256:0c91329b023f9c4bf304e5d61e5c2a1abfc156cc5fddab6b3e601e1c1dbf5d75",
+        "byteLength": 805333
+      },
+      {
+        "source": "golden-report.aze.md",
+        "format": "html",
+        "contentHash": "sha256:16efdada81537d99ac1265ddfe95b3803838bf9d8561591236b4e2d8c762ca2f",
+        "artifactHash": "sha256:0c91329b023f9c4bf304e5d61e5c2a1abfc156cc5fddab6b3e601e1c1dbf5d75",
+        "byteLength": 805333
+      }
+    ],
+    "fixture": null
+  },
+  "manualEvidence": {
+    "schema": "azeforge.acceptance-manual-evidence/v1",
+    "acceptanceId": "ALPHA-WALKTHROUGH-001",
+    "status": "pending-owner-approval",
+    "note": "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
+    "required": [
+      "participantRole",
+      "consentedIdentifier",
+      "fixtureContentHash",
+      "fixtureArtifactHashes",
+      "commands",
+      "result",
+      "unresolvedNotes",
+      "date",
+      "compilerFingerprint",
+      "os"
+    ],
+    "automated": {
+      "date": "2026-09-16T02:27:00.057Z",
+      "os": "darwin arm64 · node v26.8.2",
+      "canonicalRuntime": {
+        "os": "ubuntu",
+        "arch": "x64",
+        "node": 24
+      },
+      "containerDeviations": [
+        "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+      ],
+      "compilerRelease": "0.3.1",
+      "compilerFingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+      "fixture": {
+        "name": "walkthrough.aze.md",
+        "contentHash": null
+      },
+      "fixtureArtifactHashes": {},
+      "commands": [
+        "npm run walkthrough -- --image aze-forge-web:5af61b6"
+      ]
+    },
+    "record": null
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "azeforge.acceptance-manual-evidence/v1",
+  "acceptanceId": "ALPHA-WALKTHROUGH-001",
+  "status": "pending-owner-approval",
+  "note": "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
+  "required": [
+    "participantRole",
+    "consentedIdentifier",
+    "fixtureContentHash",
+    "fixtureArtifactHashes",
+    "commands",
+    "result",
+    "unresolvedNotes",
+    "date",
+    "compilerFingerprint",
+    "os"
+  ],
+  "automated": {
+    "date": "2026-09-16T02:27:00.057Z",
+    "os": "darwin arm64 · node v26.8.2",
+    "canonicalRuntime": {
+      "os": "ubuntu",
+      "arch": "x64",
+      "node": 24
+    },
+    "containerDeviations": [
+      "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+    ],
+    "compilerRelease": "0.3.1",
+    "compilerFingerprint": "sha256:30e49f48333438118d008a9f5cf6239f0fd92b339042dfa7903a8ad6d1bd15c1",
+    "fixture": {
+      "name": "walkthrough.aze.md",
+      "contentHash": null
+    },
+    "fixtureArtifactHashes": {},
+    "commands": [
+      "npm run walkthrough -- --image aze-forge-web:5af61b6"
+    ]
+  },
+  "record": null
+}
