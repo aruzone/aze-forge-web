@@ -8,30 +8,35 @@
 </head>
 <body>
 <header class="toolbar">
-  <div class="brand">
-    <img class="brand-logo" src="/azeforge-logo-03-2.jpg" alt="" width="32" height="32">
-    <span>AzeForge</span>
+  <div class="toolbar-primary">
+    <div class="brand">
+      <img class="brand-logo" src="/azeforge-logo-03-2.jpg" alt="" width="32" height="32">
+      <span>AzeForge</span>
+    </div>
+    <button id="signout" type="button" class="ghost" hidden>Sign out</button>
   </div>
-  <label class="field">Example
-    <select id="example"></select>
-  </label>
-  <label class="field">Theme
-    <select id="theme"></select>
-  </label>
-  <span class="actions">
-    <button id="analyze" type="button">Analyze</button>
-    <button id="format" type="button">Format Source</button>
-  </span>
-  <span class="actions exports">
-    <span class="label">Export</span>
-    <button type="button" data-format="html">HTML</button>
-    <button type="button" data-format="svg">SVG</button>
-    <button type="button" data-format="png">PNG</button>
-    <button type="button" data-format="pdf">PDF</button>
-  </span>
-  <span id="activity" class="activity" role="status" aria-live="polite"></span>
-  <button id="signout" type="button" class="ghost" hidden>Sign out</button>
+  <div class="toolbar-secondary">
+    <label class="field">Example
+      <select id="example"></select>
+    </label>
+    <label class="field">Theme
+      <select id="theme"></select>
+    </label>
+    <span class="actions">
+      <button id="analyze" type="button">Analyze</button>
+      <button id="format" type="button">Format Source</button>
+    </span>
+    <span class="actions exports">
+      <span class="label">Export</span>
+      <button type="button" data-format="html">HTML</button>
+      <button type="button" data-format="svg">SVG</button>
+      <button type="button" data-format="png">PNG</button>
+      <button type="button" data-format="pdf">PDF</button>
+    </span>
+    <span id="activity" class="activity" role="status" aria-live="polite"></span>
+  </div>
 </header>
+<div id="preview-toast" class="preview-toast" role="status" aria-live="polite" hidden></div>
 
 <main id="workspace" hidden>
   <section class="pane">

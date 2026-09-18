@@ -40,6 +40,7 @@ const els = {
   format: /** @type {HTMLButtonElement} */ (element("format", HTMLButtonElement)),
   signout: /** @type {HTMLButtonElement} */ (element("signout", HTMLButtonElement)),
   activity: element("activity"),
+  previewToast: element("preview-toast"),
   source: /** @type {HTMLTextAreaElement} */ (element("source", HTMLTextAreaElement)),
   sourceMeta: element("source-meta"),
   diagnosticsList: element("diagnostics-list"),
@@ -99,8 +100,8 @@ const els = {
 /** @type {{ token: string, capabilities: any, examples: { id: string, name: string, source: string }[],
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
  *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
- *   artifact: { format: string, bytes: ArrayBuffer, revision: string, theme: string } | null,
- *   debounceTimer: ReturnType<typeof setTimeout> | undefined }} */
+ *   debounceTimer: ReturnType<typeof setTimeout> | undefined,
+ *   previewToastTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
   token: sessionStorage.getItem(TOKEN_KEY) ?? "",
   capabilities: null,
@@ -111,6 +112,7 @@ const state = {
   preview: { objectUrl: null, revision: null, theme: null },
   artifact: null,
   debounceTimer: undefined,
+  previewToastTimer: undefined,
 };
 
 // ------------------------------------------------------------------ transport
@@ -474,7 +476,7 @@ async function exportFormat(format, { previewLabel } = {}) {
   const revision = currentRevision();
   const source = els.source.value;
   const theme = els.theme.value;
-  setActivity(`Compiling ${format.toUpperCase()}…`);
+  showToast(`Compiling ${format.toUpperCase()}…`, "progress");
   setExporting(format, true);
 
   try {
@@ -490,18 +492,18 @@ async function exportFormat(format, { previewLabel } = {}) {
     const job = await pollJob(accepted.jobId, { pollAfterMs: accepted.pollAfterMs });
 
     if (job.revision !== currentRevision()) {
-      setActivity(`Discarded a stale ${format.toUpperCase()} result from revision ${job.revision}.`, "error");
+      showToast(`Discarded a stale ${format.toUpperCase()} result from revision ${job.revision}.`, "error");
       return;
     }
 
     if (job.status !== "completed") {
-      setActivity(job.failure?.message ?? `${format.toUpperCase()} export failed.`, "error");
+      showToast(job.failure?.message ?? `${format.toUpperCase()} export failed.`, "error");
       return;
     }
 
     renderDiagnostics(job);
     if (job.result?.ok !== true || !job.result.artifact) {
-      setActivity(`${format.toUpperCase()} export failed; see diagnostics.`, "error");
+      showToast(`${format.toUpperCase()} export failed; see diagnostics.`, "error");
       return;
     }
 
@@ -514,14 +516,14 @@ async function exportFormat(format, { previewLabel } = {}) {
     if (format === "html") {
       showPreview(job, bytes, previewLabel);
       const action = previewLabel === undefined ? "Preview updated" : `Preview refreshed for ${previewLabel}`;
-      setActivity(`${action} (revision ${job.revision})`, "ok");
+      showToast(`${action} (revision ${job.revision})`);
     } else {
       downloadArtifact(format, bytes);
-      setActivity(`${format.toUpperCase()} downloaded (revision ${job.revision})`, "ok");
+      showToast(`${format.toUpperCase()} downloaded (revision ${job.revision})`);
     }
   } catch (error) {
     if (isAbort(error)) return;
-    handleRequestFailure(asFailure(error), `${format.toUpperCase()} export failed`);
+    handleRequestFailure(asFailure(error), `${format.toUpperCase()} export failed`, showToast);
   } finally {
     setExporting(format, false);
   }
@@ -590,6 +592,19 @@ function setActivity(text, tone = "") {
   else els.activity.dataset.tone = tone;
 }
 
+/** @param {string} text @param {"ok" | "progress" | "error"} [tone] */
+function showToast(text, tone = "ok") {
+  if (state.previewToastTimer !== undefined) clearTimeout(state.previewToastTimer);
+  els.previewToast.textContent = text;
+  els.previewToast.dataset.tone = tone;
+  els.previewToast.hidden = false;
+  if (tone === "progress") return;
+  state.previewToastTimer = setTimeout(() => {
+    els.previewToast.hidden = true;
+    state.previewToastTimer = undefined;
+  }, 3_000);
+}
+
 /** @param {Error & { unauthorized?: boolean, serviceError?: { code: string } | null }} error
  * @param {string} prefix */
 /** @param {unknown} error @returns {error is DOMException & { name: "AbortError" }} */
@@ -605,17 +620,16 @@ function asFailure(error) {
 }
 
 /**
- * @param {Error & { unauthorized?: boolean, serviceError?: { code: string } | null }} error
- * @param {string} prefix
+ * @param {(text: string, tone?: string) => void} [reporter]
  */
-function handleRequestFailure(error, prefix) {
+function handleRequestFailure(error, prefix, reporter = setActivity) {
   if (error.unauthorized) {
     showGate("The access token was rejected.");
-    setActivity("Not authorized", "error");
+    reporter("Not authorized", "error");
     return;
   }
   const code = error.serviceError?.code;
-  setActivity(code === undefined ? `${prefix}: ${error.message}` : `${prefix}: ${error.message} (${code})`, "error");
+  reporter(code === undefined ? `${prefix}: ${error.message}` : `${prefix}: ${error.message} (${code})`, "error");
 }
 
 /** @returns {Promise<void>} */
