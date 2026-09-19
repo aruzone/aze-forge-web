@@ -100,6 +100,7 @@ const els = {
 /** @type {{ token: string, capabilities: any, examples: { id: string, name: string, source: string }[],
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
  *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
+ *   artifact: { format: string, bytes: ArrayBuffer, revision: string, theme: string } | null,
  *   debounceTimer: ReturnType<typeof setTimeout> | undefined,
  *   previewToastTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
@@ -605,8 +606,6 @@ function showToast(text, tone = "ok") {
   }, 3_000);
 }
 
-/** @param {Error & { unauthorized?: boolean, serviceError?: { code: string } | null }} error
- * @param {string} prefix */
 /** @param {unknown} error @returns {error is DOMException & { name: "AbortError" }} */
 function isAbort(error) {
   return error instanceof DOMException && error.name === "AbortError";
@@ -620,7 +619,9 @@ function asFailure(error) {
 }
 
 /**
- * @param {(text: string, tone?: string) => void} [reporter]
+ * @param {Error & { unauthorized?: boolean, serviceError?: { code: string } | null }} error
+ * @param {string} prefix
+ * @param {(text: string, tone?: "ok" | "progress" | "error") => void} [reporter]
  */
 function handleRequestFailure(error, prefix, reporter = setActivity) {
   if (error.unauthorized) {
