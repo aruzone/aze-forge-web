@@ -32,6 +32,21 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+/**
+ * The Docker CLI the image bakes for a TeX-enabled deployment, as the build's
+ * own `ADD --checksum` verified it. The Dockerfile passes the version and the
+ * tarball checksum in, so the manifest cannot drift from the pin; a host-side
+ * run records `null` rather than inventing one.
+ *
+ * @returns {{ version: string, sha256: string } | null}
+ */
+function dockerCliPin() {
+  const version = process.env.DOCKER_CLI_VERSION;
+  const checksum = process.env.DOCKER_CLI_SHA256;
+  if (version === undefined || checksum === undefined) return null;
+  return { version, sha256: `sha256:${checksum}` };
+}
+
 /** @param {Record<string, any>} packages @param {string} name */
 function resolved(packages, name) {
   const entry = packages[`node_modules/${name}`];
@@ -123,6 +138,7 @@ export function buildImageManifest(options = {}) {
       byteLength: browserBytes.byteLength,
       sha256: `sha256:${createHash("sha256").update(browserBytes).digest("hex")}`,
     },
+    dockerCli: dockerCliPin(),
     fonts: {
       "@fontsource/inter": resolved(packages, "@fontsource/inter"),
       "@fontsource/jetbrains-mono": resolved(packages, "@fontsource/jetbrains-mono"),

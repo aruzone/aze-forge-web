@@ -46,11 +46,23 @@ function idFor(file) {
   return basename(file, ".aze.md").replace(/^\d+-/, "");
 }
 
-/** @param {string} text */
+/**
+ * The document's title: the front matter's own `title:` when it declares one,
+ * and otherwise the first level-1 heading. The library is reused verbatim and
+ * the `tex` escape-hatch example ships without a front-matter title, so the
+ * fallback keeps that document named for its heading instead of for the
+ * `title:` of the first typed Block inside it; the front-matter scope is what
+ * stops the latter from winning.
+ *
+ * @param {string} text
+ */
 function titleFor(text) {
-  const match = /^title:[ \t]*(.+)$/m.exec(text);
-  if (match === null) throw new Error("an example has no title in its front matter");
-  return match[1].trim().replace(/^["']|["']$/g, "");
+  const frontMatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  const declared = frontMatter === null ? null : /^title:[ \t]*(.+)$/m.exec(frontMatter[1]);
+  if (declared !== null) return declared[1].trim().replace(/^["']|["']$/g, "");
+  const heading = /^#\s+(.+)$/m.exec(text);
+  if (heading === null) throw new Error("an example has neither a front-matter title nor a level-1 heading");
+  return heading[1].trim();
 }
 
 async function main() {

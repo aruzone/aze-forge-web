@@ -151,7 +151,8 @@ docker build --platform linux/amd64 -t aze-forge-web:"$(git rev-parse --short HE
 The base image is `node:24-bookworm-slim`, pinned by manifest-list digest inside
 the `Dockerfile`, so it cannot move under a rebuild. `/app/image-manifest.json`
 records the exact pins the built image contains — compiler release, resolved
-dependency tree, fonts, and the browser's build, digest and archive.
+dependency tree, fonts, the browser's build, digest and archive, and the Docker
+CLI the TeX renderer needs.
 
 **Target platform.** `linux/amd64`. The pinned `chrome-headless-shell`
 152.0.7977.75 is only published for `linux64` on Linux (Chrome for Testing began

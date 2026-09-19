@@ -704,6 +704,13 @@ export const CHECKS = [
         /^sha256:[0-9a-f]{64}$/.test(manifest.browser?.sha256 ?? ""),
         "the baked browser executable carries no digest",
       );
+      // The Docker CLI the TeX renderer needs is baked too, and a baked binary
+      // the manifest does not pin is exactly what this check exists to catch.
+      expect(
+        typeof manifest.dockerCli?.version === "string" &&
+          /^sha256:[0-9a-f]{64}$/.test(manifest.dockerCli?.sha256 ?? ""),
+        "the baked Docker CLI carries no version and checksum pin",
+      );
       const runtimePlatform = String(manifest.runtime?.platform ?? "");
       const expectedArchive = /** @type {Record<string, string>} */ ({
         "linux-x64": "linux64",
@@ -752,6 +759,7 @@ export const CHECKS = [
       );
       record(`browser ${manifest.browser.name} ${manifest.browser.version} ${manifest.browser.sha256.slice(0, 22)}…`);
       record(`browser archive ${manifest.browser.archive} (runtime ${manifest.runtime.platform})`);
+      record(`docker cli ${manifest.dockerCli.version} ${manifest.dockerCli.sha256.slice(0, 22)}…`);
       record(
         `fonts inter@${manifest.fonts["@fontsource/inter"].version} ` +
           `jetbrains-mono@${manifest.fonts["@fontsource/jetbrains-mono"].version}`,

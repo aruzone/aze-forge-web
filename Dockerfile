@@ -25,8 +25,10 @@ RUN apt-get update \
 # and nothing here runs one. The static release is pinned by version and
 # checksum so the binary cannot move under a rebuild; the build stage keeps the
 # 85 MiB tarball and the runtime image only gains the one executable.
-ADD --checksum=sha256:803d433f226db4776e1768fd319fc6c6e4935a456acf84fcc0080818b854bc8f \
-    https://download.docker.com/linux/static/stable/x86_64/docker-29.7.2.tgz /tmp/docker-cli.tgz
+ARG DOCKER_CLI_VERSION=29.7.2
+ARG DOCKER_CLI_SHA256=803d433f226db4776e1768fd319fc6c6e4935a456acf84fcc0080818b854bc8f
+ADD --checksum=sha256:${DOCKER_CLI_SHA256} \
+    https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz /tmp/docker-cli.tgz
 RUN mkdir -p /docker-cli \
  && tar -xzf /tmp/docker-cli.tgz -C /docker-cli docker/docker \
  && rm -f /tmp/docker-cli.tgz \
@@ -92,7 +94,15 @@ RUN chmod 0755 /usr/local/bin/azeweb-entrypoint \
 # Build-time provenance: exact pins for the compiler, the browser and every
 # resolved dependency. Read by the deployment acceptance smoke suite.
 ARG AZEWEB_BASE_IMAGE=node:24.21.0-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
-RUN AZEWEB_BASE_IMAGE="$AZEWEB_BASE_IMAGE" node scripts/image-manifest.mjs > /app/image-manifest.json
+# The Docker CLI pin is declared in the dependencies stage, so the manifest
+# records the same version and checksum the ADD above verified rather than a
+# second copy that could drift.
+ARG DOCKER_CLI_VERSION=29.7.2
+ARG DOCKER_CLI_SHA256=803d433f226db4776e1768fd319fc6c6e4935a456acf84fcc0080818b854bc8f
+RUN AZEWEB_BASE_IMAGE="$AZEWEB_BASE_IMAGE" \
+    DOCKER_CLI_VERSION="$DOCKER_CLI_VERSION" \
+    DOCKER_CLI_SHA256="$DOCKER_CLI_SHA256" \
+    node scripts/image-manifest.mjs > /app/image-manifest.json
 
 USER node
 EXPOSE 8080

@@ -81,6 +81,23 @@ test("a cache without the pinned browser is a build failure, not an empty pin", 
   }
 });
 
+test("the manifest records the Docker CLI the build verified, and only when the build supplied it", async () => {
+  const { directory, cacheDir } = await fixture();
+  const previous = { DOCKER_CLI_VERSION: process.env.DOCKER_CLI_VERSION, DOCKER_CLI_SHA256: process.env.DOCKER_CLI_SHA256 };
+  process.env.DOCKER_CLI_VERSION = "29.7.2";
+  process.env.DOCKER_CLI_SHA256 = "a".repeat(64);
+  try {
+    const manifest = buildImageManifest({ cwd: directory, cacheDir, baseImage: BASE });
+    assert.deepEqual(manifest.dockerCli, { version: "29.7.2", sha256: `sha256:${"a".repeat(64)}` });
+  } finally {
+    if (previous.DOCKER_CLI_VERSION === undefined) delete process.env.DOCKER_CLI_VERSION;
+    else process.env.DOCKER_CLI_VERSION = previous.DOCKER_CLI_VERSION;
+    if (previous.DOCKER_CLI_SHA256 === undefined) delete process.env.DOCKER_CLI_SHA256;
+    else process.env.DOCKER_CLI_SHA256 = previous.DOCKER_CLI_SHA256;
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("the manifest pins the compiler, the browser, the fonts and every production dependency", async () => {
   const { directory, cacheDir } = await fixture();
   try {
@@ -94,6 +111,9 @@ test("the manifest pins the compiler, the browser, the fonts and every productio
 
     assert.equal(manifest.browser.name, "chrome-headless-shell");
     assert.equal(manifest.browser.version, CHROME_HEADLESS_SHELL_VERSION);
+
+    // A host-side run has no build arguments, so it must not invent a pin.
+    assert.equal(manifest.dockerCli, null);
 
     assert.equal(manifest.fonts["@fontsource/inter"].version, "5.3.0");
     assert.equal(manifest.fonts["@fontsource/jetbrains-mono"].version, "5.2.8");

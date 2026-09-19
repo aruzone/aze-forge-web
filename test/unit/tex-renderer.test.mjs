@@ -89,6 +89,12 @@ test("the readiness probe exercises the real adapter and demands the configured 
     probeTexRenderer({ config, spawn: respondingSpawn({ error: new Error("spawn docker ENOENT") }) }).detail,
     "executable-unavailable",
   );
+  const timedOut = Object.assign(new Error("spawnSync docker ETIMEDOUT"), { code: "ETIMEDOUT" });
+  assert.equal(
+    probeTexRenderer({ config, spawn: respondingSpawn({ error: timedOut }) }).detail,
+    "renderer-timeout",
+    "a hung renderer is not reported as a missing executable",
+  );
   assert.deepEqual(probeTexRenderer({ config: { texRenderTimeoutMs: 15_000 } }), {
     ok: false,
     detail: "not-configured",

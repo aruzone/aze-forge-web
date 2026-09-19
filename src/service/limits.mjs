@@ -102,6 +102,17 @@ export const KNOBS = Object.freeze({
   texRenderTimeoutMs: { env: "TEX_RENDER_TIMEOUT_MS", default: 15_000, min: 1, max: 15_000 },
 });
 
+/**
+ * Whether this deployment can render `tex` Blocks: both renderer knobs are
+ * supplied. It lives beside the knobs so the limit list and the renderer wiring
+ * cannot disagree about what "configured" means.
+ *
+ * @param {{ texRendererImage?: string, texRendererIdentity?: string }} config
+ */
+export function texRendererEnabled(config) {
+  return config.texRendererImage !== undefined && config.texRendererIdentity !== undefined;
+}
+
 const PREFIX = "AZEWEB_";
 
 /** @param {string} key */
@@ -145,9 +156,9 @@ export function publishedLimits(config) {
     limit("asset-uploads", "requests", "per-token-per-minute", config.assetUploadsPerMinute),
     limit("job-deadline", "ms", "analyze|format", config.deadlineAnalyzeMs),
     limit("job-deadline", "ms", "compile", config.deadlineCompileMs),
-    ...(config.texRendererImage === undefined
-      ? []
-      : [limit("tex-render-timeout", "ms", "job", config.texRenderTimeoutMs)]),
+    ...(texRendererEnabled(config)
+      ? [limit("tex-render-timeout", "ms", "job", config.texRenderTimeoutMs)]
+      : []),
     limit("termination-grace", "ms", "job", config.terminationGraceMs),
     limit("asset-handle-retention", "ms", "asset", config.assetTtlMs),
     limit("result-retention", "ms", "job", config.resultTtlMs),

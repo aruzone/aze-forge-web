@@ -18,7 +18,9 @@
 
 import { spawnSync } from "node:child_process";
 
-import { envNameFor } from "./limits.mjs";
+import { envNameFor, texRendererEnabled } from "./limits.mjs";
+
+export { texRendererEnabled };
 
 /** The batch protocol discriminant the renderer answers with. */
 export const TEX_RENDERER_PROTOCOL = "azeforge.tex-renderer/v1";
@@ -64,15 +66,6 @@ export function dockerTexRendererArgs(image, rendererIdentity) {
     "--env", `AZEFORGE_TEX_RENDERER_IDENTITY=${rendererIdentity}`,
     image,
   ];
-}
-
-/**
- * Whether this deployment can render `tex` Blocks at all.
- *
- * @param {{ texRendererImage?: string, texRendererIdentity?: string }} config
- */
-export function texRendererEnabled(config) {
-  return config.texRendererImage !== undefined && config.texRendererIdentity !== undefined;
 }
 
 /**
@@ -160,7 +153,10 @@ export function probeTexRenderer({ config, timeoutMs = 60_000, spawn = spawnSync
     },
   );
   if (outcome.error !== undefined && outcome.error !== null) {
-    return { ok: false, detail: "executable-unavailable" };
+    // spawnSync reports both "could not launch" and "the timeout expired"
+    // through `error`; a hung renderer must not read as a missing binary.
+    const code = /** @type {NodeJS.ErrnoException} */ (outcome.error).code;
+    return { ok: false, detail: code === "ETIMEDOUT" ? "renderer-timeout" : "executable-unavailable" };
   }
   if (outcome.status !== 0) return { ok: false, detail: `renderer-exit-${outcome.status ?? "signal"}` };
 
