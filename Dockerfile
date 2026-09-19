@@ -29,9 +29,13 @@ ARG DOCKER_CLI_VERSION=29.7.2
 ARG DOCKER_CLI_SHA256=803d433f226db4776e1768fd319fc6c6e4935a456acf84fcc0080818b854bc8f
 ADD --checksum=sha256:${DOCKER_CLI_SHA256} \
     https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz /tmp/docker-cli.tgz
+# `--strip-components=1` is load-bearing: the tarball's member is `docker/docker`
+# (directory then file), and extracting it verbatim would leave a *directory*
+# named `docker` for the COPY below to copy into place.
 RUN mkdir -p /docker-cli \
- && tar -xzf /tmp/docker-cli.tgz -C /docker-cli docker/docker \
+ && tar -xzf /tmp/docker-cli.tgz -C /docker-cli --strip-components=1 docker/docker \
  && rm -f /tmp/docker-cli.tgz \
+ && test -f /docker-cli/docker \
  && test -x /docker-cli/docker
 
 # Puppeteer's own install script is disabled: the browser is installed below by
