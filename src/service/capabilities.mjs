@@ -11,6 +11,7 @@
 
 import { PROTOCOL_VERSION, SUPPORTED_OPERATIONS, UNAVAILABLE_OPERATIONS } from "./protocol.mjs";
 import { publishedLimits } from "./limits.mjs";
+import { texRendererEnabled } from "./tex-renderer.mjs";
 
 export const WEB_CAPABILITIES_SCHEMA_ID = "azeforge.web.capabilities/v1";
 export const WEB_CAPABILITIES_SCHEMA_VERSION = 1;
@@ -21,6 +22,7 @@ export const WEB_CAPABILITIES_SCHEMA_VERSION = 1;
  */
 export function buildWebCapabilities({ config, compilerFacts }) {
   const { capabilities, tool, versionReport, capabilityFingerprint } = compilerFacts;
+  const hostEnabled = texRendererEnabled(config);
 
   return {
     schema: WEB_CAPABILITIES_SCHEMA_ID,
@@ -53,6 +55,21 @@ export function buildWebCapabilities({ config, compilerFacts }) {
         cache: "ephemeral-per-client-context",
         persistence: "none",
         accounts: false,
+      },
+      // What this host can execute beyond the compiler's bundled engines. The
+      // capability document is reachable only while the service is ready, and
+      // readiness includes the renderer probe, so an enabled renderer is one
+      // that has already answered the batch protocol. Nothing here names the
+      // image, an executable or a container runtime detail.
+      renderers: {
+        tex: {
+          hostEnabled,
+          available: hostEnabled,
+          profiles: /** @type {{ engines?: { tex?: { profiles?: readonly string[] } } }} */ (capabilities).engines?.tex?.profiles ?? [],
+          remedy: hostEnabled
+            ? null
+            : "This deployment has not enabled the trusted TeX renderer; tex Blocks compile with an adapter-missing diagnostic instead.",
+        },
       },
       limits: publishedLimits(config),
       deadlines: {

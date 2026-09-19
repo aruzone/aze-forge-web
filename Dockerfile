@@ -19,6 +19,19 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends unzip \
  && rm -rf /var/lib/apt/lists/*
 
+# The Docker CLI, and only the CLI: a TeX-enabled worker launches the trusted
+# renderer as a short-lived sibling container through the host's Docker socket,
+# which the TeX-enabled run command mounts. The daemon stays outside this image
+# and nothing here runs one. The static release is pinned by version and
+# checksum so the binary cannot move under a rebuild; the build stage keeps the
+# 85 MiB tarball and the runtime image only gains the one executable.
+ADD --checksum=sha256:803d433f226db4776e1768fd319fc6c6e4935a456acf84fcc0080818b854bc8f \
+    https://download.docker.com/linux/static/stable/x86_64/docker-29.7.2.tgz /tmp/docker-cli.tgz
+RUN mkdir -p /docker-cli \
+ && tar -xzf /tmp/docker-cli.tgz -C /docker-cli docker/docker \
+ && rm -f /tmp/docker-cli.tgz \
+ && test -x /docker-cli/docker
+
 # Puppeteer's own install script is disabled: the browser is installed below by
 # the compiler's own installer, at the version the compiler publishes, so the
 # pin has exactly one source and the platform mapping is the one the compiler
@@ -56,6 +69,11 @@ COPY scripts/image-manifest.mjs ./scripts/
 # The pinned browser cache belongs to the non-root user that launches it, and
 # is read-only at runtime: the compiler only ever resolves an executable path.
 COPY --from=dependencies /root/.cache/puppeteer /home/node/.cache/puppeteer
+
+# The CLI a TeX-enabled deployment's workers launch the renderer with. It is
+# inert until the deployment supplies the renderer configuration and mounts the
+# Docker socket; a deployment that does not enable TeX never runs it.
+COPY --from=dependencies /docker-cli/docker /usr/local/bin/docker
 
 # Image defaults. Every one of these is an `AZEWEB_*` deployment setting with a
 # documented default in src/service/limits.mjs; the image picks the ones the

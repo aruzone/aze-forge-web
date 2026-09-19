@@ -7,6 +7,7 @@
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { KNOBS, envNameFor, knownEnvNames } from "./limits.mjs";
+import { isImmutableRendererImage, isRendererIdentity } from "./tex-renderer.mjs";
 
 /**
  * The effective configuration. Every field is a validated envelope value, so
@@ -38,6 +39,9 @@ import { KNOBS, envNameFor, knownEnvNames } from "./limits.mjs";
  * @property {number} cacheMaxAgeMs
  * @property {number} scratchMaxBytes
  * @property {string} scratchDir
+ * @property {string} [texRendererImage] immutable renderer image; enables `tex`
+ * @property {string} [texRendererIdentity] renderer release-manifest hash
+ * @property {number} texRenderTimeoutMs
  */
 
 /** Thrown for any configuration problem. Never reaches an HTTP response. */
@@ -114,6 +118,28 @@ export function loadConfig(env = process.env) {
     }
     if (/\s/.test(token)) {
       problems.push(`${envNameFor("accessToken")} must not contain whitespace.`);
+    }
+  }
+
+  // The renderer is either configured as a pair or not at all. Half a
+  // configuration would enable a capability the deployment cannot honour.
+  const texImage = raw.texRendererImage;
+  const texIdentity = raw.texRendererIdentity;
+  if ((texImage === undefined) !== (texIdentity === undefined)) {
+    problems.push(
+      `${envNameFor("texRendererImage")} and ${envNameFor("texRendererIdentity")} must be supplied together.`,
+    );
+  } else if (typeof texImage === "string" && typeof texIdentity === "string") {
+    if (!isImmutableRendererImage(texImage)) {
+      problems.push(
+        `${envNameFor("texRendererImage")} must name an immutable renderer image ` +
+          `(a sha256 digest, optionally pinned by repository); received a mutable reference.`,
+      );
+    }
+    if (!isRendererIdentity(texIdentity)) {
+      problems.push(
+        `${envNameFor("texRendererIdentity")} must be the sha256 identity of the renderer release manifest.`,
+      );
     }
   }
 

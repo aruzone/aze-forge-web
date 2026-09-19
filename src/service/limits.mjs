@@ -89,6 +89,17 @@ export const KNOBS = Object.freeze({
   scratchMaxBytes: { env: "SCRATCH_MAX_BYTES", default: 2 * GIB, min: 1, max: 2 * GIB },
 
   scratchDir: { env: "SCRATCH_DIR", kind: "string" },
+
+  // The trusted TeX renderer: the worker deployment's own configuration,
+  // supplied by the operator and never visible to a browser client. Both the
+  // image and the release-manifest identity are required to enable it, so a
+  // half-configured deployment is a startup error rather than a job that
+  // discovers the gap at compile time. They are `secret` so a startup log
+  // names the knob without echoing the pinned image or identity.
+  texRendererImage: { env: "TEX_RENDERER_IMAGE", kind: "string", secret: true },
+  texRendererIdentity: { env: "TEX_RENDERER_IDENTITY", kind: "string", secret: true },
+  // The compiler owns a 15 s batch deadline and hosts may only lower it.
+  texRenderTimeoutMs: { env: "TEX_RENDER_TIMEOUT_MS", default: 15_000, min: 1, max: 15_000 },
 });
 
 const PREFIX = "AZEWEB_";
@@ -134,6 +145,9 @@ export function publishedLimits(config) {
     limit("asset-uploads", "requests", "per-token-per-minute", config.assetUploadsPerMinute),
     limit("job-deadline", "ms", "analyze|format", config.deadlineAnalyzeMs),
     limit("job-deadline", "ms", "compile", config.deadlineCompileMs),
+    ...(config.texRendererImage === undefined
+      ? []
+      : [limit("tex-render-timeout", "ms", "job", config.texRenderTimeoutMs)]),
     limit("termination-grace", "ms", "job", config.terminationGraceMs),
     limit("asset-handle-retention", "ms", "asset", config.assetTtlMs),
     limit("result-retention", "ms", "job", config.resultTtlMs),

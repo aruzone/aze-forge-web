@@ -7,6 +7,7 @@
  */
 
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { after, before, describe, test } from "node:test";
@@ -16,6 +17,23 @@ const packageJson = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
 );
 const examples = JSON.parse(await readFile(new URL("../src/web/examples.json", import.meta.url), "utf8"));
+
+// The sealed renderer release this checkout targets: the repository pinned to
+// the release manifest's image digest, and the manifest's own hash as the
+// identity. A development machine that already holds the canonical image runs
+// the TeX path for real (the reviewed local-docker workflow); one that does not
+// proves the deployment tells the truth about the missing renderer instead. The
+// suite must pass either way.
+const TEX_RENDERER_IMAGE = "kkumaresan/aze-forge-tex-renderer@sha256:89386319c33f4e386289cfb4e79460a82946c255d0a344da1233e6d17a61e4e4";
+const TEX_RENDERER_IDENTITY = "sha256:12d8fdb40b0b8632d5049476e8ff0c61b51731e2f4ff7ddc7afe1775a930ff25";
+const texRendererAvailable =
+  spawnSync("docker", ["image", "inspect", TEX_RENDERER_IMAGE], { stdio: "ignore" }).status === 0;
+const texRendererEnv = texRendererAvailable
+  ? {
+      AZEWEB_TEX_RENDERER_IMAGE: TEX_RENDERER_IMAGE,
+      AZEWEB_TEX_RENDERER_IDENTITY: TEX_RENDERER_IDENTITY,
+    }
+  : {};
 
 /** @type {Awaited<ReturnType<typeof startTestService>>} */
 let service;
@@ -31,7 +49,11 @@ before(async () => {
   // configuration — rather than the suite quietly staying under the limit.
   service = await startTestService({
     realWorker: true,
-    env: { AZEWEB_DEADLINE_COMPILE_MS: "300000", AZEWEB_RATE_LIMIT_WINDOW_MS: "1000" },
+    env: {
+      AZEWEB_DEADLINE_COMPILE_MS: "300000",
+      AZEWEB_RATE_LIMIT_WINDOW_MS: "1000",
+      ...texRendererEnv,
+    },
   });
   const capabilities = await call(service.base, "GET", "/v1/capabilities");
   engineAvailable = capabilities.json.compiler.engines.browser.availability === "available";
@@ -50,19 +72,52 @@ describe("pinned compiler", () => {
     assert.match(json.compiler.engines.browser.pinnedVersion, /^\d+\.\d+\.\d+\.\d+$/);
     assert.deepEqual(json.compiler.source.azemarkVersions, [2]);
     assert.equal(json.service.policy.rawMath, "unavailable");
+
+    // The deployment reports only the coarse host fact: an enabled renderer is
+    // one the readiness probe has already exercised, and no image, path or
+    // runtime detail is published.
+    const tex = json.service.renderers.tex;
+    assert.equal(tex.hostEnabled, texRendererAvailable);
+    assert.equal(tex.available, texRendererAvailable);
+    assert.ok(!JSON.stringify(tex).includes("sha256:"));
   });
 
   test("the readiness self-check compiled a trivial Source through a real worker", async () => {
-    const started = await startTestService({ realWorker: true });
+    const started = await startTestService({ realWorker: true, env: { ...texRendererEnv } });
     try {
       const readiness = started.application.runReadiness();
       assert.equal(readiness.ok, true, JSON.stringify(readiness.checks));
       assert.deepEqual(
         readiness.checks.map((check) => check.name),
-        ["compiler-registry", "browser-engine", "scratch-storage", "self-check-compile"],
+        texRendererAvailable
+          ? ["compiler-registry", "browser-engine", "tex-renderer", "scratch-storage", "self-check-compile"]
+          : ["compiler-registry", "browser-engine", "scratch-storage", "self-check-compile"],
       );
+      for (const check of readiness.checks) assert.equal(check.ok, true, JSON.stringify(check));
     } finally {
       await started.close();
+    }
+  });
+
+  test("a deployment without the renderer completes a tex job with the compiler's own diagnostic", async () => {
+    // No renderer configuration is supplied here whatever the host has: the
+    // deployment is the thing under test, not the machine.
+    const disabled = await startTestService({ realWorker: true });
+    try {
+      const tex = examples.find((example) => example.id === "tex");
+      const { job } = await runJob(disabled.base, {
+        ...compileRequest(tex.source, "html", "rev-tex-disabled"),
+        source: { text: tex.source, name: "tex.aze.md" },
+      });
+      assert.equal(job.status, "completed");
+      assert.equal(job.result.ok, false);
+      assert.equal(job.result.artifact, undefined);
+      assert.deepEqual(
+        job.result.diagnostics.map((diagnostic) => diagnostic.code),
+        ["azeforge.renderer#adapter-missing"],
+      );
+    } finally {
+      await disabled.close();
     }
   });
 });
@@ -92,6 +147,16 @@ describe("the edit-preview-export loop", () => {
         ...compileRequest(example.source, "html", "rev-1"),
         source: { text: example.source, name: `${example.id}.aze.md` },
       });
+      if (example.id === "tex" && !texRendererAvailable) {
+        // A deployment that has not enabled the trusted renderer must fail
+        // closed with the compiler's own diagnostic, never a silent Artifact.
+        assert.equal(compiled.job.result.ok, false);
+        assert.ok(
+          compiled.job.result.diagnostics.some((diagnostic) => diagnostic.code === "azeforge.renderer#adapter-missing"),
+          `tex without a renderer: ${compiled.job.result.diagnostics.map((diagnostic) => diagnostic.code).join(", ")}`,
+        );
+        return;
+      }
       assert.equal(compiled.job.result.ok, true);
       assert.match(compiled.job.result.semantic.contentHash, /^sha256:[0-9a-f]{64}$/);
       const download = await call(service.base, "GET", `/v1/jobs/${compiled.job.jobId}/artifact`, { raw: true });

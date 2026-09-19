@@ -31,18 +31,23 @@ export class JobExecutor {
   /** @type {number} */
   #nodeHeapMb;
 
+  /** @type {Readonly<Record<string, string>>} */
+  #workerEnv;
+
   /** @type {typeof spawn} */
   #spawn;
 
   /**
    * @param {{ workerEntry: string, nodePath?: string, graceMs: number,
-   *           nodeHeapMb: number, spawn?: typeof spawn }} options
+   *           nodeHeapMb: number, workerEnv?: Record<string, string>,
+   *           spawn?: typeof spawn }} options
    */
-  constructor({ workerEntry, nodePath = process.execPath, graceMs, nodeHeapMb, spawn: spawnImpl = spawn }) {
+  constructor({ workerEntry, nodePath = process.execPath, graceMs, nodeHeapMb, workerEnv = {}, spawn: spawnImpl = spawn }) {
     this.#workerEntry = workerEntry;
     this.#nodePath = nodePath;
     this.#graceMs = graceMs;
     this.#nodeHeapMb = nodeHeapMb;
+    this.#workerEnv = Object.freeze({ ...workerEnv });
     this.#spawn = spawnImpl;
   }
 
@@ -64,7 +69,9 @@ export class JobExecutor {
         // found again at termination (see `descendantGroups`).
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
-        env: { PATH: process.env.PATH ?? "", NODE_ENV: "production" },
+        // The worker inherits no service environment by accident: only the
+        // path it needs and the renderer configuration this deployment owns.
+        env: { PATH: process.env.PATH ?? "", NODE_ENV: "production", ...this.#workerEnv },
       },
     );
 

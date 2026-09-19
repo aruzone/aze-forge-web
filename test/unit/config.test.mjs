@@ -101,6 +101,69 @@ test("published limits are the effective configuration, with id, unit and scope"
   assert.ok(limits.every((limit) => limit.id && limit.unit && limit.scope && typeof limit.value === "number"));
 });
 
+const RENDERER_IMAGE = `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`;
+const RENDERER_IDENTITY = `sha256:${"b".repeat(64)}`;
+
+test("TeX stays disabled unless the renderer is configured as an immutable pair", () => {
+  const disabled = loadConfig(minimal);
+  assert.equal(disabled.texRendererImage, undefined);
+  assert.equal(disabled.texRenderTimeoutMs, 15_000);
+  assert.equal(publishedLimits(disabled).some((limit) => limit.id === "tex-render-timeout"), false);
+
+  const enabled = loadConfig({
+    ...minimal,
+    AZEWEB_TEX_RENDERER_IMAGE: RENDERER_IMAGE,
+    AZEWEB_TEX_RENDERER_IDENTITY: RENDERER_IDENTITY,
+  });
+  assert.equal(enabled.texRendererImage, RENDERER_IMAGE);
+  assert.equal(enabled.texRendererIdentity, RENDERER_IDENTITY);
+  assert.equal(publishedLimits(enabled).find((limit) => limit.id === "tex-render-timeout")?.value, 15_000);
+});
+
+test("half a renderer configuration is a startup error, not a runtime surprise", () => {
+  assert.throws(
+    () => loadConfig({ ...minimal, AZEWEB_TEX_RENDERER_IMAGE: RENDERER_IMAGE }),
+    (error) => error instanceof ConfigurationError && /must be supplied together/.test(error.message),
+  );
+  assert.throws(
+    () => loadConfig({ ...minimal, AZEWEB_TEX_RENDERER_IDENTITY: RENDERER_IDENTITY }),
+    ConfigurationError,
+  );
+});
+
+test("a mutable or malformed renderer reference never enables TeX", () => {
+  for (const image of ["aze-forge-tex-renderer:local", "repo/image@sha256:short", "sha256:xyz"]) {
+    assert.throws(
+      () =>
+        loadConfig({
+          ...minimal,
+          AZEWEB_TEX_RENDERER_IMAGE: image,
+          AZEWEB_TEX_RENDERER_IDENTITY: RENDERER_IDENTITY,
+        }),
+      (error) => error instanceof ConfigurationError && /immutable renderer image/.test(error.message),
+      image,
+    );
+  }
+  assert.throws(
+    () =>
+      loadConfig({
+        ...minimal,
+        AZEWEB_TEX_RENDERER_IMAGE: RENDERER_IMAGE,
+        AZEWEB_TEX_RENDERER_IDENTITY: "sha256:not-a-digest",
+      }),
+    (error) => error instanceof ConfigurationError && /release manifest/.test(error.message),
+  );
+});
+
+test("the TeX batch deadline can only be lowered", () => {
+  const rendered = { AZEWEB_TEX_RENDERER_IMAGE: RENDERER_IMAGE, AZEWEB_TEX_RENDERER_IDENTITY: RENDERER_IDENTITY };
+  assert.throws(
+    () => loadConfig({ ...minimal, ...rendered, AZEWEB_TEX_RENDER_TIMEOUT_MS: "15001" }),
+    ConfigurationError,
+  );
+  assert.equal(loadConfig({ ...minimal, ...rendered, AZEWEB_TEX_RENDER_TIMEOUT_MS: "5000" }).texRenderTimeoutMs, 5_000);
+});
+
 test("compile gets the long deadline and the Source-only operations the short one", () => {
   const config = loadConfig(minimal);
   assert.equal(deadlineForOperation(config, "compile"), config.deadlineCompileMs);

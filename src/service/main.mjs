@@ -20,6 +20,7 @@ import { runStartupChecks } from "./readiness.mjs";
 import { buildSchemaRegistry, unservableSchemaIds } from "./schemas.mjs";
 import { createService } from "./server.mjs";
 import { loadWebAssets } from "./static.mjs";
+import { texRendererEnvironment } from "./tex-renderer.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const WORKER_ENTRY = join(HERE, "worker-entry.mjs");
@@ -75,6 +76,7 @@ export async function createApplication({
     nodePath,
     graceMs: config.terminationGraceMs,
     nodeHeapMb: config.nodeHeapMb,
+    workerEnv: texRendererEnvironment(config),
   });
   const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now });
   await jobs.init();

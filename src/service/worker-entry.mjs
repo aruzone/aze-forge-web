@@ -17,6 +17,7 @@ import { readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createCompiler } from "@aruzone/aze-forge";
 import { runOperation } from "./runner.mjs";
+import { texRendererCompilerOptions } from "./tex-renderer.mjs";
 
 const [specPath, resultPath] = /** @type {[string, string]} */ (process.argv.slice(2));
 if (specPath === undefined || resultPath === undefined) {
@@ -31,7 +32,7 @@ for (const signal of ["SIGTERM", "SIGINT"]) {
 
 try {
   const spec = JSON.parse(await readFile(specPath, "utf8"));
-  const compiler = createCompiler();
+  const compiler = createCompiler(texRendererCompilerOptions(process.env));
   const result = await runOperation(compiler, spec, { signal: controller.signal });
 
   const artifactBytes = result.artifact?.bytes;

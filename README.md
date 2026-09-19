@@ -50,6 +50,7 @@ succeeds in an isolated child process.
 | Deadlines | Start at admission and include queue time. A service deadline produces `failed` with the stable `job-timeout` code, never a fabricated Source diagnostic. |
 | Artifacts | Delivered as bytes with their MIME type and byte-integrity hash, verified by the service before publication. Never base64 in JSON, never a partial Artifact. |
 | Retention | Assets, results and cache entries expire; terminal results advertise `expiresAt` and keep it — an unexpired result is never evicted. Reaching the retained-result bound refuses new work (`503`) instead of shortening an advertised lifetime. |
+| TeX | Optional and worker-only. A compile containing `tex` Blocks starts one short-lived, digest-pinned renderer instance through the compiler's batch adapter, and publishes its Artifact or the compiler's own diagnostic — never a placeholder. The request boundary cannot name the renderer, and a job without `tex` starts no instance. |
 | Logs | Metadata only. Source text, asset bytes, Artifact bytes and diagnostic messages never appear. |
 
 The frontend owns editing, examples, request scheduling and polling,
@@ -58,10 +59,10 @@ application and downloads. It does not reproduce compiler policy: what a
 diagnostic means, what may be fixed and what renders all come from the compiler.
 
 The preloaded examples are the compiler's own reference library
-(`docs/language/*.aze.md`), reused verbatim: thirteen complete Sources spanning
+(`docs/language/*.aze.md`), reused verbatim: fourteen complete Sources spanning
 every family, graded within each section from the minimal idiomatic form to the
-deepest feature the directive registers, plus the deliberately invalid
-diagnostics sampler. The library is not on the installed path — the published
+deepest feature the directive registers, plus the `tex` escape hatch and the
+deliberately invalid diagnostics sampler. The library is not on the installed
 package ships `dist`, `schemas` and its logo — so it is vendored into
 `src/web/examples.json`, and moving to a new compiler release re-runs the
 generator that produced it:
@@ -129,6 +130,8 @@ ceiling is an owner decision, not a configuration change.
 | `AZEWEB_MAX_RETAINED_JOBS` | `256` | unexpired terminal results held in memory; reaching it returns 503 rather than evicting a promised result |
 | `AZEWEB_CACHE_MAX_BYTES`, `AZEWEB_CACHE_MAX_AGE_MS` | `256 MiB`, `24 h` | completed successful results only |
 | `AZEWEB_SCRATCH_MAX_BYTES` | `2 GiB` | admission refuses with 503 when full |
+| `AZEWEB_TEX_RENDERER_IMAGE`, `AZEWEB_TEX_RENDERER_IDENTITY` | unset | the trusted TeX renderer, in the worker deployment only: an immutable image reference (`sha256:…`, optionally `repo@sha256:…`) and the SHA-256 of the sealed renderer release manifest. Both or neither; a mutable reference or a lone half is a startup error. |
+| `AZEWEB_TEX_RENDER_TIMEOUT_MS` | `15000` (= ceiling) | one TeX batch deadline; the compiler owns the ceiling, a host may only lower it |
 
 An unrecognised `AZEWEB_*` variable is a startup error: a typo must not be
 silently ignored.
@@ -220,6 +223,55 @@ docker run -d --name azeweb \
   staged container → stop the old container, start the new one. Rollback is
   redeploying the previous tag; tags are never mutated. Cache never survives
   cutover because it is on the scratch tmpfs.
+
+### The trusted TeX renderer (optional)
+
+`tex` Technical objects (the CircuitikZ, TikZ, PGFPlots, Chemfig and TikZ-CD
+profiles) render through the compiler's batch adapter: a deployment-configured,
+fixed-argv command that the *worker* runs once per compilation containing `tex`
+Blocks. It is never exposed to the browser, and the request boundary has no
+field that could name it. A deployment that does not configure it is fully
+functional — every family and both diagrams modes render — and a Source with a
+`tex` Block fails closed with the compiler's `azeforge.renderer#adapter-missing`
+diagnostic, never a placeholder figure.
+
+Enabling it needs two things, both in the worker deployment only:
+
+1. **The renderer configuration.** `AZEWEB_TEX_RENDERER_IMAGE` is the official
+   renderer repository pinned to the sealed release digest (or a bare image
+   digest), and `AZEWEB_TEX_RENDERER_IDENTITY` is the SHA-256 of that release's
+   manifest. The argv — `docker run --rm --interactive --platform linux/amd64
+   --network none --read-only --tmpfs /tmp:… --cap-drop ALL
+   --no-new-privileges --pids-limit 64 --memory 512m --cpus 1`, with the
+   identity passed only through `AZEFORGE_TEX_RENDERER_IDENTITY` — is fixed in
+   `src/service/tex-renderer.mjs`; the image is its only variable, and author
+   Source contributes neither an executable nor an argument.
+2. **The Docker socket, and nothing else.** The image bakes only the Docker CLI
+   (pinned by version and checksum); a TeX-enabled run adds
+   `-v /var/run/docker.sock:/var/run/docker.sock` and
+   `--group-add "$(stat -c '%g' /var/run/docker.sock)"`, and the renderer is a
+   short-lived sibling container with no ingress, no network, no volume, no
+   Source and no credentials. This is a second, larger deviation from the
+   envelope's hardening list than the browser's seccomp flag: a socket grants
+   root-equivalent control of the host's Docker daemon to anything that can read
+   it, so it is an owner decision recorded here, and the default deployment
+   above does not have it. Jobs without `tex` Blocks never start an instance.
+
+Readiness is fail-closed around this: an enabled renderer that cannot answer the
+batch protocol makes the whole service not-ready (503) rather than a service
+that accepts work it cannot complete, and the capabilities document reports
+`service.renderers.tex.hostEnabled`/`available` plus a generic remedy — never the
+image, the digest, a path or a container runtime detail.
+
+For development, the canonical image is usually already in the local Docker:
+point the pair at the sealed digest and manifest hash and run without the
+socket-mount ceremony the same way the compiler's own wrappers do.
+
+```bash
+AZEWEB_TEX_RENDERER_IMAGE="kkumaresan/aze-forge-tex-renderer@sha256:89386319c33f4e386289cfb4e79460a82946c255d0a344da1233e6d17a61e4e4" \
+AZEWEB_TEX_RENDERER_IDENTITY="sha256:12d8fdb40b0b8632d5049476e8ff0c61b51731e2f4ff7ddc7afe1775a930ff25" \
+npm start
+```
 
 ### Deployment acceptance smoke suite
 
@@ -424,9 +476,11 @@ log privacy — and stub the worker so they need no browser; the walkthrough's o
 steps are tested there too. The compiler tests run
 the real loop: every preloaded example validates and previews, all four formats
 produce bytes whose advertised hash matches, and an unavailable required engine
-fails with a truthful diagnostic instead of a silent fallback. The acceptance
-golden report is analyzed there too, so a document the smoke suite compiles
-cannot rot unnoticed.
+fails with a truthful diagnostic instead of a silent fallback. When the sealed
+renderer image is present locally the `tex` example is compiled through it; when
+it is not, the suite proves the deployment reports the missing renderer instead,
+so it passes on either machine. The acceptance golden report is analyzed there
+too, so a document the smoke suite compiles cannot rot unnoticed.
 
 ## Architecture
 
@@ -446,6 +500,7 @@ src/service/
   readiness.mjs       fail-closed startup validation
   capabilities.mjs    the compiler's capabilities plus this deployment's policy
   schemas.mjs         the published schema registry
+  tex-renderer.mjs    the trusted TeX renderer: fixed argv, worker env, readiness probe
 src/web/              the frontend: no build step, no runtime dependencies
 Dockerfile            the deployable image (Node LTS + pinned browser + fonts)
 docker/               the image entrypoint and the build-time browser provisioning

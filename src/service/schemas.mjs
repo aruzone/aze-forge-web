@@ -348,6 +348,23 @@ function webCapabilitiesSchema({ diagnosticSchemaId, documentSchemaIds }) {
               remoteAssets: { const: "denied" },
             },
           },
+          renderers: {
+            type: "object",
+            description:
+              "Host-side renderers this deployment configures. Coarse facts only: no image, digest, path or runtime detail.",
+            properties: {
+              tex: {
+                type: "object",
+                required: ["hostEnabled", "available", "profiles", "remedy"],
+                properties: {
+                  hostEnabled: { type: "boolean" },
+                  available: { type: "boolean" },
+                  profiles: { type: "array", items: { type: "string" } },
+                  remedy: { type: ["string", "null"] },
+                },
+              },
+            },
+          },
           limits: {
             type: "array",
             items: {

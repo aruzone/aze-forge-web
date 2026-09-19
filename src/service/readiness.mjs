@@ -13,6 +13,8 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, statfsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { probeTexRenderer, texRendererEnabled } from "./tex-renderer.mjs";
+
 const SELF_CHECK_SOURCE = [
   "---",
   "azemark: 2",
@@ -56,6 +58,15 @@ export function runStartupChecks({
     ok: browser?.availability === "available",
     detail: browser === undefined ? undefined : `${browser.name} ${browser.pinnedVersion}`,
   });
+
+  // Only a deployment that enables TeX pays for — and owes — this check: a
+  // renderer that cannot be launched makes every `tex` compile fail, so the
+  // deployment is not ready rather than a service that accepts work it cannot
+  // complete. A deployment without the renderer does not create one.
+  if (texRendererEnabled(config)) {
+    const probe = probeTexRenderer({ config, timeoutMs, spawn });
+    checks.push({ name: "tex-renderer", ok: probe.ok, detail: probe.detail });
+  }
 
   let free = -1;
   try {
