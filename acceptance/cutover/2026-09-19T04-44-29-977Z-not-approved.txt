@@ -1,0 +1,23 @@
+AzeForge Web alpha cutover
+  started     2026-09-19T04:44:29.977Z
+  image       aze-forge-web:85ff0e2 (sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c)
+  digest      aze-forge-web@sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c
+
+[1/2] deployability smoke suite
+  smoke exited 0
+
+[2/2] owner walkthrough (Checkpoint B)
+  walkthrough exited 0
+
+AzeForge Web alpha cutover result
+  smoke       9 passed, 0 failed (acceptance/cutover/smoke/2026-09-19T04-44-29-977Z/2026-09-19T04-44-30-159Z-pass.json)
+  walkthrough 5 passed, 0 failed (acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-pass.json)
+  catalog     acceptance/cutover/azeforge-acceptance-report-0.5.0.json (26 catalog clause failure(s))
+  clause catalog      not ok · 26 catalog clause failure(s)
+  clause deployability ok · 9 passed, 0 failed
+  clause walkthrough  not ok · automated steps passed; owner Approve not recorded
+  clause stagedImage  ok · sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c
+  decision    not-approved
+  reason      catalog: 26 catalog clause failure(s)
+  reason      owner: Approve is not recorded on the walkthrough entry
+  finished    2026-09-19T04:45:55.528Z (85.6s)

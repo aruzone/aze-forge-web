@@ -16,7 +16,7 @@
     "os"
   ],
   "automated": {
-    "date": "2026-09-16T09:04:04.802Z",
+    "date": "2026-09-19T04:45:27.685Z",
     "os": "darwin arm64 · node v26.8.2",
     "canonicalRuntime": {
       "os": "ubuntu",
@@ -26,20 +26,20 @@
     "containerDeviations": [
       "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
     ],
-    "compilerRelease": "0.3.3",
-    "compilerFingerprint": "sha256:9cde67ee31029e604461db331bb0fbe5aa5375398740df705abe5deae2b4e2bd",
+    "compilerRelease": "0.5.0",
+    "compilerFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
     "fixture": {
       "name": "walkthrough.aze.md",
       "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
     },
     "fixtureArtifactHashes": {
-      "html": "sha256:cd73c75341e48471c0f859535e0fac53710bafd4ff01e8d94cc743d955bf4e08",
-      "svg": "sha256:33cc065f9a8e370219badf7413dbfaace3fad18dfcf07f7e3967a46632d969ab",
-      "png": "sha256:8427e48505041d51625527b24c46dc84468de6b62e29664a25e8d89e2e3b341a",
-      "pdf": "sha256:9b9fff0805a17d12fa8a702da7e54bd9f8d9ecedcf5570103981db05e03ec059"
+      "html": "sha256:06f6220af328dd56ee233ccfd1f50592ecb5f83d85e2a9766fa3dbb4cb29e9e9",
+      "svg": "sha256:4fdf1bb7c2dc8a9c941e23a6c99f2adcfd944298b6b87edc5b62df3f4ca6cfd8",
+      "png": "sha256:455a052cb1dbf1fb70a2c8796c3ce1d447871e665049b0168f52197ebde45308",
+      "pdf": "sha256:88eea6e525b5e7b8e5da5dd1a21fd90a26e724473dc60af5d4d5205112c6f26d"
     },
     "commands": [
-      "npm run walkthrough -- --image aze-forge-web:2aa298b"
+      "npm run walkthrough -- --image aze-forge-web:85ff0e2"
     ]
   },
   "record": null

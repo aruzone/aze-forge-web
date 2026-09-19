@@ -1,0 +1,140 @@
+{
+  "schema": "azeforge.web.cutover-evidence/v1",
+  "startedAt": "2026-09-19T04:44:29.977Z",
+  "finishedAt": "2026-09-19T04:45:55.528Z",
+  "image": {
+    "reference": "aze-forge-web:85ff0e2",
+    "id": "sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c",
+    "digests": [
+      "aze-forge-web@sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c"
+    ]
+  },
+  "catalog": {
+    "report": "acceptance/cutover/azeforge-acceptance-report-0.5.0.json",
+    "ok": false,
+    "detail": "26 catalog clause failure(s)",
+    "failures": [
+      "P0-OUT-002: approved evidence matches the complete live manifest",
+      "P0-OUT-002: html/default matches the approved manifest",
+      "P0-OUT-002: svg/default matches the approved manifest",
+      "P0-OUT-002: png/default matches the approved manifest",
+      "P0-OUT-002: png/default reference PNG matches live Artifact bytes",
+      "P0-OUT-002: pdf/default matches the approved manifest",
+      "P0-OUT-002: html/academic matches the approved manifest",
+      "P0-OUT-002: svg/academic matches the approved manifest",
+      "P0-OUT-002: png/academic matches the approved manifest",
+      "P0-OUT-002: png/academic reference PNG matches live Artifact bytes",
+      "P0-OUT-002: pdf/academic matches the approved manifest",
+      "P0-OUT-002: html/dark-presentation matches the approved manifest",
+      "P0-OUT-002: svg/dark-presentation matches the approved manifest",
+      "P0-OUT-002: png/dark-presentation matches the approved manifest",
+      "P0-OUT-002: png/dark-presentation reference PNG matches live Artifact bytes",
+      "P0-OUT-002: pdf/dark-presentation matches the approved manifest",
+      "no green automated catalog entry covers mathematics: the pinned release publishes automated entries in equation/derivation",
+      "no green automated catalog entry covers plotting: the pinned release publishes automated entries in plot/chart",
+      "no green automated catalog entry covers geometry: the pinned release publishes automated entries in geometry",
+      "no green automated catalog entry covers diagrams: the pinned release publishes automated entries in diagram",
+      "no green automated catalog entry covers models: the pinned release publishes automated entries in models",
+      "no green automated catalog entry covers timing: the pinned release publishes automated entries in timing",
+      "no green automated catalog entry covers chemistry: the pinned release publishes automated entries in chemistry",
+      "no green automated catalog entry covers engineering: the pinned release publishes automated entries in engineering",
+      "no green automated catalog entry covers content: the pinned release publishes automated entries in structured-content",
+      "no green automated catalog entry covers composition: the pinned release publishes automated entries in composition"
+    ],
+    "areas": [
+      "artifact",
+      "author",
+      "cli"
+    ],
+    "manual": [
+      "circuit"
+    ],
+    "path": "acceptance/cutover/azeforge-acceptance-report-0.5.0.json",
+    "sha256": "sha256:5da5249d6d2d9e8f5cb0e0ea975c83b47e5758831fa07a25f2d91a3328e15d55"
+  },
+  "smoke": {
+    "evidence": "acceptance/cutover/smoke/2026-09-19T04-44-29-977Z/2026-09-19T04-44-30-159Z-pass.json",
+    "status": 0,
+    "passed": 9,
+    "failed": 0
+  },
+  "walkthrough": {
+    "evidence": "acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-pass.json",
+    "passed": 5,
+    "failed": 0,
+    "manualEvidence": {
+      "schema": "azeforge.acceptance-manual-evidence/v1",
+      "acceptanceId": "ALPHA-WALKTHROUGH-001",
+      "status": "pending-owner-approval",
+      "note": "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
+      "required": [
+        "participantRole",
+        "consentedIdentifier",
+        "fixtureContentHash",
+        "fixtureArtifactHashes",
+        "commands",
+        "result",
+        "unresolvedNotes",
+        "date",
+        "compilerFingerprint",
+        "os"
+      ],
+      "automated": {
+        "date": "2026-09-19T04:45:27.685Z",
+        "os": "darwin arm64 · node v26.8.2",
+        "canonicalRuntime": {
+          "os": "ubuntu",
+          "arch": "x64",
+          "node": 24
+        },
+        "containerDeviations": [
+          "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+        ],
+        "compilerRelease": "0.5.0",
+        "compilerFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+        "fixture": {
+          "name": "walkthrough.aze.md",
+          "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
+        },
+        "fixtureArtifactHashes": {
+          "html": "sha256:06f6220af328dd56ee233ccfd1f50592ecb5f83d85e2a9766fa3dbb4cb29e9e9",
+          "svg": "sha256:4fdf1bb7c2dc8a9c941e23a6c99f2adcfd944298b6b87edc5b62df3f4ca6cfd8",
+          "png": "sha256:455a052cb1dbf1fb70a2c8796c3ce1d447871e665049b0168f52197ebde45308",
+          "pdf": "sha256:88eea6e525b5e7b8e5da5dd1a21fd90a26e724473dc60af5d4d5205112c6f26d"
+        },
+        "commands": [
+          "npm run walkthrough -- --image aze-forge-web:85ff0e2"
+        ]
+      },
+      "record": null
+    }
+  },
+  "approvedDriftExceptions": [],
+  "preApprovedBaseline": {
+    "id": "azemark:2",
+    "reason": "The corpus proved azemark:1 while the alpha replaces it with azemark:2; the single reviewed canonical-host re-baseline is pre-approved by aruzone/aze-forge#53 §3."
+  },
+  "decision": "not-approved",
+  "clauses": {
+    "catalog": {
+      "ok": false,
+      "detail": "26 catalog clause failure(s)"
+    },
+    "deployability": {
+      "ok": true,
+      "detail": "9 passed, 0 failed"
+    },
+    "walkthrough": {
+      "ok": false,
+      "detail": "automated steps passed; owner Approve not recorded"
+    },
+    "stagedImage": {
+      "ok": true,
+      "detail": "sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c"
+    }
+  },
+  "reasons": [
+    "catalog: 26 catalog clause failure(s)",
+    "owner: Approve is not recorded on the walkthrough entry"
+  ]
+}

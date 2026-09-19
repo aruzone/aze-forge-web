@@ -1,0 +1,702 @@
+{
+  "schema": "azeforge.acceptance-report/v1",
+  "failures": 16,
+  "results": [
+    {
+      "id": "P0-CLI-007",
+      "name": "canonical catalog matches the source of truth",
+      "pass": true,
+      "detail": "azeforge.acceptance/v1 with 65 entries"
+    },
+    {
+      "id": "P0-CLI-007",
+      "name": "catalog covers every required P0 contract",
+      "pass": true,
+      "detail": "51 P0 entries"
+    },
+    {
+      "id": "P0-CLI-007",
+      "name": "catalog IDs are unique",
+      "pass": true,
+      "detail": "65 unique IDs"
+    },
+    {
+      "id": "P0-CLI-007",
+      "name": "coverage rejects missing and unknown IDs",
+      "pass": true,
+      "detail": "51 automated P0 IDs"
+    },
+    {
+      "id": "P0-CLI-007",
+      "name": "coverage rejects unknown IDs",
+      "pass": true,
+      "detail": "P0-NOPE-000"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/default manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.html.self-contained/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/default carries every semantic object",
+      "pass": true,
+      "detail": "h1,h2,equations,table,mermaid,link,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/default mismatch always fails",
+      "pass": true,
+      "detail": "tampered id detected"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/default manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.svg.foreign-object/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "svg/default carries every semantic object",
+      "pass": true,
+      "detail": "equations,mermaid,table,plot,chart,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/default manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.png.continuous/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/default uses the exact sRGB profile",
+      "pass": true,
+      "detail": "IHDR,sRGB,IDAT,IEND"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/default matches theme dimensions",
+      "pass": true,
+      "detail": "1920px"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/default manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.pdf.paged/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "pdf/default carries title, authors, links, bookmarks, geometry, page text, and every timing, diagram, model and engineering figure",
+      "pass": true,
+      "detail": "8 pages"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/academic manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.html.self-contained/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/academic carries every semantic object",
+      "pass": true,
+      "detail": "h1,h2,equations,table,mermaid,link,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/academic mismatch always fails",
+      "pass": true,
+      "detail": "tampered id detected"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/academic manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.svg.foreign-object/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "svg/academic carries every semantic object",
+      "pass": true,
+      "detail": "equations,mermaid,table,plot,chart,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/academic manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.png.continuous/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/academic uses the exact sRGB profile",
+      "pass": true,
+      "detail": "IHDR,sRGB,IDAT,IEND"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/academic matches theme dimensions",
+      "pass": true,
+      "detail": "1760px"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/academic manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.pdf.paged/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "pdf/academic carries title, authors, links, bookmarks, geometry, page text, and every timing, diagram, model and engineering figure",
+      "pass": true,
+      "detail": "8 pages"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/dark-presentation manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.html.self-contained/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/dark-presentation carries every semantic object",
+      "pass": true,
+      "detail": "h1,h2,equations,table,mermaid,link,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "html/dark-presentation mismatch always fails",
+      "pass": true,
+      "detail": "tampered id detected"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/dark-presentation manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.svg.foreign-object/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "svg/dark-presentation carries every semantic object",
+      "pass": true,
+      "detail": "equations,mermaid,table,plot,chart,timing,diagram,models,engineering"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/dark-presentation manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.png.continuous/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/dark-presentation uses the exact sRGB profile",
+      "pass": true,
+      "detail": "IHDR,sRGB,IDAT,IEND"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "png/dark-presentation matches theme dimensions",
+      "pass": true,
+      "detail": "2560px"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/dark-presentation manifest is truthful",
+      "pass": true,
+      "detail": "azeforge.pdf.paged/v1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "pdf/dark-presentation carries title, authors, links, bookmarks, geometry, page text, and every timing, diagram, model and engineering figure",
+      "pass": true,
+      "detail": "8 pages"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/default same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:4a196addbe4067e7d52173dbb1d91b657315af417b2c0571ba9204da65c6b530"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/default same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "891511 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/academic same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:0e9142c31e7b5081cfada6316618d1593aab0cb033c64d4a40b92d35fcaaa164"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/academic same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "891788 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/dark-presentation same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:935fc3618878a1cafec3d0a0c742a2539c10165e890278d1931e81430577271f"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "html/dark-presentation same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "891897 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "svg/default same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:e38211db0a5fc676aaa487f9309fefc9318a3465f7487c098e609e0e315b2573"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "svg/default same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "892619 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "png/default same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:c88d18154e1e0206fbc36ad246715b89519f9986319ab87b445309b8a59e83b5"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "png/default same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "1048134 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "png visual evidence is pixel-identical within approved bounds",
+      "pass": true,
+      "detail": "ssim=1"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "pdf/default same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:9347e27d55ef4332ba55951d0edc3c1058bf8f0dff7e55e70621a334f3a8cb8a"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "pdf/default same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "168803 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "table-split.aze.md same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:a033f37990d1b37544b8786287e83ec7f8b8408d2f53817bff935dbcd9411feb"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "table-split.aze.md same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "57195 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "code-split.aze.md same-fingerprint builds share every identity",
+      "pass": true,
+      "detail": "sha256:b2aabbae46217b38d986c002bdf178ed478549a5e3de13d713f4b54b551a8493"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "code-split.aze.md same-fingerprint bytes are equal",
+      "pass": true,
+      "detail": "10877 bytes"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "trivia-only edits preserve content identity",
+      "pass": true,
+      "detail": "sha256:aeec493d8701b61c7fff8136a9d56b88b53850b39db2922a0c65dcd06ea85ddc"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "trivia-only edits preserve artifact identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "path moves preserve content identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "path moves preserve artifact identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "semantic edits change content identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "semantic edits change artifact identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "theme changes preserve content identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "theme changes change artifact identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "used-asset bytes change the manifest identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "used-asset bytes preserve content identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "renderer fingerprint is stable and versioned",
+      "pass": true,
+      "detail": "sha256:746c7583"
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "theme changes change the renderer configuration identity",
+      "pass": true,
+      "detail": "theme is a fingerprinted render option"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "keep-next.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "keep-next.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "keep-next.aze.md every page carries content",
+      "pass": true,
+      "detail": "32 streams over 1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "widows.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "widows.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "widows.aze.md every page carries content",
+      "pass": true,
+      "detail": "27 streams over 1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "table-split.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "table-split.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998,0x0x594.95996x841.91998,0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "table-split.aze.md every page carries content",
+      "pass": true,
+      "detail": "109 streams over 3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "code-split.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "code-split.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998,0x0x594.95996x841.91998,0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "code-split.aze.md every page carries content",
+      "pass": true,
+      "detail": "35 streams over 3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "atomic-scale.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "atomic-scale.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "atomic-scale.aze.md every page carries content",
+      "pass": true,
+      "detail": "43 streams over 1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "long-callout-split.aze.md splits or keeps as specified",
+      "pass": true,
+      "detail": "3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "long-callout-split.aze.md page boxes are finite and within bounds",
+      "pass": true,
+      "detail": "0x0x594.95996x841.91998,0x0x594.95996x841.91998,0x0x594.95996x841.91998"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "long-callout-split.aze.md every page carries content",
+      "pass": true,
+      "detail": "85 streams over 3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "oversize atomic content errors instead of clipping",
+      "pass": true,
+      "detail": "exit=1"
+    },
+    {
+      "id": "P0-CLI-001",
+      "name": "oversize failure commits no Artifact",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "unchanged report validates",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "equation and table edits change content identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "equation and table edits change artifact identity",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "edited report keeps every presence check",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "missing dx fails validation",
+      "pass": true,
+      "detail": "exit=1"
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "missing dx diagnoses the stable line-specific code",
+      "pass": true,
+      "detail": "azeforge.equation#missing-integration-variable"
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "failure commits no Artifact",
+      "pass": true,
+      "detail": "exit=1"
+    },
+    {
+      "id": "P0-AUTHOR-001",
+      "name": "restoration passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "P0-OUT-004",
+      "name": "repeat png passes the approved pixel and SSIM bounds",
+      "pass": true,
+      "detail": "changed=0 ssim=1"
+    },
+    {
+      "id": "P0-OUT-001",
+      "name": "structural semantic mismatches always fail the visual bound",
+      "pass": true,
+      "detail": "changed=0.0001 ssim=0.9988"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "approved evidence matches the complete live manifest",
+      "pass": false,
+      "detail": "committed manifest fields differ"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/default matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/default matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/default matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/default reference PNG matches live Artifact bytes",
+      "pass": false,
+      "detail": "changed=1.0000 maxDelta=255 ssim=0.0000 1920x2940"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/default matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/academic matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/academic matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/academic matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/academic reference PNG matches live Artifact bytes",
+      "pass": false,
+      "detail": "changed=1.0000 maxDelta=255 ssim=0.0000 1760x2994"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/academic matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "html/dark-presentation matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "svg/dark-presentation matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/dark-presentation matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "png/dark-presentation reference PNG matches live Artifact bytes",
+      "pass": false,
+      "detail": "changed=1.0000 maxDelta=255 ssim=0.0000 2560x2996"
+    },
+    {
+      "id": "P0-OUT-002",
+      "name": "pdf/dark-presentation matches the approved manifest",
+      "pass": false,
+      "detail": "mismatched fields: contentHash, rendererFingerprint, artifactHash, byteLength"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "keep-next.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "widows.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "table-split.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "code-split.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "3 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "atomic-scale.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "1 pages"
+    },
+    {
+      "id": "P0-OUT-003",
+      "name": "long-callout-split.aze.md matches the approved pagination",
+      "pass": true,
+      "detail": "3 pages"
+    }
+  ]
+}

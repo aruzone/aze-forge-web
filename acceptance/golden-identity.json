@@ -1,9 +1,9 @@
 {
   "schema": "azeforge.web.golden-identity/v1",
-  "recordedAt": "2026-09-16T09:03:59.421Z",
-  "image": "sha256:3f49f4b664f8b47f1f6911819d5033afce4e48ea21f1d1eb86a7130db9dffd2a",
-  "compilerRelease": "0.3.3",
-  "capabilityFingerprint": "sha256:9cde67ee31029e604461db331bb0fbe5aa5375398740df705abe5deae2b4e2bd",
+  "recordedAt": "2026-09-19T04:43:27.454Z",
+  "image": "sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c",
+  "compilerRelease": "0.5.0",
+  "capabilityFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
   "entries": {
     "golden-report.aze.md": {
       "source": "golden-report.aze.md",

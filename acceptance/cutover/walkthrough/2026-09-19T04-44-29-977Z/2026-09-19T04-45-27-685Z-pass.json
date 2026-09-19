@@ -1,0 +1,471 @@
+{
+  "schema": "azeforge.web.walkthrough-evidence/v1",
+  "startedAt": "2026-09-19T04:45:27.685Z",
+  "finishedAt": "2026-09-19T04:45:55.202Z",
+  "image": {
+    "reference": "aze-forge-web:85ff0e2",
+    "id": "sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c",
+    "digests": [
+      "aze-forge-web@sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c"
+    ]
+  },
+  "target": {
+    "base": "http://127.0.0.1:51217",
+    "container": "azeweb-walkthrough-58385"
+  },
+  "pins": {
+    "compiler": "0.5.0",
+    "browser": "152.0.7977.75",
+    "capabilityFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee"
+  },
+  "containerFlags": [
+    "--read-only",
+    "--tmpfs",
+    "/scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777",
+    "--tmpfs",
+    "/tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777",
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--security-opt",
+    "seccomp=unconfined",
+    "--memory",
+    "6g",
+    "--memory-swap",
+    "6g",
+    "--pids-limit",
+    "512"
+  ],
+  "containerDeviations": [
+    "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+  ],
+  "sources": {
+    "walkthrough": "acceptance/walkthrough.aze.md",
+    "goldens": [
+      "acceptance/golden-report.aze.md"
+    ]
+  },
+  "outDir": "acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-artifacts",
+  "passed": 5,
+  "failed": 0,
+  "steps": [
+    {
+      "id": "capabilities",
+      "title": "Capabilities: the exact build, the three Themes and the four exports",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "compiler 0.5.0 · fingerprint sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+        "themes academic, dark-presentation, default",
+        "formats html, svg, png, pdf",
+        "canonical runtime ubuntu/x64 · node 24"
+      ]
+    },
+    {
+      "id": "source",
+      "title": "The representative Source: live diagnostics and ten-family coverage",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "diagnostics: 0 (0 warning(s), no errors)",
+        "covered mathematics: equation, derivation",
+        "covered plotting: plot, chart",
+        "covered geometry: geometry",
+        "covered diagrams: diagram",
+        "covered models: sequence, state, entity, class",
+        "covered circuit: circuit",
+        "covered timing: timing",
+        "covered chemistry: formula, reaction, structure",
+        "covered engineering: control, free-body",
+        "covered content: table, algorithm, statement, example",
+        "covered composition: figure, bibliography"
+      ]
+    },
+    {
+      "id": "themes",
+      "title": "Theme toggle: one semantic identity, three layouts",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "academic: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:f1d1802d7e83147…",
+        "dark-presentation: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:1c42016f442d18d…",
+        "default: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:06f6220af328dd5…"
+      ]
+    },
+    {
+      "id": "exports",
+      "title": "Export: HTML, SVG, PNG and PDF from one Document",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "html: 820786 bytes, text/html; charset=utf-8, sha256:06f6220af328dd5… verified",
+        "svg: 821897 bytes, image/svg+xml, sha256:4fdf1bb7c2dc8a9… verified",
+        "png: 1418399 bytes, image/png, sha256:455a052cb1dbf1f… verified",
+        "pdf: 269879 bytes, application/pdf, sha256:88eea6e525b5e7b… verified",
+        "contentHash identical across all four exports: sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
+      ]
+    },
+    {
+      "id": "golden",
+      "title": "Golden spot-check: a re-render is byte-identical and matches the recording",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "golden-report.aze.md: two renders byte-identical at sha256:9992a1f795a6e9a…",
+        "golden-report.aze.md: matches the identity recorded on sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c at sha256:9992a1f795a6e9a…"
+      ]
+    }
+  ],
+  "findings": {
+    "capabilities": {
+      "release": "0.5.0",
+      "fingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+      "themes": [
+        {
+          "id": "academic",
+          "title": "Academic"
+        },
+        {
+          "id": "dark-presentation",
+          "title": "Dark Presentation"
+        },
+        {
+          "id": "default",
+          "title": "Default"
+        }
+      ],
+      "formats": [
+        "html",
+        "svg",
+        "png",
+        "pdf"
+      ],
+      "runtime": {
+        "os": "ubuntu",
+        "arch": "x64",
+        "node": 24
+      }
+    },
+    "source": {
+      "name": "walkthrough.aze.md",
+      "diagnostics": [],
+      "kinds": [
+        "equation",
+        "derivation",
+        "plot",
+        "chart",
+        "geometry",
+        "diagram",
+        "sequence",
+        "state",
+        "entity",
+        "class",
+        "circuit",
+        "timing",
+        "formula",
+        "reaction",
+        "structure",
+        "control",
+        "free-body",
+        "table",
+        "algorithm",
+        "statement",
+        "example",
+        "figure",
+        "bibliography"
+      ],
+      "coverage": [
+        {
+          "id": "mathematics",
+          "title": "Native mathematics",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "equation",
+              "present": true
+            },
+            {
+              "kind": "derivation",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "plotting",
+          "title": "Native plots and data charts",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "plot",
+              "present": true
+            },
+            {
+              "kind": "chart",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "geometry",
+          "title": "Native geometry constructions and measurements",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "geometry",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "diagrams",
+          "title": "Native general diagrams",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "diagram",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "models",
+          "title": "Native software and data models",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "sequence",
+              "present": true
+            },
+            {
+              "kind": "state",
+              "present": true
+            },
+            {
+              "kind": "entity",
+              "present": true
+            },
+            {
+              "kind": "class",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "circuit",
+          "title": "Native analog and digital circuits",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "circuit",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "timing",
+          "title": "Native digital timing",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "timing",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "chemistry",
+          "title": "Native chemistry",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "formula",
+              "present": true
+            },
+            {
+              "kind": "reaction",
+              "present": true
+            },
+            {
+              "kind": "structure",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "engineering",
+          "title": "Native control and free-body diagrams",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "control",
+              "present": true
+            },
+            {
+              "kind": "free-body",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "content",
+          "title": "Native structured content",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "table",
+              "present": true
+            },
+            {
+              "kind": "algorithm",
+              "present": true
+            },
+            {
+              "kind": "statement",
+              "present": true
+            },
+            {
+              "kind": "example",
+              "present": true
+            }
+          ]
+        },
+        {
+          "id": "composition",
+          "title": "Document composition, references and citations",
+          "covered": true,
+          "kinds": [
+            {
+              "kind": "figure",
+              "present": true
+            },
+            {
+              "kind": "bibliography",
+              "present": true
+            }
+          ]
+        }
+      ]
+    },
+    "themes": [
+      {
+        "id": "academic",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "artifactHash": "sha256:f1d1802d7e831475dfdbd16559d163b535615b87f60b8b292ee968b27172f76e",
+        "byteLength": 820875
+      },
+      {
+        "id": "dark-presentation",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "artifactHash": "sha256:1c42016f442d18dbb0452ddf42f639e239889901f60bed0246906db519b96eae",
+        "byteLength": 820441
+      },
+      {
+        "id": "default",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "artifactHash": "sha256:06f6220af328dd56ee233ccfd1f50592ecb5f83d85e2a9766fa3dbb4cb29e9e9",
+        "byteLength": 820786
+      }
+    ],
+    "formats": [
+      {
+        "format": "html",
+        "mimeType": "text/html; charset=utf-8",
+        "byteLength": 820786,
+        "artifactHash": "sha256:06f6220af328dd56ee233ccfd1f50592ecb5f83d85e2a9766fa3dbb4cb29e9e9",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "path": "/Users/kumaresan/Work/Sources/aze-forge-web/acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-artifacts/walkthrough.html"
+      },
+      {
+        "format": "svg",
+        "mimeType": "image/svg+xml",
+        "byteLength": 821897,
+        "artifactHash": "sha256:4fdf1bb7c2dc8a9c941e23a6c99f2adcfd944298b6b87edc5b62df3f4ca6cfd8",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "path": "/Users/kumaresan/Work/Sources/aze-forge-web/acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-artifacts/walkthrough.svg"
+      },
+      {
+        "format": "png",
+        "mimeType": "image/png",
+        "byteLength": 1418399,
+        "artifactHash": "sha256:455a052cb1dbf1fb70a2c8796c3ce1d447871e665049b0168f52197ebde45308",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "path": "/Users/kumaresan/Work/Sources/aze-forge-web/acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-artifacts/walkthrough.png"
+      },
+      {
+        "format": "pdf",
+        "mimeType": "application/pdf",
+        "byteLength": 269879,
+        "artifactHash": "sha256:88eea6e525b5e7b8e5da5dd1a21fd90a26e724473dc60af5d4d5205112c6f26d",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8",
+        "path": "/Users/kumaresan/Work/Sources/aze-forge-web/acceptance/cutover/walkthrough/2026-09-19T04-44-29-977Z/2026-09-19T04-45-27-685Z-artifacts/walkthrough.pdf"
+      }
+    ],
+    "determinism": [
+      {
+        "source": "golden-report.aze.md",
+        "format": "html",
+        "contentHash": "sha256:1456a20fab919ced7377909ae71600f2b4bc3062566ff76d794e276a98de2299",
+        "artifactHash": "sha256:9992a1f795a6e9a70b5c7d3c6c6e51a54ecce1a9cf2600b30a79c7b9bc202720",
+        "byteLength": 812893
+      },
+      {
+        "source": "golden-report.aze.md",
+        "format": "html",
+        "contentHash": "sha256:1456a20fab919ced7377909ae71600f2b4bc3062566ff76d794e276a98de2299",
+        "artifactHash": "sha256:9992a1f795a6e9a70b5c7d3c6c6e51a54ecce1a9cf2600b30a79c7b9bc202720",
+        "byteLength": 812893
+      }
+    ],
+    "fixture": {
+      "name": "walkthrough.aze.md",
+      "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
+    }
+  },
+  "manualEvidence": {
+    "schema": "azeforge.acceptance-manual-evidence/v1",
+    "acceptanceId": "ALPHA-WALKTHROUGH-001",
+    "status": "pending-owner-approval",
+    "note": "One scripted owner pass over the deployed alpha: a Source spanning all ten native capability families plus composition, live diagnostics, the three Themes, HTML/SVG/PNG/PDF exports, and a re-render spot-check of the golden report. The owner performs the same pass in the browser and records the binary decision.",
+    "required": [
+      "participantRole",
+      "consentedIdentifier",
+      "fixtureContentHash",
+      "fixtureArtifactHashes",
+      "commands",
+      "result",
+      "unresolvedNotes",
+      "date",
+      "compilerFingerprint",
+      "os"
+    ],
+    "automated": {
+      "date": "2026-09-19T04:45:27.685Z",
+      "os": "darwin arm64 · node v26.8.2",
+      "canonicalRuntime": {
+        "os": "ubuntu",
+        "arch": "x64",
+        "node": 24
+      },
+      "containerDeviations": [
+        "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+      ],
+      "compilerRelease": "0.5.0",
+      "compilerFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+      "fixture": {
+        "name": "walkthrough.aze.md",
+        "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
+      },
+      "fixtureArtifactHashes": {
+        "html": "sha256:06f6220af328dd56ee233ccfd1f50592ecb5f83d85e2a9766fa3dbb4cb29e9e9",
+        "svg": "sha256:4fdf1bb7c2dc8a9c941e23a6c99f2adcfd944298b6b87edc5b62df3f4ca6cfd8",
+        "png": "sha256:455a052cb1dbf1fb70a2c8796c3ce1d447871e665049b0168f52197ebde45308",
+        "pdf": "sha256:88eea6e525b5e7b8e5da5dd1a21fd90a26e724473dc60af5d4d5205112c6f26d"
+      },
+      "commands": [
+        "npm run walkthrough -- --image aze-forge-web:85ff0e2"
+      ]
+    },
+    "record": null
+  }
+}

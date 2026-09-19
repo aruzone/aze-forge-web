@@ -1,0 +1,173 @@
+{
+  "schema": "azeforge.web.smoke-evidence/v1",
+  "startedAt": "2026-09-19T04:44:30.159Z",
+  "finishedAt": "2026-09-19T04:45:26.934Z",
+  "image": {
+    "reference": "aze-forge-web:85ff0e2",
+    "id": "sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c",
+    "digests": [
+      "aze-forge-web@sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c"
+    ]
+  },
+  "target": {
+    "base": "http://127.0.0.1:51180",
+    "probeBase": "http://127.0.0.1:51181",
+    "container": "azeweb-smoke-57062-a",
+    "probeContainer": "azeweb-smoke-57062-b"
+  },
+  "pins": {
+    "compiler": "0.5.0",
+    "browser": "152.0.7977.75"
+  },
+  "wedgeDiagrams": 100,
+  "containerFlags": [
+    "--read-only",
+    "--tmpfs",
+    "/scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777",
+    "--tmpfs",
+    "/tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777",
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "--security-opt",
+    "seccomp=unconfined",
+    "--memory",
+    "6g",
+    "--memory-swap",
+    "6g",
+    "--pids-limit",
+    "512"
+  ],
+  "containerDeviations": [
+    "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
+  ],
+  "runCommands": [
+    "run -d --name azeweb-smoke-57062-a --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -p 127.0.0.1:51180:8080 aze-forge-web:85ff0e2",
+    "run -d --name azeweb-smoke-57062-b --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -e AZEWEB_DEADLINE_COMPILE_MS=5000 -e AZEWEB_RESULT_TTL_MS=1000 -p 127.0.0.1:51181:8080 aze-forge-web:85ff0e2"
+  ],
+  "passed": 9,
+  "failed": 0,
+  "checks": [
+    {
+      "id": "token-401",
+      "title": "Access boundary",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "/healthz without a token → 200 ok",
+        "/readyz without a token → 200 ready",
+        "/v1/capabilities without a token → 401 unauthorized",
+        "/v1/capabilities with a wrong token → 401 unauthorized",
+        "/v1/capabilities with the deployment token → 200"
+      ]
+    },
+    {
+      "id": "capabilities",
+      "title": "Capabilities, policy and effective limits",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "compiler release 0.5.0",
+        "capability fingerprint sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+        "chrome-headless-shell 152.0.7977.75 available",
+        "policy rawMath=unavailable rawHtml=denied remoteAssets=denied persistence=none accounts=false",
+        "formats html, svg, png, pdf",
+        "all 19 advertised limits are within their built-in alpha ceilings",
+        "deadlines compile=300000ms analyze=60000ms grace=5000ms result-retention=3600000ms"
+      ]
+    },
+    {
+      "id": "golden-report",
+      "title": "Golden report: analyze, compile to four formats, verify every hash",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "analyze → valid, contentHash not computed",
+        "html: 812893 bytes, sha256:9992a1f795a6e9a… verified",
+        "svg: 814001 bytes, sha256:7690bd73043baa2… verified",
+        "png: 320852 bytes, sha256:7634013718d7efe… verified",
+        "pdf: 61633 bytes, sha256:cbb0e08dee85a0c… verified",
+        "contentHash identical across all four formats: sha256:1456a20fab919ced7377909ae71600f2b4bc3062566ff76d794e276a98de2299"
+      ]
+    },
+    {
+      "id": "asset-roundtrip",
+      "title": "Asset upload, job binding, render, handle revocation",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "uploaded 717 bytes as image/svg+xml → handle fd32bf47-7120-490d-a7c6-c60109e2bff4",
+        "job bound figure.svg → Artifact 698384 bytes, asset manifest sha256:864c2251e231194…",
+        "DELETE /v1/assets/fd32bf47-7120-490d-a7c6-c60109e2bff4 → 204",
+        "binding the revoked handle → 404 not-found"
+      ]
+    },
+    {
+      "id": "cancel",
+      "title": "Cancellation of a running job",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "admitted wedge compile c6c5665b-2e19-4a40-a7c3-6c7f4502d84a (100 diagrams)",
+        "observed 4 browser process(es) before cancelling: 688, 692, 693, 695",
+        "POST /v1/jobs/c6c5665b-2e19-4a40-a7c3-6c7f4502d84a/cancel → cancelling",
+        "cancelled job c6c5665b-2e19-4a40-a7c3-6c7f4502d84a: terminal state cancelled, Artifact 404"
+      ]
+    },
+    {
+      "id": "limits",
+      "title": "Size ceilings, admission limits and retention expiry",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "asset upload of 33554433 bytes (ceiling 33554432) → 413",
+        "Source of 1048577 bytes (ceiling 1048576) → 413",
+        "admitted 10 jobs (2 running, 8 queued), the 11th → 429 queue-depth retry-after=1s",
+        "cancelled the 10 admitted flood jobs",
+        "Artifact read 0.8s after its advertised expiry (retention 1000 ms) → 404 not-found"
+      ]
+    },
+    {
+      "id": "deadline-kill",
+      "title": "Deadline kill with no orphaned browser",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "probe compile deadline 5000 ms, termination grace 5000 ms",
+        "browser processes before the wedge: 0",
+        "admitted wedge compile 117d542e-d026-444e-b5d1-d37186b9ae2f (100 diagrams)",
+        "observed peak 7 browser process(es) and 1 worker process(es) while running",
+        "terminated failed job-timeout (deadlineMs=5000)",
+        "after termination plus grace: 0 browser processes, 0 worker processes"
+      ]
+    },
+    {
+      "id": "privacy-canary",
+      "title": "Privacy: no Source text or token in the container logs",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "canary job completed with diagnostics: azeforge.source#unknown-directive",
+        "canary (which must never appear in a log line): azeweb-canary-aa9f8b04b551d72772bb06a4",
+        "261 log lines inspected: neither the canary nor the token appears"
+      ]
+    },
+    {
+      "id": "image-manifest",
+      "title": "Image dependency manifest",
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "base node:24.21.0-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+        "compiler @aruzone/aze-forge@0.5.0 sha512-57A+mn7bwuuacrwrC…",
+        "browser chrome-headless-shell 152.0.7977.75 sha256:6e81bf177c886f8…",
+        "browser archive chrome-headless-shell-linux64 (runtime linux-x64)",
+        "docker cli 29.7.2 sha256:803d433f226db47…",
+        "fonts inter@5.3.0 jetbrains-mono@5.2.8",
+        "runtime node v24.21.0 (linux-x64)",
+        "149 resolved dependencies, all exact pins"
+      ]
+    }
+  ]
+}
