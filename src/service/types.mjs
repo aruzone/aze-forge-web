@@ -77,6 +77,7 @@
  * @property {string | null} format
  * @property {string | null} theme
  * @property {string | null} fingerprint
+ * @property {boolean} requiresTexRenderer
  * @property {JobState} state
  * @property {boolean | null} ok
  * @property {AzeJobResult | null} result

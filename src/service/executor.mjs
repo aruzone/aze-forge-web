@@ -68,7 +68,7 @@ export class JobExecutor {
    * @param {{ specPath: string, resultPath: string, cwd: string, rendererContainerName?: string,
    *           onSettled: (outcome: { code: number | null, signal: NodeJS.Signals | null }) => void,
    *           onOutput?: (channel: "stdout" | "stderr", text: string) => void }} input
-   * @returns {{ pid: number | undefined, kill: () => void, cleanup: () => void }}
+   * @returns {{ pid: number | undefined, kill: () => void, cleanup: () => boolean }}
    */
   start({ specPath, resultPath, cwd, rendererContainerName, onSettled, onOutput }) {
     const child = this.#spawn(
@@ -119,17 +119,31 @@ export class JobExecutor {
     };
   }
 
-  /** @param {string | undefined} rendererContainerName */
+  /** @param {string | undefined} rendererContainerName @returns {boolean} */
   #removeRenderer(rendererContainerName) {
-    if (rendererContainerName === undefined) return;
+    if (rendererContainerName === undefined) return true;
     try {
-      this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["rm", "--force", rendererContainerName], {
+      const removed = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["rm", "--force", rendererContainerName], {
         stdio: "ignore",
         timeout: this.#graceMs,
       });
+      if (removed.error === undefined && removed.status === 0) return true;
+
+      // A TeX Source can fail validation before the compiler starts Docker. A
+      // missing named container is safe only while the daemon still answers,
+      // which distinguishes it from a failed Docker transport.
+      const inspected = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["container", "inspect", rendererContainerName], {
+        stdio: "ignore",
+        timeout: this.#graceMs,
+      });
+      if (inspected.error !== undefined || inspected.status === 0) return false;
+      const daemon = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["info"], {
+        stdio: "ignore",
+        timeout: this.#graceMs,
+      });
+      return daemon.error === undefined && daemon.status === 0;
     } catch {
-      // The job's terminal state must not depend on Docker reporting that a
-      // container already exited and removed itself.
+      return false;
     }
   }
 

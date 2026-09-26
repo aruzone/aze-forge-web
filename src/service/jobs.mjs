@@ -71,7 +71,7 @@ export class JobManager {
   /** @type {Set<string>} */
   #running = new Set();
 
-  /** @type {Map<string, { pid?: number, kill: () => void, cleanup: () => void }>} */
+  /** @type {Map<string, { pid?: number, kill: () => void, cleanup: () => boolean }>} */
   #handles = new Map();
 
   /** @type {Map<string, NodeJS.Timeout>} */
@@ -124,7 +124,9 @@ export class JobManager {
    * @returns {Promise<import("./types.mjs").JobRecord>}
    */
   async submit({ contextId, spec }) {
-    if (spec.operation === "compile" && texRendererEnabled(this.#config) && sourceHasTexBlock(spec.source.text)) {
+    const requiresTexRenderer =
+      spec.operation === "compile" && texRendererEnabled(this.#config) && sourceHasTexBlock(spec.source.text);
+    if (requiresTexRenderer) {
       const renderer = this.#rendererProbe({ config: this.#config });
       if (!renderer.ok) {
         throw new ServiceError(
@@ -170,6 +172,7 @@ export class JobManager {
       format: spec.format ?? null,
       theme: spec.theme ?? null,
       fingerprint: null,
+      requiresTexRenderer,
       state: JOB_STATES.queued,
       ok: null,
       result: null,
@@ -408,8 +411,21 @@ export class JobManager {
 
     const specPath = join(job.jobDir, "spec.json");
     const resultPath = join(job.jobDir, "result.json");
-    const rendererContainerName =
-      job.operation === "compile" && texRendererEnabled(this.#config) ? `azeweb-tex-${job.jobId}` : null;
+    const rendererContainerName = job.requiresTexRenderer ? `azeweb-tex-${job.jobId}` : null;
+    if (job.requiresTexRenderer && !this.#rendererProbe({ config: this.#config }).ok) {
+      this.#running.delete(job.jobId);
+      this.#terminalize(
+        job,
+        JOB_STATES.failed,
+        serviceFailure(ERROR_CODES.serviceUnavailable, "The trusted TeX renderer is temporarily unavailable.", {}),
+      );
+      this.#log.warn("renderer-unavailable-before-dispatch", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+      });
+      this.#pump();
+      return;
+    }
     try {
       await writeFile(
         specPath,
@@ -463,11 +479,26 @@ export class JobManager {
     job.settled = true;
 
     this.#clearDeadline(job.jobId);
-    this.#handles.get(job.jobId)?.cleanup();
+    const cleanedUp = this.#handles.get(job.jobId)?.cleanup() ?? true;
     this.#handles.delete(job.jobId);
     this.#running.delete(job.jobId);
 
     const durationMs = this.#now() - startedAt;
+    if (!cleanedUp) {
+      this.#terminalize(
+        job,
+        JOB_STATES.failed,
+        serviceFailure(ERROR_CODES.jobFailed, "The job could not be cleaned up safely.", {}),
+      );
+      this.#log.error("job-cleanup-failed", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        durationMs,
+      });
+      this.#pump();
+      return;
+    }
+
 
     if (job.state === JOB_STATES.cancelling) {
       this.#terminalize(job, JOB_STATES.cancelled);

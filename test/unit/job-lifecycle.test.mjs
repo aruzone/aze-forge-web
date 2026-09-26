@@ -29,6 +29,7 @@ class FakeExecutor {
   runs = [];
   kills = 0;
   cleanups = 0;
+  cleanupOk = true;
 
   start(input) {
     this.runs.push(input);
@@ -39,6 +40,7 @@ class FakeExecutor {
       },
       cleanup: () => {
         this.cleanups += 1;
+        return this.cleanupOk;
       },
     };
   }
@@ -50,7 +52,7 @@ class FakeExecutor {
   }
 }
 
-async function harness(env = {}) {
+async function harness(env = {}, rendererProbe = () => ({ ok: true })) {
   const scratchDir = await mkdtemp(join(tmpdir(), "azeweb-lifecycle-"));
   const config = loadConfig({
     AZEWEB_ACCESS_TOKEN: TOKEN,
@@ -78,6 +80,7 @@ async function harness(env = {}) {
     executor,
     compilerFacts: fakeCompilerFacts(),
     log: createLogger({ stream: { write: () => true } }),
+    rendererProbe,
   });
   await jobs.init();
   return {
@@ -102,6 +105,24 @@ function submitAnalyze(jobs, revision = "rev-1", text = "STUB\n") {
       requestId: `request-${revision}`,
       revision,
       source: { text, name: "document.aze.md" },
+      includeDocument: false,
+    },
+  });
+}
+
+function submitTexCompile(jobs, revision = "rev-tex") {
+  return jobs.submit({
+    contextId: CONTEXT,
+    spec: {
+      protocolVersion: 1,
+      operation: "compile",
+      requestId: `request-${revision}`,
+      revision,
+      source: {
+        text: "---\nazemark: 2\n---\n\n:::: tex\nid: line\ntitle: Line\ndescription: A line.\nprofile: tikz\n----\n\\draw (0,0) -- (1,1);\n::::\n",
+        name: "document.aze.md",
+      },
+      format: "html",
       includeDocument: false,
     },
   });
@@ -222,6 +243,32 @@ test("a deadline that fires before publication fails the job with the timeout co
   }
 });
 
+test("a queued TeX compile rechecks renderer availability before dispatch", async () => {
+  let probes = 0;
+  const { jobs, executor, cleanup } = await harness(
+    {
+      AZEWEB_MAX_RUNNING_JOBS: "1",
+      AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
+      AZEWEB_TEX_RENDERER_IDENTITY: `sha256:${"b".repeat(64)}`,
+    },
+    () => ({ ok: probes++ === 0 }),
+  );
+  try {
+    const running = await submitAnalyze(jobs);
+    const queued = await submitTexCompile(jobs);
+    assert.equal(queued.state, "queued");
+    assert.equal(executor.runs.length, 1);
+
+    executor.last.onSettled({ code: 1, signal: null });
+    assert.equal(await settled(running), "failed");
+    assert.equal(await settled(queued), "failed");
+    assert.equal(queued.failure?.code, "service-unavailable");
+    assert.equal(executor.runs.length, 1, "the unavailable renderer never starts a worker");
+  } finally {
+    await cleanup();
+  }
+});
+
 test("an Artifact that fails its integrity check is never published, and a refused job is not cached", async () => {
   const { jobs, executor, cleanup } = await harness();
   try {
@@ -272,6 +319,24 @@ test("a worker that dies after staging an Artifact cannot publish it", async () 
     assert.equal(await settled(job), "failed");
     assert.equal(executor.cleanups, 1, "the renderer is removed after worker loss");
     assert.equal(job.failure?.code, "job-failed");
+    assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
+  } finally {
+    await cleanup();
+  }
+});
+
+test("a renderer cleanup failure blocks Artifact publication", async () => {
+  const { jobs, executor, cleanup } = await harness();
+  try {
+    executor.cleanupOk = false;
+    const job = await submitAnalyze(jobs);
+    const bytes = Buffer.from("artifact");
+    await writeWorkerResult(executor, compileArtifact(bytes), bytes);
+
+    executor.last.onSettled({ code: 0, signal: null });
+    assert.equal(await settled(job), "failed");
+    assert.equal(executor.cleanups, 1);
+    assert.equal(job.result, null);
     assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
   } finally {
     await cleanup();
