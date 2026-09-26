@@ -28,6 +28,7 @@ class FakeExecutor {
    *           onSettled: (outcome: { code: number | null, signal: NodeJS.Signals | null }) => void }[]} */
   runs = [];
   kills = 0;
+  cleanups = 0;
 
   start(input) {
     this.runs.push(input);
@@ -35,6 +36,9 @@ class FakeExecutor {
       pid: 4242,
       kill: () => {
         this.kills += 1;
+      },
+      cleanup: () => {
+        this.cleanups += 1;
       },
     };
   }
@@ -156,6 +160,7 @@ test("a cancellation decided before the worker settles wins, and publishes nothi
 
     executor.last.onSettled({ code: 0, signal: null });
     assert.equal(await settled(job), "cancelled");
+    assert.equal(executor.cleanups, 1, "the renderer is removed after cancellation");
     await jobs.cancel(job.jobId, CONTEXT);
 
     assert.equal(job.state, "cancelled");
@@ -179,6 +184,7 @@ test("a completion decided first is terminal and repeated cancellation cannot ch
     });
     executor.last.onSettled({ code: 0, signal: null });
     assert.equal(await settled(job), "completed");
+    assert.equal(executor.cleanups, 1, "the renderer is removed after completion");
 
     const again = await jobs.cancel(job.jobId, CONTEXT);
     assert.equal(again?.state, "completed");
@@ -206,6 +212,7 @@ test("a deadline that fires before publication fails the job with the timeout co
 
     executor.last.onSettled({ code: null, signal: "SIGKILL" });
     assert.equal(await settled(job), "failed");
+    assert.equal(executor.cleanups, 1, "the renderer is removed after deadline expiry");
 
     assert.equal(job.state, "failed");
     assert.equal(job.failure?.code, "job-timeout");
@@ -263,6 +270,7 @@ test("a worker that dies after staging an Artifact cannot publish it", async () 
 
     executor.last.onSettled({ code: null, signal: "SIGKILL" });
     assert.equal(await settled(job), "failed");
+    assert.equal(executor.cleanups, 1, "the renderer is removed after worker loss");
     assert.equal(job.failure?.code, "job-failed");
     assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
   } finally {

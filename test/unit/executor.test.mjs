@@ -83,3 +83,32 @@ test("a worker is launched with the configured heap ceiling before its script pa
   assert.equal(calls[0].options.detached, true, "the worker leads its own process group");
   assert.equal(calls[0].options.cwd, "/scratch/jobs/job-a");
 });
+
+test("cleanup removes only the service-generated renderer container", () => {
+  const { spawn } = recordingSpawn();
+  /** @type {{ command: string, args: string[], options: Record<string, unknown> }[]} */
+  const cleanupCalls = [];
+  const executor = new JobExecutor({
+    workerEntry: "/app/src/service/worker-entry.mjs",
+    graceMs: 5_000,
+    nodeHeapMb: 512,
+    spawn: /** @type {any} */ (spawn),
+    cleanupSpawn: /** @type {any} */ ((command, args, options) => {
+      cleanupCalls.push({ command, args, options });
+      return { status: 0 };
+    }),
+  });
+
+  const handle = executor.start({
+    specPath: "/scratch/jobs/job-a/spec.json",
+    resultPath: "/scratch/jobs/job-a/result.json",
+    cwd: "/scratch/jobs/job-a",
+    rendererContainerName: "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc",
+    onSettled: () => {},
+  });
+  handle.cleanup();
+
+  assert.deepEqual(cleanupCalls.map(({ command, args }) => [command, args]), [
+    ["docker", ["rm", "--force", "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc"]],
+  ]);
+});

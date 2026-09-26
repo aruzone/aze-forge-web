@@ -31,9 +31,9 @@ for (const signal of ["SIGTERM", "SIGINT"]) {
 }
 
 try {
-  const spec = JSON.parse(await readFile(specPath, "utf8"));
-  const compiler = createCompiler(texRendererCompilerOptions(process.env));
-  const result = await runOperation(compiler, spec, { signal: controller.signal });
+  const { rendererContainerName, ...operation } = JSON.parse(await readFile(specPath, "utf8"));
+  const compiler = createCompiler(texRendererCompilerOptions(process.env, rendererContainerName));
+  const result = await runOperation(compiler, operation, { signal: controller.signal });
 
   const artifactBytes = result.artifact?.bytes;
   if (artifactBytes !== undefined) {
@@ -42,7 +42,7 @@ try {
   }
 
   await writeResult(resultPath, {
-    operation: result.operation ?? spec.operation,
+    operation: result.operation ?? operation.operation,
     ok: result.ok,
     semantic: result.semantic ?? null,
     diagnostics: result.diagnostics ?? [],

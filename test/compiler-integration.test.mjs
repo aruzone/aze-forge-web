@@ -159,6 +159,14 @@ describe("the edit-preview-export loop", () => {
       }
       assert.equal(compiled.job.result.ok, true);
       assert.match(compiled.job.result.semantic.contentHash, /^sha256:[0-9a-f]{64}$/);
+      if (example.id === "tex" && texRendererAvailable) {
+        const container = `azeweb-tex-${compiled.job.jobId}`;
+        assert.notEqual(
+          spawnSync("docker", ["container", "inspect", container], { stdio: "ignore" }).status,
+          0,
+          "the completed job removed its renderer container",
+        );
+      }
       const download = await call(service.base, "GET", `/v1/jobs/${compiled.job.jobId}/artifact`, { raw: true });
       assert.equal(download.status, 200);
       assert.equal(download.headers.get("content-type"), "text/html; charset=utf-8");

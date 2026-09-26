@@ -14,9 +14,10 @@
  * signalling above: SIGTERM, a bounded grace period, then SIGKILL.
  */
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { TEX_RENDERER_COMMAND } from "./tex-renderer.mjs";
 
 export class JobExecutor {
   /** @type {string} */
@@ -37,27 +38,39 @@ export class JobExecutor {
   /** @type {typeof spawn} */
   #spawn;
 
+  /** @type {typeof spawnSync} */
+  #cleanupSpawn;
+
   /**
    * @param {{ workerEntry: string, nodePath?: string, graceMs: number,
    *           nodeHeapMb: number, workerEnv?: Record<string, string>,
-   *           spawn?: typeof spawn }} options
+   *           spawn?: typeof spawn, cleanupSpawn?: typeof spawnSync }} options
    */
-  constructor({ workerEntry, nodePath = process.execPath, graceMs, nodeHeapMb, workerEnv = {}, spawn: spawnImpl = spawn }) {
+  constructor({
+    workerEntry,
+    nodePath = process.execPath,
+    graceMs,
+    nodeHeapMb,
+    workerEnv = {},
+    spawn: spawnImpl = spawn,
+    cleanupSpawn = spawnSync,
+  }) {
     this.#workerEntry = workerEntry;
     this.#nodePath = nodePath;
     this.#graceMs = graceMs;
     this.#nodeHeapMb = nodeHeapMb;
     this.#workerEnv = Object.freeze({ ...workerEnv });
     this.#spawn = spawnImpl;
+    this.#cleanupSpawn = cleanupSpawn;
   }
 
   /**
-   * @param {{ specPath: string, resultPath: string, cwd: string,
+   * @param {{ specPath: string, resultPath: string, cwd: string, rendererContainerName?: string,
    *           onSettled: (outcome: { code: number | null, signal: NodeJS.Signals | null }) => void,
    *           onOutput?: (channel: "stdout" | "stderr", text: string) => void }} input
-   * @returns {{ pid: number | undefined, kill: () => void }}
+   * @returns {{ pid: number | undefined, kill: () => void, cleanup: () => void }}
    */
-  start({ specPath, resultPath, cwd, onSettled, onOutput }) {
+  start({ specPath, resultPath, cwd, rendererContainerName, onSettled, onOutput }) {
     const child = this.#spawn(
       this.#nodePath,
       // The heap ceiling is a Node flag, so it must precede the script path:
@@ -102,7 +115,22 @@ export class JobExecutor {
       kill: () => {
         if (child.pid !== undefined) this.#terminateGroup(child.pid);
       },
+      cleanup: () => this.#removeRenderer(rendererContainerName),
     };
+  }
+
+  /** @param {string | undefined} rendererContainerName */
+  #removeRenderer(rendererContainerName) {
+    if (rendererContainerName === undefined) return;
+    try {
+      this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["rm", "--force", rendererContainerName], {
+        stdio: "ignore",
+        timeout: this.#graceMs,
+      });
+    } catch {
+      // The job's terminal state must not depend on Docker reporting that a
+      // container already exited and removed itself.
+    }
   }
 
   /** @param {number} pid */

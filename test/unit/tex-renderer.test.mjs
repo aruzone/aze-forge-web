@@ -20,13 +20,17 @@ import {
 
 const IMAGE = `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`;
 const IDENTITY = `sha256:${"b".repeat(64)}`;
+const CONTAINER = "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc";
 
-test("the fixed argv is the reviewed sandbox policy, with the image as the only variable", () => {
-  const args = dockerTexRendererArgs(IMAGE, IDENTITY);
+
+test("the fixed argv is the reviewed sandbox policy, with the image and generated container name as the only variables", () => {
+  const args = dockerTexRendererArgs(IMAGE, IDENTITY, CONTAINER);
   assert.equal(TEX_RENDERER_COMMAND, "docker");
   assert.deepEqual(args.slice(0, 3), ["run", "--rm", "--interactive"]);
   assert.equal(args.at(-1), IMAGE, "the image is the last argv entry");
-  assert.equal(args.at(-2), `AZEFORGE_TEX_RENDERER_IDENTITY=${IDENTITY}`);
+  assert.equal(args.at(-2), CONTAINER);
+  assert.equal(args.at(-3), "--name");
+  assert.equal(args.at(-4), `AZEFORGE_TEX_RENDERER_IDENTITY=${IDENTITY}`);
   for (const flag of ["--network", "--pull", "--read-only", "--cap-drop", "--security-opt", "--pids-limit", "--memory", "--cpus", "--platform"]) {
     assert.ok(args.includes(flag), `${flag} is part of the fixed policy`);
   }
@@ -49,12 +53,12 @@ test("the renderer configuration is either a pair or nothing at all", () => {
 test("the configured pair reaches the worker and becomes the compiler's adapter", () => {
   const config = { texRendererImage: IMAGE, texRendererIdentity: IDENTITY, texRenderTimeoutMs: 9_000 };
   const env = texRendererEnvironment(config);
-  const options = texRendererCompilerOptions(env);
+  const options = texRendererCompilerOptions(env, CONTAINER);
   assert.equal(options.texRenderTimeoutMs, 9_000);
   assert.deepEqual(options.texRenderer, {
     rendererIdentity: IDENTITY,
     command: TEX_RENDERER_COMMAND,
-    args: dockerTexRendererArgs(IMAGE, IDENTITY),
+    args: dockerTexRendererArgs(IMAGE, IDENTITY, CONTAINER),
   });
 });
 

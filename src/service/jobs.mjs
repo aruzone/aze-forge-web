@@ -16,6 +16,8 @@ import { deadlineForOperation } from "./config.mjs";
 import { ERROR_CODES, ServiceError, serviceFailure } from "./errors.mjs";
 import { canonicalJson, sha256BytesHex, sha256Hex } from "./hash.mjs";
 import { PROTOCOL_VERSION } from "./protocol.mjs";
+import { texRendererEnabled } from "./limits.mjs";
+import { probeTexRenderer } from "./tex-renderer.mjs";
 
 export const JOB_STATES = Object.freeze({
   queued: "queued",
@@ -57,6 +59,9 @@ export class JobManager {
   /** @type {() => number} */
   #now;
 
+  /** @type {typeof probeTexRenderer} */
+  #rendererProbe;
+
   /** @type {Map<string, import("./types.mjs").JobRecord>} */
   #jobs = new Map();
 
@@ -66,7 +71,7 @@ export class JobManager {
   /** @type {Set<string>} */
   #running = new Set();
 
-  /** @type {Map<string, { pid?: number, kill: () => void }>} */
+  /** @type {Map<string, { pid?: number, kill: () => void, cleanup: () => void }>} */
   #handles = new Map();
 
   /** @type {Map<string, NodeJS.Timeout>} */
@@ -86,9 +91,9 @@ export class JobManager {
    *           executor: import("./executor.mjs").JobExecutor,
    *           compilerFacts: import("./types.mjs").AzeCompilerFacts,
    *           log: import("./types.mjs").AzeLogger,
-   *           now?: () => number }} input
+   *           now?: () => number, rendererProbe?: typeof probeTexRenderer }} input
    */
-  constructor({ config, assets, cache, executor, compilerFacts, log, now = Date.now }) {
+  constructor({ config, assets, cache, executor, compilerFacts, log, now = Date.now, rendererProbe = probeTexRenderer }) {
     this.#config = config;
     this.#assets = assets;
     this.#cache = cache;
@@ -96,6 +101,7 @@ export class JobManager {
     this.#compilerFacts = compilerFacts;
     this.#log = log;
     this.#now = now;
+    this.#rendererProbe = rendererProbe;
   }
 
   async init() {
@@ -118,6 +124,17 @@ export class JobManager {
    * @returns {Promise<import("./types.mjs").JobRecord>}
    */
   async submit({ contextId, spec }) {
+    if (spec.operation === "compile" && texRendererEnabled(this.#config)) {
+      const renderer = this.#rendererProbe({ config: this.#config });
+      if (!renderer.ok) {
+        throw new ServiceError(
+          ERROR_CODES.serviceUnavailable,
+          "The trusted TeX renderer is temporarily unavailable.",
+          {},
+        );
+      }
+    }
+
     const bindings = await this.#resolveBindings(spec.assets ?? [], contextId);
 
     if (this.scratchBytesInUse >= this.#config.scratchMaxBytes) {
@@ -303,6 +320,7 @@ export class JobManager {
     if (this.#pruneTimer !== null) clearInterval(this.#pruneTimer);
     for (const [jobId, handle] of this.#handles) {
       handle.kill();
+      handle.cleanup();
       this.#log.warn("job-terminated-on-shutdown", { jobId });
     }
     for (const timer of this.#deadlines.values()) clearTimeout(timer);
@@ -390,6 +408,8 @@ export class JobManager {
 
     const specPath = join(job.jobDir, "spec.json");
     const resultPath = join(job.jobDir, "result.json");
+    const rendererContainerName =
+      job.operation === "compile" && texRendererEnabled(this.#config) ? `azeweb-tex-${job.jobId}` : null;
     try {
       await writeFile(
         specPath,
@@ -403,6 +423,7 @@ export class JobManager {
           ...(job.theme === null ? {} : { theme: job.theme }),
           ...(job.includeDocument ? { includeDocument: true } : {}),
           ...(job.hasAssets ? { projectRoot: join(job.jobDir, "assets") } : {}),
+          ...(rendererContainerName === null ? {} : { rendererContainerName }),
         }),
         { mode: 0o600 },
       );
@@ -422,6 +443,7 @@ export class JobManager {
       specPath,
       resultPath,
       cwd: job.jobDir,
+      ...(rendererContainerName === null ? {} : { rendererContainerName }),
       onSettled: (outcome) => {
         void this.#settle(job, outcome, resultPath, startedAt);
       },
@@ -441,6 +463,7 @@ export class JobManager {
     job.settled = true;
 
     this.#clearDeadline(job.jobId);
+    this.#handles.get(job.jobId)?.cleanup();
     this.#handles.delete(job.jobId);
     this.#running.delete(job.jobId);
 

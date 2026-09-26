@@ -492,6 +492,28 @@ describe("capacity and readiness", () => {
   });
 });
 
+test("a configured renderer that fails its pre-dispatch probe returns the temporary-unavailable envelope", async () => {
+  const unavailable = await startTestService({
+    env: {
+      AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
+      AZEWEB_TEX_RENDERER_IDENTITY: `sha256:${"b".repeat(64)}`,
+    },
+    rendererProbe: () => ({ ok: false, detail: "executable-unavailable" }),
+  });
+  try {
+    const response = await call(unavailable.base, "POST", "/v1/jobs", {
+      body: compileRequest("A document without TeX.\n", "html", "rev-renderer-unavailable"),
+      contentType: "application/json",
+    });
+    assert.equal(response.status, 503);
+    assert.equal(response.json.error.code, "service-unavailable");
+    assert.equal(unavailable.application.jobs.stats().running, 0);
+    assert.ok(!/docker|renderer@sha256|executable-unavailable/i.test(response.text));
+  } finally {
+    await unavailable.close();
+  }
+});
+
 describe("uploaded assets", () => {
   test("an upload handle can be bound by a job, and revoking it cannot change that job", async () => {
     const upload = await call(service.base, "POST", "/v1/assets", {

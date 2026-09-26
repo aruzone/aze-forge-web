@@ -20,7 +20,7 @@ import { runStartupChecks } from "./readiness.mjs";
 import { buildSchemaRegistry, unservableSchemaIds } from "./schemas.mjs";
 import { createService } from "./server.mjs";
 import { loadWebAssets } from "./static.mjs";
-import { texRendererEnvironment } from "./tex-renderer.mjs";
+import { probeTexRenderer, texRendererEnvironment } from "./tex-renderer.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const WORKER_ENTRY = join(HERE, "worker-entry.mjs");
@@ -33,7 +33,7 @@ const READINESS_RETRY_MS = 30_000;
  * @param {{ config: import("./config.mjs").Config, log?: import("./types.mjs").AzeLogger,
  *           now?: () => number, workerEntry?: string, nodePath?: string,
  *           checkTimeoutMs?: number, compilerFacts?: import("./types.mjs").AzeCompilerFacts,
- *           webRoot?: string }} input
+ *           webRoot?: string, rendererProbe?: typeof probeTexRenderer }} input
  * @returns {Promise<any>}
  */
 export async function createApplication({
@@ -45,6 +45,7 @@ export async function createApplication({
   checkTimeoutMs = 60_000,
   compilerFacts: providedFacts,
   webRoot = WEB_ROOT,
+  rendererProbe = probeTexRenderer,
 }) {
   await mkdir(config.scratchDir, { recursive: true });
 
@@ -78,7 +79,7 @@ export async function createApplication({
     nodeHeapMb: config.nodeHeapMb,
     workerEnv: texRendererEnvironment(config),
   });
-  const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now });
+  const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now, rendererProbe });
   await jobs.init();
 
   const service = createService({

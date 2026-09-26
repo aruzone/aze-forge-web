@@ -54,14 +54,16 @@ export function isRendererIdentity(value) {
  *
  * @param {string} image
  * @param {string} rendererIdentity
+ * @param {string} rendererContainerName
  * @returns {string[]}
  */
-export function dockerTexRendererArgs(image, rendererIdentity) {
+export function dockerTexRendererArgs(image, rendererIdentity, rendererContainerName) {
   return [
     "run", "--rm", "--interactive", "--pull", "never", "--platform", "linux/amd64", "--network", "none", "--read-only",
     "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m", "--cap-drop", "ALL",
     "--security-opt", "no-new-privileges", "--pids-limit", "64", "--memory", "512m", "--cpus", "1",
     "--env", `AZEFORGE_TEX_RENDERER_IDENTITY=${rendererIdentity}`,
+    "--name", rendererContainerName,
     image,
   ];
 }
@@ -90,9 +92,10 @@ export function texRendererEnvironment(config) {
  * `azeforge.renderer#adapter-missing` diagnostic.
  *
  * @param {Record<string, string | undefined>} env
+ * @param {string} rendererContainerName
  * @returns {{ texRenderer?: import("@aruzone/aze-forge").TexRenderer, texRenderTimeoutMs?: number }}
  */
-export function texRendererCompilerOptions(env) {
+export function texRendererCompilerOptions(env, rendererContainerName) {
   const image = env[envNameFor("texRendererImage")];
   const rendererIdentity = env[envNameFor("texRendererIdentity")];
   if (image === undefined || rendererIdentity === undefined) return {};
@@ -102,7 +105,7 @@ export function texRendererCompilerOptions(env) {
     texRenderer: {
       rendererIdentity: /** @type {`sha256:${string}`} */ (rendererIdentity),
       command: TEX_RENDERER_COMMAND,
-      args: dockerTexRendererArgs(image, rendererIdentity),
+      args: dockerTexRendererArgs(image, rendererIdentity, rendererContainerName),
     },
     ...(timeout === undefined || !Number.isInteger(timeout) ? {} : { texRenderTimeoutMs: timeout }),
   };

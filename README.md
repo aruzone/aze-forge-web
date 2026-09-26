@@ -245,24 +245,28 @@ Enabling it needs two things, both in the worker deployment only:
    linux/amd64 --network none --read-only --tmpfs /tmp:… --cap-drop ALL
    --no-new-privileges --pids-limit 64 --memory 512m --cpus 1`, with the
    identity passed only through `AZEFORGE_TEX_RENDERER_IDENTITY` — is fixed in
-   `src/service/tex-renderer.mjs`; the image is its only variable, and author
-   Source contributes neither an executable nor an argument.
+   `src/service/tex-renderer.mjs`; only the pinned image and a service-generated
+   per-job container name vary, and author Source contributes neither.
 2. **The Docker socket, and nothing else.** The image bakes only the Docker CLI
    (pinned by version and checksum); a TeX-enabled run adds
    `-v /var/run/docker.sock:/var/run/docker.sock` and
    `--group-add "$(stat -c '%g' /var/run/docker.sock)"`, and the renderer is a
    short-lived sibling container with no ingress, no network, no volume, no
-   Source and no credentials. This is a second, larger deviation from the
-   envelope's hardening list than the browser's seccomp flag: a socket grants
-   root-equivalent control of the host's Docker daemon to anything that can read
-   it, so it is an owner decision recorded here, and the default deployment
-   above does not have it. Jobs without `tex` Blocks never start an instance.
+   Source and no credentials. The worker supervisor force-removes its generated
+   container name on completion, cancellation, deadline expiry, worker loss and
+   shutdown. This is a second, larger deviation from the envelope's hardening
+   list than the browser's seccomp flag: a socket grants root-equivalent control
+   of the host's Docker daemon to anything that can read it, so it is an owner
+   decision recorded here, and the default deployment above does not have it.
+   Jobs without `tex` Blocks never start an instance.
 
 Readiness is fail-closed around the configured image: Docker must find its
 pinned digest locally without starting an instance, or the service is not-ready
-(503). The capabilities document reports
-`service.renderers.tex.hostEnabled`/`available` plus a generic remedy — never the
-image, the digest, a path or a container runtime detail.
+(503). Each compile request repeats that pre-dispatch check, so a later Docker
+outage returns the generic `service-unavailable` envelope before a worker starts.
+The capabilities document reports `service.renderers.tex.hostEnabled`/`available`
+plus a generic remedy — never the image, the digest, a path or a container runtime
+detail.
 
 For development, the canonical image is usually already in the local Docker:
 point the pair at the sealed digest and manifest hash and run without the
