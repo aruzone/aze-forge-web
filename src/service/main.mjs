@@ -13,14 +13,14 @@ import { AccessBoundary } from "./auth.mjs";
 import { ArtifactCache } from "./cache.mjs";
 import { collectCompilerFacts } from "./compiler-facts.mjs";
 import { ConfigurationError, loadConfig, overriddenKnobs } from "./config.mjs";
-import { JobExecutor } from "./executor.mjs";
+import { JobExecutor, RENDERER_CLEANUP_TIMEOUT_MS } from "./executor.mjs";
 import { JobManager } from "./jobs.mjs";
 import { createLogger } from "./log.mjs";
 import { runStartupChecks } from "./readiness.mjs";
 import { buildSchemaRegistry, unservableSchemaIds } from "./schemas.mjs";
 import { createService } from "./server.mjs";
 import { loadWebAssets } from "./static.mjs";
-import { probeTexRenderer, texRendererEnvironment } from "./tex-renderer.mjs";
+import { probeTexRendererAsync, texRendererEnvironment } from "./tex-renderer.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const WORKER_ENTRY = join(HERE, "worker-entry.mjs");
@@ -33,7 +33,7 @@ const READINESS_RETRY_MS = 30_000;
  * @param {{ config: import("./config.mjs").Config, log?: import("./types.mjs").AzeLogger,
  *           now?: () => number, workerEntry?: string, nodePath?: string,
  *           checkTimeoutMs?: number, compilerFacts?: import("./types.mjs").AzeCompilerFacts,
- *           webRoot?: string, rendererProbe?: typeof probeTexRenderer }} input
+ *           webRoot?: string, rendererProbe?: typeof probeTexRendererAsync }} input
  * @returns {Promise<any>}
  */
 export async function createApplication({
@@ -45,7 +45,7 @@ export async function createApplication({
   checkTimeoutMs = 60_000,
   compilerFacts: providedFacts,
   webRoot = WEB_ROOT,
-  rendererProbe = probeTexRenderer,
+  rendererProbe = probeTexRendererAsync,
 }) {
   await mkdir(config.scratchDir, { recursive: true });
 
@@ -172,10 +172,14 @@ export async function main(env = process.env) {
   const shutdown = (signal) => {
     log.info("service-stopping", { signal });
     clearInterval(retry);
+    const closing = application.close();
     application.service.server.close(() => {
-      void application.close().then(() => process.exit(0));
+      void closing.then(() => process.exit(0));
     });
-    setTimeout(() => process.exit(0), config.terminationGraceMs + 1_000).unref?.();
+    setTimeout(
+      () => process.exit(0),
+      Math.max(config.terminationGraceMs, RENDERER_CLEANUP_TIMEOUT_MS) + 1_000,
+    ).unref?.();
   };
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));

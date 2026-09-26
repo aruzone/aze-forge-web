@@ -18,7 +18,7 @@
 
 import { createCompiler } from "@aruzone/aze-forge";
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 import { envNameFor, texRendererEnabled } from "./limits.mjs";
 
@@ -160,6 +160,48 @@ export function probeTexRenderer({ config, timeoutMs = 60_000, spawn = spawnSync
   }
   if (outcome.status !== 0) return { ok: false, detail: "renderer-image-unavailable" };
   return { ok: true };
+}
+
+/**
+ * Asynchronous renderer preflight for request admission. It bounds a hung
+ * Docker client without blocking the HTTP event loop.
+ *
+ * @param {{ config: { texRendererImage?: string, texRendererIdentity?: string, texRenderTimeoutMs: number },
+ *           timeoutMs?: number, spawn?: typeof spawn }} input
+ * @returns {Promise<{ ok: boolean, detail?: string }>}
+ */
+export function probeTexRendererAsync({ config, timeoutMs = 5_000, spawn: spawnImpl = spawn }) {
+  const image = config.texRendererImage;
+  const rendererIdentity = config.texRendererIdentity;
+  if (image === undefined || rendererIdentity === undefined) {
+    return Promise.resolve({ ok: false, detail: "not-configured" });
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    /** @type {NodeJS.Timeout | undefined} */
+    let timer;
+    /** @param {{ ok: boolean, detail?: string }} outcome */
+    const finish = (outcome) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(outcome);
+    };
+    let child;
+    try {
+      child = spawnImpl(TEX_RENDERER_COMMAND, ["image", "inspect", image], { stdio: "ignore" });
+    } catch {
+      finish({ ok: false, detail: "executable-unavailable" });
+      return;
+    }
+    timer = setTimeout(() => {
+      child.kill();
+      finish({ ok: false, detail: "renderer-timeout" });
+    }, timeoutMs);
+    child.once("error", () => finish({ ok: false, detail: "executable-unavailable" }));
+    child.once("close", (status) => finish(status === 0 ? { ok: true } : { ok: false, detail: "renderer-image-unavailable" }));
+  });
 }
 
 /** The knob names the worker reads, exposed for diagnostics and tests. */

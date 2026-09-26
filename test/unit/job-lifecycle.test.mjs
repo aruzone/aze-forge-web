@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -31,6 +31,9 @@ class FakeExecutor {
   cleanups = 0;
   cleanupOk = true;
 
+  /** @type {Promise<void> | null} */
+  cleanupGate = null;
+
   start(input) {
     this.runs.push(input);
     return {
@@ -38,8 +41,9 @@ class FakeExecutor {
       kill: () => {
         this.kills += 1;
       },
-      cleanup: () => {
+      cleanup: async () => {
         this.cleanups += 1;
+        if (this.cleanupGate !== null) await this.cleanupGate;
         return this.cleanupOk;
       },
     };
@@ -243,6 +247,53 @@ test("a deadline that fires before publication fails the job with the timeout co
   }
 });
 
+test("a deadline that expires during renderer cleanup blocks Artifact publication", async () => {
+  const { jobs, executor, cleanup } = await harness({ AZEWEB_DEADLINE_ANALYZE_MS: "1000" });
+  let releaseCleanup = () => {};
+  executor.cleanupGate = new Promise((resolve) => {
+    releaseCleanup = resolve;
+  });
+  try {
+    const job = await submitAnalyze(jobs);
+    const bytes = Buffer.from("artifact");
+    await writeWorkerResult(executor, compileArtifact(bytes), bytes);
+
+    executor.last.onSettled({ code: 0, signal: null });
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    assert.equal(job.timedOut, true);
+
+    releaseCleanup();
+    assert.equal(await settled(job), "failed");
+    assert.equal(job.failure?.code, "job-timeout");
+    assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
+  } finally {
+    await cleanup();
+  }
+});
+
+test("shutdown during renderer cleanup blocks Artifact publication", async () => {
+  const { jobs, executor, cleanup } = await harness();
+  let releaseCleanup = () => {};
+  executor.cleanupGate = new Promise((resolve) => {
+    releaseCleanup = resolve;
+  });
+  try {
+    const job = await submitAnalyze(jobs);
+    const bytes = Buffer.from("artifact");
+    await writeWorkerResult(executor, compileArtifact(bytes), bytes);
+
+    executor.last.onSettled({ code: 0, signal: null });
+    const closing = jobs.close();
+    releaseCleanup();
+    await closing;
+
+    assert.equal(await settled(job), "cancelled");
+    assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
+  } finally {
+    await cleanup();
+  }
+});
+
 test("a queued TeX compile rechecks renderer availability before dispatch", async () => {
   let probes = 0;
   const { jobs, executor, cleanup } = await harness(
@@ -264,6 +315,92 @@ test("a queued TeX compile rechecks renderer availability before dispatch", asyn
     assert.equal(await settled(queued), "failed");
     assert.equal(queued.failure?.code, "service-unavailable");
     assert.equal(executor.runs.length, 1, "the unavailable renderer never starts a worker");
+  } finally {
+    await cleanup();
+  }
+});
+
+test("cancellation during asynchronous renderer preflight starts no worker", async () => {
+  let probes = 0;
+  /** @type {() => void} */
+  let dispatched;
+  const dispatchStarted = new Promise((resolve) => {
+    dispatched = resolve;
+  });
+  /** @type {(result: { ok: boolean }) => void} */
+  let releasePreflight;
+  const { jobs, executor, cleanup } = await harness(
+    {
+      AZEWEB_MAX_RUNNING_JOBS: "1",
+      AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
+      AZEWEB_TEX_RENDERER_IDENTITY: `sha256:${"b".repeat(64)}`,
+    },
+    () => {
+      probes += 1;
+      if (probes === 1) return { ok: true };
+      dispatched();
+      return new Promise((resolve) => {
+        releasePreflight = resolve;
+      });
+    },
+  );
+  try {
+    const running = await submitAnalyze(jobs);
+    const queued = await submitTexCompile(jobs);
+
+    executor.last.onSettled({ code: 1, signal: null });
+    assert.equal(await settled(running), "failed");
+    await dispatchStarted;
+    assert.equal(queued.state, "running");
+
+    await jobs.cancel(queued.jobId, CONTEXT);
+    releasePreflight({ ok: true });
+    assert.equal(await settled(queued), "cancelled");
+    assert.equal(executor.runs.length, 1, "the cancelled job never starts a worker");
+  } finally {
+    await cleanup();
+  }
+});
+
+test("deadline during asynchronous renderer preflight starts no worker", async () => {
+  let probes = 0;
+  /** @type {() => void} */
+  let dispatched;
+  const dispatchStarted = new Promise((resolve) => {
+    dispatched = resolve;
+  });
+  /** @type {(result: { ok: boolean }) => void} */
+  let releasePreflight;
+  const { jobs, executor, cleanup } = await harness(
+    {
+      AZEWEB_MAX_RUNNING_JOBS: "1",
+      AZEWEB_DEADLINE_COMPILE_MS: "1000",
+      AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
+      AZEWEB_TEX_RENDERER_IDENTITY: `sha256:${"b".repeat(64)}`,
+    },
+    () => {
+      probes += 1;
+      if (probes === 1) return { ok: true };
+      dispatched();
+      return new Promise((resolve) => {
+        releasePreflight = resolve;
+      });
+    },
+  );
+  try {
+    const running = await submitAnalyze(jobs);
+    const queued = await submitTexCompile(jobs);
+
+    executor.last.onSettled({ code: 1, signal: null });
+    assert.equal(await settled(running), "failed");
+    await dispatchStarted;
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    assert.equal(queued.timedOut, true);
+
+    releasePreflight({ ok: true });
+    assert.equal(await settled(queued), "failed");
+    assert.equal(queued.failure?.code, "job-timeout");
+    assert.equal(executor.runs.length, 1, "the expired job never starts a worker");
   } finally {
     await cleanup();
   }
@@ -338,6 +475,7 @@ test("a renderer cleanup failure blocks Artifact publication", async () => {
     assert.equal(executor.cleanups, 1);
     assert.equal(job.result, null);
     assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
+    await assert.rejects(() => readFile(join(job.jobDir, "artifact.bin")), { code: "ENOENT" });
   } finally {
     await cleanup();
   }

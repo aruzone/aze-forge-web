@@ -12,6 +12,7 @@ import test from "node:test";
 import {
   dockerTexRendererArgs,
   probeTexRenderer,
+  probeTexRendererAsync,
   sourceHasTexBlock,
   texRendererCompilerOptions,
   texRendererEnabled,
@@ -106,4 +107,32 @@ test("the readiness probe checks the configured image without starting a rendere
     ok: false,
     detail: "not-configured",
   });
+});
+
+test("request preflight handles Docker launch failure asynchronously", async () => {
+  const config = { texRendererImage: IMAGE, texRendererIdentity: IDENTITY, texRenderTimeoutMs: 15_000 };
+  /** @type {string[] | undefined} */
+  let invocation;
+  const inspected = await probeTexRendererAsync({
+    config,
+    spawn: /** @type {any} */ ((command, args) => {
+      invocation = [command, ...args];
+      return {
+        kill: () => {},
+        once: (event, listener) => {
+          if (event === "close") queueMicrotask(() => listener(0));
+        },
+      };
+    }),
+  });
+  assert.deepEqual(inspected, { ok: true });
+  assert.deepEqual(invocation, ["docker", "image", "inspect", IMAGE]);
+
+  const unavailable = await probeTexRendererAsync({
+    config,
+    spawn: /** @type {any} */ (() => {
+      throw new Error("spawn docker ENOENT");
+    }),
+  });
+  assert.deepEqual(unavailable, { ok: false, detail: "executable-unavailable" });
 });

@@ -84,7 +84,7 @@ test("a worker is launched with the configured heap ceiling before its script pa
   assert.equal(calls[0].options.cwd, "/scratch/jobs/job-a");
 });
 
-test("cleanup removes only the service-generated renderer container", () => {
+test("cleanup removes only the service-generated renderer container", async () => {
   const { spawn } = recordingSpawn();
   /** @type {{ command: string, args: string[], options: Record<string, unknown> }[]} */
   const cleanupCalls = [];
@@ -95,7 +95,12 @@ test("cleanup removes only the service-generated renderer container", () => {
     spawn: /** @type {any} */ (spawn),
     cleanupSpawn: /** @type {any} */ ((command, args, options) => {
       cleanupCalls.push({ command, args, options });
-      return { status: 0 };
+      return {
+        kill: () => {},
+        once: (event, listener) => {
+          if (event === "close") queueMicrotask(() => listener(0));
+        },
+      };
     }),
   });
 
@@ -106,9 +111,39 @@ test("cleanup removes only the service-generated renderer container", () => {
     rendererContainerName: "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc",
     onSettled: () => {},
   });
-  handle.cleanup();
+  await handle.cleanup();
+  await handle.cleanup();
 
   assert.deepEqual(cleanupCalls.map(({ command, args }) => [command, args]), [
     ["docker", ["rm", "--force", "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc"]],
   ]);
+});
+
+test("renderer cleanup keeps a positive timeout when worker termination grace is zero", async () => {
+  const { spawn } = recordingSpawn();
+  let killed = false;
+  const executor = new JobExecutor({
+    workerEntry: "/app/src/service/worker-entry.mjs",
+    graceMs: 0,
+    nodeHeapMb: 512,
+    spawn: /** @type {any} */ (spawn),
+    cleanupSpawn: /** @type {any} */ (() => ({
+      kill: () => {
+        killed = true;
+      },
+      once: (event, listener) => {
+        if (event === "close") setTimeout(() => listener(0), 1);
+      },
+    })),
+  });
+  const handle = executor.start({
+    specPath: "/scratch/jobs/job-a/spec.json",
+    resultPath: "/scratch/jobs/job-a/result.json",
+    cwd: "/scratch/jobs/job-a",
+    rendererContainerName: "azeweb-tex-1a2b3c4d-1234-4abc-8def-123456789abc",
+    onSettled: () => {},
+  });
+
+  assert.equal(await handle.cleanup(), true);
+  assert.equal(killed, false);
 });

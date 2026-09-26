@@ -14,10 +14,13 @@
  * signalling above: SIGTERM, a bounded grace period, then SIGKILL.
  */
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { TEX_RENDERER_COMMAND } from "./tex-renderer.mjs";
+
+/** Maximum wall-clock time for one renderer cleanup sequence. */
+export const RENDERER_CLEANUP_TIMEOUT_MS = 5_000;
 
 export class JobExecutor {
   /** @type {string} */
@@ -38,13 +41,13 @@ export class JobExecutor {
   /** @type {typeof spawn} */
   #spawn;
 
-  /** @type {typeof spawnSync} */
+  /** @type {typeof spawn} */
   #cleanupSpawn;
 
   /**
    * @param {{ workerEntry: string, nodePath?: string, graceMs: number,
    *           nodeHeapMb: number, workerEnv?: Record<string, string>,
-   *           spawn?: typeof spawn, cleanupSpawn?: typeof spawnSync }} options
+   *           spawn?: typeof spawn, cleanupSpawn?: typeof spawn }} options
    */
   constructor({
     workerEntry,
@@ -53,7 +56,7 @@ export class JobExecutor {
     nodeHeapMb,
     workerEnv = {},
     spawn: spawnImpl = spawn,
-    cleanupSpawn = spawnSync,
+    cleanupSpawn = spawn,
   }) {
     this.#workerEntry = workerEntry;
     this.#nodePath = nodePath;
@@ -68,7 +71,7 @@ export class JobExecutor {
    * @param {{ specPath: string, resultPath: string, cwd: string, rendererContainerName?: string,
    *           onSettled: (outcome: { code: number | null, signal: NodeJS.Signals | null }) => void,
    *           onOutput?: (channel: "stdout" | "stderr", text: string) => void }} input
-   * @returns {{ pid: number | undefined, kill: () => void, cleanup: () => boolean }}
+   * @returns {{ pid: number | undefined, kill: () => void, cleanup: () => Promise<boolean> }}
    */
   start({ specPath, resultPath, cwd, rendererContainerName, onSettled, onOutput }) {
     const child = this.#spawn(
@@ -110,41 +113,61 @@ export class JobExecutor {
       onSettled({ code, signal });
     });
 
+    /** @type {Promise<boolean> | undefined} */
+    let cleanupPromise;
     return {
       pid: child.pid,
       kill: () => {
         if (child.pid !== undefined) this.#terminateGroup(child.pid);
       },
-      cleanup: () => this.#removeRenderer(rendererContainerName),
+      cleanup: () => (cleanupPromise ??= this.#removeRenderer(rendererContainerName)),
     };
   }
 
-  /** @param {string | undefined} rendererContainerName @returns {boolean} */
-  #removeRenderer(rendererContainerName) {
+  /** @param {string | undefined} rendererContainerName @returns {Promise<boolean>} */
+  async #removeRenderer(rendererContainerName) {
     if (rendererContainerName === undefined) return true;
-    try {
-      const removed = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["rm", "--force", rendererContainerName], {
-        stdio: "ignore",
-        timeout: this.#graceMs,
-      });
-      if (removed.error === undefined && removed.status === 0) return true;
+    const deadline = Date.now() + RENDERER_CLEANUP_TIMEOUT_MS;
+    const removed = await this.#runDocker(["rm", "--force", rendererContainerName], deadline);
+    if (removed === 0) return true;
 
-      // A TeX Source can fail validation before the compiler starts Docker. A
-      // missing named container is safe only while the daemon still answers,
-      // which distinguishes it from a failed Docker transport.
-      const inspected = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["container", "inspect", rendererContainerName], {
-        stdio: "ignore",
-        timeout: this.#graceMs,
-      });
-      if (inspected.error !== undefined || inspected.status === 0) return false;
-      const daemon = this.#cleanupSpawn(TEX_RENDERER_COMMAND, ["info"], {
-        stdio: "ignore",
-        timeout: this.#graceMs,
-      });
-      return daemon.error === undefined && daemon.status === 0;
-    } catch {
-      return false;
-    }
+    // A TeX Source can fail validation before the compiler starts Docker. A
+    // missing named container is safe only while the daemon still answers,
+    // which distinguishes it from a failed Docker transport.
+    const inspected = await this.#runDocker(["container", "inspect", rendererContainerName], deadline);
+    if (inspected === 0 || inspected === null) return false;
+    return (await this.#runDocker(["info"], deadline)) === 0;
+  }
+
+  /** @param {string[]} args @param {number} deadline @returns {Promise<number | null>} */
+  #runDocker(args, deadline) {
+    const timeoutMs = deadline - Date.now();
+    if (timeoutMs <= 0) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      let settled = false;
+      /** @type {NodeJS.Timeout | undefined} */
+      let timer;
+      /** @param {number | null} status */
+      const finish = (status) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(status);
+      };
+      let child;
+      try {
+        child = this.#cleanupSpawn(TEX_RENDERER_COMMAND, args, { stdio: "ignore" });
+      } catch {
+        finish(null);
+        return;
+      }
+      timer = setTimeout(() => {
+        child.kill();
+        finish(null);
+      }, timeoutMs);
+      child.once("error", () => finish(null));
+      child.once("close", (status) => finish(status));
+    });
   }
 
   /** @param {number} pid */

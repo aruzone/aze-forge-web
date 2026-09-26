@@ -17,7 +17,7 @@ import { ERROR_CODES, ServiceError, serviceFailure } from "./errors.mjs";
 import { canonicalJson, sha256BytesHex, sha256Hex } from "./hash.mjs";
 import { PROTOCOL_VERSION } from "./protocol.mjs";
 import { texRendererEnabled } from "./limits.mjs";
-import { probeTexRenderer, sourceHasTexBlock } from "./tex-renderer.mjs";
+import { probeTexRendererAsync, sourceHasTexBlock } from "./tex-renderer.mjs";
 
 export const JOB_STATES = Object.freeze({
   queued: "queued",
@@ -59,7 +59,7 @@ export class JobManager {
   /** @type {() => number} */
   #now;
 
-  /** @type {typeof probeTexRenderer} */
+  /** @type {typeof probeTexRendererAsync} */
   #rendererProbe;
 
   /** @type {Map<string, import("./types.mjs").JobRecord>} */
@@ -71,7 +71,7 @@ export class JobManager {
   /** @type {Set<string>} */
   #running = new Set();
 
-  /** @type {Map<string, { pid?: number, kill: () => void, cleanup: () => boolean }>} */
+  /** @type {Map<string, { pid?: number, kill: () => void, cleanup: () => Promise<boolean> }>} */
   #handles = new Map();
 
   /** @type {Map<string, NodeJS.Timeout>} */
@@ -84,6 +84,8 @@ export class JobManager {
   /** @type {NodeJS.Timeout | null} */
   #pruneTimer = null;
 
+  #closed = false;
+
   /**
    * @param {{ config: import("./config.mjs").Config,
    *           assets: import("./assets.mjs").AssetStore,
@@ -91,9 +93,9 @@ export class JobManager {
    *           executor: import("./executor.mjs").JobExecutor,
    *           compilerFacts: import("./types.mjs").AzeCompilerFacts,
    *           log: import("./types.mjs").AzeLogger,
-   *           now?: () => number, rendererProbe?: typeof probeTexRenderer }} input
+   *           now?: () => number, rendererProbe?: typeof probeTexRendererAsync }} input
    */
-  constructor({ config, assets, cache, executor, compilerFacts, log, now = Date.now, rendererProbe = probeTexRenderer }) {
+  constructor({ config, assets, cache, executor, compilerFacts, log, now = Date.now, rendererProbe = probeTexRendererAsync }) {
     this.#config = config;
     this.#assets = assets;
     this.#cache = cache;
@@ -127,7 +129,7 @@ export class JobManager {
     const requiresTexRenderer =
       spec.operation === "compile" && texRendererEnabled(this.#config) && sourceHasTexBlock(spec.source.text);
     if (requiresTexRenderer) {
-      const renderer = this.#rendererProbe({ config: this.#config });
+      const renderer = await this.#rendererProbe({ config: this.#config });
       if (!renderer.ok) {
         throw new ServiceError(
           ERROR_CODES.serviceUnavailable,
@@ -320,12 +322,16 @@ export class JobManager {
   }
 
   async close() {
+    this.#closed = true;
     if (this.#pruneTimer !== null) clearInterval(this.#pruneTimer);
-    for (const [jobId, handle] of this.#handles) {
-      handle.kill();
-      handle.cleanup();
-      this.#log.warn("job-terminated-on-shutdown", { jobId });
-    }
+    await Promise.all(
+      [...this.#handles].map(async ([jobId, handle]) => {
+        handle.kill();
+        const cleanedUp = await handle.cleanup();
+        if (!cleanedUp) this.#log.error("job-cleanup-failed-on-shutdown", { jobId });
+        this.#log.warn("job-terminated-on-shutdown", { jobId });
+      }),
+    );
     for (const timer of this.#deadlines.values()) clearTimeout(timer);
     this.#deadlines.clear();
   }
@@ -412,7 +418,9 @@ export class JobManager {
     const specPath = join(job.jobDir, "spec.json");
     const resultPath = join(job.jobDir, "result.json");
     const rendererContainerName = job.requiresTexRenderer ? `azeweb-tex-${job.jobId}` : null;
-    if (job.requiresTexRenderer && !this.#rendererProbe({ config: this.#config }).ok) {
+    const renderer = job.requiresTexRenderer ? await this.#rendererProbe({ config: this.#config }) : { ok: true };
+    if (this.#abortBeforeDispatch(job)) return;
+    if (!renderer.ok) {
       this.#running.delete(job.jobId);
       this.#terminalize(
         job,
@@ -454,6 +462,8 @@ export class JobManager {
       return;
     }
 
+    if (this.#abortBeforeDispatch(job)) return;
+
     const startedAt = this.#now();
     const handle = this.#executor.start({
       specPath,
@@ -468,6 +478,38 @@ export class JobManager {
   }
 
   /**
+   * Stop a job that reached a terminal decision while an asynchronous
+   * pre-dispatch step was pending.
+   *
+   * @param {import("./types.mjs").JobRecord} job
+   * @returns {boolean}
+   */
+  #abortBeforeDispatch(job) {
+    if (job.timedOut) {
+      this.#running.delete(job.jobId);
+      this.#terminalize(
+        job,
+        JOB_STATES.failed,
+        serviceFailure(ERROR_CODES.jobTimeout, "The job exceeded its execution deadline.", {
+          deadlineMs: this.#deadlineFor(job),
+          scope: "job-deadline",
+        }),
+      );
+      this.#log.warn("job-timeout", { jobId: job.jobId, tokenId: job.contextId.slice(0, 12), state: "pre-dispatch" });
+      this.#pump();
+      return true;
+    }
+    if (this.#closed || this.#jobs.get(job.jobId)?.state === JOB_STATES.cancelling) {
+      this.#running.delete(job.jobId);
+      this.#terminalize(job, JOB_STATES.cancelled);
+      this.#log.info("job-cancelled", { jobId: job.jobId, tokenId: job.contextId.slice(0, 12), state: "pre-dispatch" });
+      this.#pump();
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * @param {import("./types.mjs").JobRecord} job
    * @param {{ code: number | null, signal: NodeJS.Signals | null }} outcome
    * @param {string} resultPath
@@ -478,13 +520,14 @@ export class JobManager {
     if (job.settled) return;
     job.settled = true;
 
+    const cleanedUp = (await this.#handles.get(job.jobId)?.cleanup()) ?? true;
     this.#clearDeadline(job.jobId);
-    const cleanedUp = this.#handles.get(job.jobId)?.cleanup() ?? true;
     this.#handles.delete(job.jobId);
     this.#running.delete(job.jobId);
 
     const durationMs = this.#now() - startedAt;
     if (!cleanedUp) {
+      await rm(join(job.jobDir, "artifact.bin"), { force: true });
       this.#terminalize(
         job,
         JOB_STATES.failed,
@@ -524,6 +567,18 @@ export class JobManager {
       this.#log.warn("job-timeout", {
         jobId: job.jobId,
         tokenId: job.contextId.slice(0, 12),
+        durationMs,
+      });
+      this.#pump();
+      return;
+    }
+
+    if (this.#closed) {
+      this.#terminalize(job, JOB_STATES.cancelled);
+      this.#log.info("job-cancelled", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        state: "shutdown",
         durationMs,
       });
       this.#pump();
@@ -708,6 +763,7 @@ export class JobManager {
    * @returns {Promise<boolean>} false when the cached bytes are no longer readable
    */
   async #completeFromCache(job, entry) {
+    if (!this.#mayPublish(job)) return true;
     /** @type {Buffer} */
     let bytes;
     try {
@@ -717,7 +773,10 @@ export class JobManager {
     }
     const artifactPath = join(job.jobDir, "artifact.bin");
     await writeFile(artifactPath, bytes, { mode: 0o600 });
-
+    if (!this.#mayPublish(job)) {
+      await rm(artifactPath, { force: true });
+      return true;
+    }
     job.artifactPath = artifactPath;
     job.artifactByteLength = bytes.byteLength;
     this.#jobDiskBytes += bytes.byteLength;
@@ -750,7 +809,8 @@ export class JobManager {
 
   /**
    * A job may only publish while it is still allowed to finish: not cancelled,
-   * not past its deadline. Checked after awaits, immediately before publishing.
+   * not past its deadline, and not shutting down. Checked after awaits,
+   * immediately before publishing.
    * @param {import("./types.mjs").JobRecord} job
    * @returns {boolean}
    */
@@ -777,6 +837,16 @@ export class JobManager {
         jobId: job.jobId,
         tokenId: job.contextId.slice(0, 12),
         state: "publication",
+      });
+      return false;
+    }
+
+    if (this.#closed) {
+      this.#terminalize(job, JOB_STATES.cancelled);
+      this.#log.info("job-cancelled", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        state: "shutdown",
       });
       return false;
     }

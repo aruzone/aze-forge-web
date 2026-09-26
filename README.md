@@ -252,10 +252,12 @@ Enabling it needs two things, both in the worker deployment only:
    `-v /var/run/docker.sock:/var/run/docker.sock` and
    `--group-add "$(stat -c '%g' /var/run/docker.sock)"`, and the renderer is a
    short-lived sibling container with no ingress, no network, no volume, no
-   Source and no credentials. The worker supervisor force-removes its generated
-   container name on completion, cancellation, deadline expiry, worker loss and
-   shutdown. This is a second, larger deviation from the envelope's hardening
-   list than the browser's seccomp flag: a socket grants root-equivalent control
+   Source and no credentials. The worker supervisor force-removes and verifies
+   its generated container name on completion, cancellation, deadline expiry,
+   worker loss and shutdown; it refuses Artifact publication if verification
+   fails. The bounded cleanup sequence gets up to five seconds during shutdown.
+   This is a second, larger deviation from the envelope's hardening list than
+   the browser's seccomp flag: a socket grants root-equivalent control
    of the host's Docker daemon to anything that can read it, so it is an owner
    decision recorded here, and the default deployment above does not have it.
    Jobs without `tex` Blocks never start an instance.
