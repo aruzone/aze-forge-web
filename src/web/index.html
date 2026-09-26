@@ -39,9 +39,30 @@
 <div id="preview-toast" class="preview-toast" role="status" aria-live="polite" hidden></div>
 
 <main id="workspace" hidden>
+  <section class="authoring-pane" aria-labelledby="authoring-title">
+    <h2 id="authoring-title" class="pane-title">AzeMark authoring</h2>
+    <label class="authoring-field">Description
+      <textarea id="description" rows="3" maxlength="32768"></textarea>
+    </label>
+    <label class="authoring-consent"><input id="authoring-consent" type="checkbox"> I understand that my Description and AzeMark Source draft are sent to the owner-configured authoring service.</label>
+    <p id="authoring-status" role="status" aria-live="polite"></p>
+    <button id="generate-draft" type="button">Generate draft</button>
+  </section>
+
   <section class="pane">
-    <h2 class="pane-title">Source <span id="source-meta" class="meta"></span></h2>
-    <textarea id="source" spellcheck="false" aria-label="AzeMark Source"></textarea>
+    <h2 class="pane-title">Current editor Source <span id="source-meta" class="meta"></span></h2>
+    <textarea id="source" spellcheck="false" aria-label="Current editor Source"></textarea>
+  </section>
+
+  <section id="draft-gate" class="pane draft-gate" hidden aria-labelledby="draft-title">
+    <h2 id="draft-title" class="pane-title" tabindex="-1">Proposed AzeMark Source draft</h2>
+    <p id="draft-status" role="status" aria-live="polite"></p>
+    <textarea id="draft-source" readonly spellcheck="false" aria-label="Proposed AzeMark Source draft"></textarea>
+    <pre id="draft-diagnostics" hidden></pre>
+    <div class="draft-actions">
+      <button id="apply-draft" type="button">Apply draft</button>
+      <button id="discard-draft" type="button">Discard draft</button>
+    </div>
   </section>
 
   <section class="pane split">

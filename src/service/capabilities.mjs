@@ -72,6 +72,13 @@ export function buildWebCapabilities({ config, compilerFacts }) {
         },
       },
       limits: publishedLimits(config),
+      authoring: {
+        available: config.openAiApiKey !== undefined,
+        catalogue: ["mathematics", "geometry", "chemistry"],
+        texProfiles: hostEnabled
+          ? /** @type {{ engines?: { tex?: { profiles?: readonly string[] } } }} */ (capabilities).engines?.tex?.profiles ?? []
+          : [],
+      },
       deadlines: {
         analyzeMs: config.deadlineAnalyzeMs,
         formatMs: config.deadlineAnalyzeMs,

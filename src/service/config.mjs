@@ -23,6 +23,10 @@ import { isImmutableRendererImage, isRendererIdentity } from "./tex-renderer.mjs
  * @property {number} jobSubmissionsPerMinute
  * @property {number} assetUploadsPerMinute
  * @property {number} rateLimitWindowMs
+ * @property {number} authoringGenerationsPerMinute
+ * @property {number} authoringDeadlineMs
+ * @property {string} [openAiApiKey]
+ * @property {string} openAiModel
  * @property {number} deadlineAnalyzeMs
  * @property {number} deadlineCompileMs
  * @property {number} terminationGraceMs

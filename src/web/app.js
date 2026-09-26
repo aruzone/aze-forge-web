@@ -42,6 +42,17 @@ const els = {
   activity: element("activity"),
   previewToast: element("preview-toast"),
   source: /** @type {HTMLTextAreaElement} */ (element("source", HTMLTextAreaElement)),
+  description: /** @type {HTMLTextAreaElement} */ (element("description", HTMLTextAreaElement)),
+  authoringConsent: /** @type {HTMLInputElement} */ (element("authoring-consent", HTMLInputElement)),
+  authoringStatus: element("authoring-status"),
+  generateDraft: /** @type {HTMLButtonElement} */ (element("generate-draft", HTMLButtonElement)),
+  draftGate: element("draft-gate"),
+  draftTitle: element("draft-title"),
+  draftStatus: element("draft-status"),
+  draftSource: /** @type {HTMLTextAreaElement} */ (element("draft-source", HTMLTextAreaElement)),
+  draftDiagnostics: element("draft-diagnostics"),
+  applyDraft: /** @type {HTMLButtonElement} */ (element("apply-draft", HTMLButtonElement)),
+  discardDraft: /** @type {HTMLButtonElement} */ (element("discard-draft", HTMLButtonElement)),
   sourceMeta: element("source-meta"),
   diagnosticsList: element("diagnostics-list"),
   diagnosticsSummary: element("diagnostics-summary"),
@@ -101,7 +112,7 @@ const els = {
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
  *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
  *   artifact: { format: string, bytes: ArrayBuffer, revision: string, theme: string } | null,
- *   debounceTimer: ReturnType<typeof setTimeout> | undefined,
+ *   draft: any, debounceTimer: ReturnType<typeof setTimeout> | undefined,
  *   previewToastTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
   token: sessionStorage.getItem(TOKEN_KEY) ?? "",
@@ -114,6 +125,7 @@ const state = {
   artifact: null,
   debounceTimer: undefined,
   previewToastTimer: undefined,
+  draft: null,
 };
 
 // ------------------------------------------------------------------ transport
@@ -221,6 +233,63 @@ async function fetchArtifact(jobId) {
   if (response.status === 401) throw new Error("The access token was rejected.");
   if (!response.ok) throw new Error(`Artifact download failed (${response.status}).`);
   return response.arrayBuffer();
+}
+
+// ------------------------------------------------------------- Draft Gate
+
+async function generateDraft() {
+  if (!els.authoringConsent.checked) {
+    els.authoringStatus.textContent = "Acknowledge data transfer before generating a draft.";
+    return;
+  }
+  els.generateDraft.disabled = true;
+  els.authoringStatus.textContent = "Generating draft…";
+  try {
+    const draft = await request("POST", "/v1/authoring/drafts", {
+      body: JSON.stringify({ protocolVersion: 1, requestId: crypto.randomUUID(), description: els.description.value }),
+      contentType: "application/json",
+    });
+    state.draft = draft;
+    els.draftGate.hidden = false;
+    els.draftDiagnostics.hidden = true;
+    els.draftDiagnostics.textContent = "";
+    if (draft.outcome === "source") {
+      els.draftSource.value = draft.source.text;
+      const valid = draft.analysis.valid === true;
+      els.draftStatus.textContent = valid ? "Draft analyzed — ready to apply." : "Draft needs changes — it has not replaced your Source.";
+      els.applyDraft.disabled = !valid;
+      if (!valid) {
+        els.draftDiagnostics.hidden = false;
+        els.draftDiagnostics.textContent = (draft.analysis.diagnostics ?? []).map((/** @type {{ message: string }} */ item) => item.message).join("\n");
+      }
+    } else {
+      els.draftSource.value = "";
+      els.applyDraft.disabled = true;
+      els.draftStatus.textContent = draft.outcome === "clarification"
+        ? `More detail is needed. ${draft.question}`
+        : "This request is not available in this deployment.";
+    }
+  } catch (error) {
+    els.authoringStatus.textContent = "Draft generation is temporarily unavailable. Your Description and Source are unchanged.";
+  } finally {
+    els.generateDraft.disabled = false;
+  }
+}
+
+function applyDraft() {
+  if (state.draft?.outcome !== "source" || state.draft.analysis.valid !== true) return;
+  setSource(state.draft.source.text);
+  els.source.focus();
+  els.source.select();
+  els.draftGate.hidden = true;
+  state.draft = null;
+  void analyze();
+}
+
+function discardDraft() {
+  els.draftGate.hidden = true;
+  state.draft = null;
+  els.description.focus();
 }
 
 // -------------------------------------------------------------- source state
@@ -645,6 +714,11 @@ async function loadCapabilities() {
     option.textContent = `${theme.title} (${theme.colorScheme})`;
     els.theme.append(option);
   }
+  const authoring = capabilities.service.authoring;
+  els.generateDraft.disabled = authoring?.available !== true;
+  if (authoring?.available !== true) {
+    els.authoringStatus.textContent = "This request is not available in this deployment.";
+  }
 
   els.serviceMeta.textContent = [
     `compiler ${capabilities.compatibility.compilerRelease}`,
@@ -741,6 +815,9 @@ function bindEvents() {
   els.format.addEventListener("click", () => void formatSource());
   els.example.addEventListener("change", () => loadExample(els.example.value));
   els.theme.addEventListener("change", markPreviewStale);
+  els.generateDraft.addEventListener("click", () => void generateDraft());
+  els.applyDraft.addEventListener("click", applyDraft);
+  els.discardDraft.addEventListener("click", discardDraft);
   els.downloadArtifact.addEventListener("click", () => {
     const artifact = state.artifact;
     if (artifact === null) return;

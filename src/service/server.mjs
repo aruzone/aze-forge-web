@@ -8,6 +8,7 @@
  */
 
 import { createServer } from "node:http";
+import { MAX_DRAFT_SOURCE_BYTES, buildSourceDraft, validateDraftRequest, validateSourceDraft } from "./authoring.mjs";
 import { SlidingWindowLimiter } from "./rate-limit.mjs";
 import { buildWebCapabilities } from "./capabilities.mjs";
 import { ERROR_CODES, ServiceError, serviceErrorBody, statusForErrorCode } from "./errors.mjs";
@@ -43,12 +44,13 @@ const ARTIFACT_CONTENT_SECURITY_POLICY = [
  *   schemaRegistry: Map<string, import("./types.mjs").AzeSchemaEntry>,
  *   assets: import("./assets.mjs").AssetStore,
  *   jobs: import("./jobs.mjs").JobManager,
+ *   authoringProvider: { generate: (description: string) => Promise<{ kind: string, text?: string, title?: string, blockType?: string, question?: string, reason?: string, code?: string }> } | null,
  *   webAssets: Map<string, { body: Buffer, contentType: string }>,
  *   now?: () => number,
  * }} deps
  */
 export function createService(deps) {
-  const { config, log, accessBoundary, compilerFacts, schemaRegistry, assets, jobs, webAssets } = deps;
+  const { config, log, accessBoundary, compilerFacts, schemaRegistry, assets, jobs, authoringProvider, webAssets } = deps;
   const now = deps.now ?? Date.now;
   /** @type {Awaited<ReturnType<import("./compiler-facts.mjs").collectCompilerFacts>>} */
   const facts = /** @type {Awaited<ReturnType<import("./compiler-facts.mjs").collectCompilerFacts>>} */ (
@@ -199,6 +201,12 @@ export function createService(deps) {
       sendJson(res, 200, Buffer.from(`${JSON.stringify(schema.document)}\n`, "utf8"));
       return;
     }
+    if (pathname === "/v1/authoring/drafts") {
+      if (method !== "POST") throw methodNotAllowed("POST");
+      await createDraft(req, res, tokenIdHash);
+      return;
+    }
+
 
     if (segments[0] === "assets") {
       if (segments.length === 1) {
@@ -330,6 +338,123 @@ export function createService(deps) {
       })}\n`,
     );
   }
+  /**
+   * Generate one untrusted AzeMark Source proposal, then compiler-analyze it
+   * before any browser receives it.
+   * @param {import("node:http").IncomingMessage} req
+   * @param {import("node:http").ServerResponse} res
+   * @param {string} tokenIdHash
+   */
+  async function createDraft(req, res, tokenIdHash) {
+    const limit = limiter.take(`authoring:${tokenIdHash}`, config.authoringGenerationsPerMinute, now());
+    if (!limit.allowed) throw rateLimited(limit.retryAfterMs, "authoring-generations");
+    if (authoringProvider === null) {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "This request is not available in this deployment.", {
+        data: { code: "authoring-unavailable" },
+      });
+    }
+    const body = await readBody(req, MAX_DRAFT_SOURCE_BYTES);
+    let parsed;
+    try {
+      parsed = JSON.parse(body.toString("utf8"));
+    } catch {
+      throw new ServiceError(ERROR_CODES.requestMalformed, "The request body must be a JSON object.", {});
+    }
+    const request = validateDraftRequest(parsed);
+    let outcome;
+    try {
+      outcome = await authoringProvider.generate(request.description);
+    } catch (error) {
+      const status =
+        error !== null &&
+        typeof error === "object" &&
+        typeof /** @type {{ status?: unknown }} */ (error).status === "number"
+          ? /** @type {{ status: number }} */ (error).status
+          : null;
+      log.warn("authoring-provider-unavailable", {
+        reason: error instanceof Error ? error.name : "unknown",
+        status,
+      });
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+        data: { code: "authoring-temporarily-unavailable" },
+      });
+    }
+    const response = draftResponseBase(request);
+    if (outcome.kind === "clarification") {
+      sendJson(res, 200, Buffer.from(`${JSON.stringify({ ...response, outcome: "clarification", question: outcome.question })}\n`, "utf8"));
+      return;
+    }
+    if (outcome.kind === "refusal") {
+      sendJson(res, 200, Buffer.from(`${JSON.stringify({ ...response, outcome: "refusal", reason: outcome.reason, code: outcome.code })}\n`, "utf8"));
+      return;
+    }
+    if (outcome.kind !== "source") {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+        data: { code: "authoring-invalid-provider-outcome" },
+      });
+    }
+    let source;
+    try {
+      source = validateSourceDraft(buildSourceDraft(/** @type {{ kind: "source", title: string, blockType: string, text: string }} */ (outcome)));
+    } catch {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+        data: { code: "authoring-incomplete-source-draft" },
+      });
+    }
+    const byteLength = Buffer.byteLength(source, "utf8");
+    if (byteLength > MAX_DRAFT_SOURCE_BYTES) {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+        data: { code: "authoring-draft-too-large" },
+      });
+    }
+    const job = await jobs.submit({
+      contextId: tokenIdHash,
+      spec: { protocolVersion: 1, requestId: request.requestId, revision: request.requestId, operation: "analyze", source: { text: source, name: "draft.aze.md" }, includeDocument: false },
+    });
+    const analyzed = await waitForDraftAnalysis(jobs, job.jobId, tokenIdHash, config.deadlineAnalyzeMs);
+    if (analyzed === null || analyzed.result === null) {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+        data: { code: "authoring-analysis-unavailable" },
+      });
+    }
+    sendJson(res, 200, Buffer.from(`${JSON.stringify({
+      ...response,
+      outcome: "source",
+      source: { text: source, byteLength },
+      analysis: { valid: analyzed.result.ok === true, diagnostics: analyzed.result.diagnostics ?? [] },
+    })}\n`, "utf8"));
+  }
+  /** @param {{ protocolVersion: number, requestId: string }} request */
+  function draftResponseBase(request) {
+    return {
+      protocolVersion: request.protocolVersion,
+      requestId: request.requestId,
+      capabilityFingerprint: facts.capabilityFingerprint,
+      sourceLanguageVersion: facts.versionReport.source.azemarkVersions[0],
+      catalogueRevision: 1,
+    };
+  }
+
+  /**
+   * @param {import("./jobs.mjs").JobManager} manager
+   * @param {string} jobId
+   * @param {string} contextId
+   * @param {number} timeoutMs
+   */
+  async function waitForDraftAnalysis(manager, jobId, contextId, timeoutMs) {
+    const deadline = now() + timeoutMs;
+    for (;;) {
+      const job = manager.get(jobId, contextId);
+      if (job === null) return null;
+      if (job.state === "completed" || job.state === "failed" || job.state === "cancelled") return job;
+      if (now() >= deadline) {
+        await manager.cancel(jobId, contextId);
+        return null;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
 
   /**
    * @param {import("node:http").ServerResponse} res

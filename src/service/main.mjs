@@ -8,6 +8,7 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createOpenAIAuthoringProvider } from "./authoring.mjs";
 import { AssetStore } from "./assets.mjs";
 import { AccessBoundary } from "./auth.mjs";
 import { ArtifactCache } from "./cache.mjs";
@@ -33,7 +34,8 @@ const READINESS_RETRY_MS = 30_000;
  * @param {{ config: import("./config.mjs").Config, log?: import("./types.mjs").AzeLogger,
  *           now?: () => number, workerEntry?: string, nodePath?: string,
  *           checkTimeoutMs?: number, compilerFacts?: import("./types.mjs").AzeCompilerFacts,
- *           webRoot?: string, rendererProbe?: typeof probeTexRendererAsync }} input
+ *           webRoot?: string, rendererProbe?: typeof probeTexRendererAsync,
+ *           authoringProvider?: { generate: (description: string) => Promise<any> } | null }} input
  * @returns {Promise<any>}
  */
 export async function createApplication({
@@ -46,6 +48,7 @@ export async function createApplication({
   compilerFacts: providedFacts,
   webRoot = WEB_ROOT,
   rendererProbe = probeTexRendererAsync,
+  authoringProvider,
 }) {
   await mkdir(config.scratchDir, { recursive: true });
 
@@ -80,6 +83,16 @@ export async function createApplication({
     workerEnv: texRendererEnvironment(config),
   });
   const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now, rendererProbe });
+  const provider =
+    authoringProvider === undefined
+      ? config.openAiApiKey === undefined
+        ? null
+        : createOpenAIAuthoringProvider({
+            apiKey: config.openAiApiKey,
+            model: config.openAiModel,
+            catalogue: ["mathematics", "geometry", "chemistry"],
+          })
+      : authoringProvider;
   await jobs.init();
 
   const service = createService({
@@ -90,6 +103,7 @@ export async function createApplication({
     schemaRegistry,
     assets,
     jobs,
+    authoringProvider: provider,
     webAssets: await loadWebAssets(webRoot),
     now,
   });

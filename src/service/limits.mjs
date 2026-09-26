@@ -59,6 +59,16 @@ export const KNOBS = Object.freeze({
     max: 60,
   },
   rateLimitWindowMs: { env: "RATE_LIMIT_WINDOW_MS", default: MINUTE_MS, min: 1_000, max: MINUTE_MS },
+  authoringGenerationsPerMinute: {
+    env: "AUTHORING_GENERATIONS_PER_MINUTE",
+    default: 10,
+    min: 1,
+    max: 10,
+  },
+  authoringDeadlineMs: { env: "AUTHORING_DEADLINE_MS", default: 30_000, min: 1_000, max: 30_000 },
+  openAiApiKey: { env: "OPENAI_API_KEY", kind: "string", secret: true },
+  openAiModel: { env: "OPENAI_MODEL", default: "gpt-4o-mini", kind: "string" },
+
 
   deadlineAnalyzeMs: { env: "DEADLINE_ANALYZE_MS", default: MINUTE_MS, min: 1_000, max: MINUTE_MS },
   deadlineCompileMs: {
@@ -154,6 +164,9 @@ export function publishedLimits(config) {
     limit("node-heap", "bytes", "process", config.nodeHeapMb * MIB),
     limit("job-submissions", "requests", "per-token-per-minute", config.jobSubmissionsPerMinute),
     limit("asset-uploads", "requests", "per-token-per-minute", config.assetUploadsPerMinute),
+    limit("authoring-generations", "requests", "per-token-per-minute", config.authoringGenerationsPerMinute),
+    limit("authoring-description-bytes", "bytes", "request", 32 * KIB),
+    limit("authoring-draft-source-bytes", "bytes", "draft", 128 * KIB),
     limit("job-deadline", "ms", "analyze|format", config.deadlineAnalyzeMs),
     limit("job-deadline", "ms", "compile", config.deadlineCompileMs),
     ...(texRendererEnabled(config)
