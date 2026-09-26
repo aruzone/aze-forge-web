@@ -262,8 +262,9 @@ Enabling it needs two things, both in the worker deployment only:
 
 Readiness is fail-closed around the configured image: Docker must find its
 pinned digest locally without starting an instance, or the service is not-ready
-(503). Each compile request repeats that pre-dispatch check, so a later Docker
-outage returns the generic `service-unavailable` envelope before a worker starts.
+(503). A compile that parses a `tex` Block repeats that pre-dispatch check, so a
+later Docker outage returns the generic `service-unavailable` envelope before a
+worker starts.
 The capabilities document reports `service.renderers.tex.hostEnabled`/`available`
 plus a generic remedy — never the image, the digest, a path or a container runtime
 detail.

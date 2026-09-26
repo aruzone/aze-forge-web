@@ -17,7 +17,7 @@ import { ERROR_CODES, ServiceError, serviceFailure } from "./errors.mjs";
 import { canonicalJson, sha256BytesHex, sha256Hex } from "./hash.mjs";
 import { PROTOCOL_VERSION } from "./protocol.mjs";
 import { texRendererEnabled } from "./limits.mjs";
-import { probeTexRenderer } from "./tex-renderer.mjs";
+import { probeTexRenderer, sourceHasTexBlock } from "./tex-renderer.mjs";
 
 export const JOB_STATES = Object.freeze({
   queued: "queued",
@@ -124,7 +124,7 @@ export class JobManager {
    * @returns {Promise<import("./types.mjs").JobRecord>}
    */
   async submit({ contextId, spec }) {
-    if (spec.operation === "compile" && texRendererEnabled(this.#config)) {
+    if (spec.operation === "compile" && texRendererEnabled(this.#config) && sourceHasTexBlock(spec.source.text)) {
       const renderer = this.#rendererProbe({ config: this.#config });
       if (!renderer.ok) {
         throw new ServiceError(

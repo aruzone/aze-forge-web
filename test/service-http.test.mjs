@@ -492,7 +492,7 @@ describe("capacity and readiness", () => {
   });
 });
 
-test("a configured renderer that fails its pre-dispatch probe returns the temporary-unavailable envelope", async () => {
+test("a TeX compile with a failed pre-dispatch probe returns the temporary-unavailable envelope", async () => {
   const unavailable = await startTestService({
     env: {
       AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
@@ -502,7 +502,7 @@ test("a configured renderer that fails its pre-dispatch probe returns the tempor
   });
   try {
     const response = await call(unavailable.base, "POST", "/v1/jobs", {
-      body: compileRequest("A document without TeX.\n", "html", "rev-renderer-unavailable"),
+      body: compileRequest("---\nazemark: 2\n---\n\n:::: tex\nid: line\ntitle: Line\ndescription: A line.\nprofile: tikz\n----\n\\draw (0,0) -- (1,1);\n::::\n", "html", "rev-renderer-unavailable"),
       contentType: "application/json",
     });
     assert.equal(response.status, 503);
@@ -511,6 +511,30 @@ test("a configured renderer that fails its pre-dispatch probe returns the tempor
     assert.ok(!/docker|renderer@sha256|executable-unavailable/i.test(response.text));
   } finally {
     await unavailable.close();
+  }
+});
+
+test("a compile without TeX does not probe the renderer", async () => {
+  let probes = 0;
+  const available = await startTestService({
+    env: {
+      AZEWEB_TEX_RENDERER_IMAGE: `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`,
+      AZEWEB_TEX_RENDERER_IDENTITY: `sha256:${"b".repeat(64)}`,
+    },
+    rendererProbe: () => {
+      probes += 1;
+      return { ok: false, detail: "executable-unavailable" };
+    },
+  });
+  try {
+    const response = await call(available.base, "POST", "/v1/jobs", {
+      body: compileRequest("A document without TeX.\n", "html", "rev-no-tex-probe"),
+      contentType: "application/json",
+    });
+    assert.equal(response.status, 202);
+    assert.equal(probes, 0);
+  } finally {
+    await available.close();
   }
 });
 

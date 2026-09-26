@@ -12,6 +12,7 @@ import test from "node:test";
 import {
   dockerTexRendererArgs,
   probeTexRenderer,
+  sourceHasTexBlock,
   texRendererCompilerOptions,
   texRendererEnabled,
   texRendererEnvironment,
@@ -60,6 +61,15 @@ test("the configured pair reaches the worker and becomes the compiler's adapter"
     command: TEX_RENDERER_COMMAND,
     args: dockerTexRendererArgs(IMAGE, IDENTITY, CONTAINER),
   });
+});
+
+test("only parsed TeX Blocks require the renderer preflight", () => {
+  assert.equal(sourceHasTexBlock("A document without TeX.\n"), false);
+  assert.equal(
+    sourceHasTexBlock("---\nazemark: 2\n---\n\n:::: tex\nid: line\ntitle: Line\ndescription: A line.\nprofile: tikz\n----\n\\draw (0,0) -- (1,1);\n::::\n"),
+    true,
+  );
+  assert.equal(sourceHasTexBlock("```text\n:::: tex\n```\n"), false, "code text is not a TeX Block");
 });
 
 /** A spawn that answers with a canned Docker outcome. */

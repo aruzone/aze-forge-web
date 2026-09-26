@@ -16,11 +16,33 @@
  * runtime detail.
  */
 
+import { createCompiler } from "@aruzone/aze-forge";
+
 import { spawnSync } from "node:child_process";
 
 import { envNameFor, texRendererEnabled } from "./limits.mjs";
 
 export { texRendererEnabled };
+
+// The compiler owns the AzeMark grammar. Reusing its parser keeps this
+// pre-dispatch decision aligned with nested Blocks and code fences.
+const TEX_BLOCK_DETECTOR = createCompiler();
+
+/**
+ * @param {string} sourceText
+ * @returns {boolean}
+ */
+export function sourceHasTexBlock(sourceText) {
+  return includesTexBlock(TEX_BLOCK_DETECTOR.parse(sourceText).document.blocks);
+}
+
+/** @param {unknown} value @returns {boolean} */
+function includesTexBlock(value) {
+  if (Array.isArray(value)) return value.some(includesTexBlock);
+  if (value === null || typeof value !== "object") return false;
+  if (/** @type {{ kind?: unknown }} */ (value).kind === "tex") return true;
+  return Object.values(value).some(includesTexBlock);
+}
 
 
 /** The executable the fixed argv launches. Never configurable. */
