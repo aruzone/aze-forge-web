@@ -23,6 +23,9 @@ const FILES = Object.freeze([
   "coordinates.js",
   "examples.json",
   "azeforge-logo-03-2.jpg",
+  "draft-gate-prototype.html",
+  "draft-gate-prototype.js",
+  "draft-gate-prototype.css",
 ]);
 
 /**

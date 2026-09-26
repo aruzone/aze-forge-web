@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Gate interaction prototype</title>
+<link rel="stylesheet" href="/draft-gate-prototype.css">
+</head>
+<body>
+<header>
+  <strong>AzeForge</strong><span>Draft Gate prototype — throwaway, no model calls</span>
+</header>
+<main>
+  <aside class="scenarios" aria-label="Prototype scenarios">
+    <h1>AI authoring</h1>
+    <p>Choose a representative state. All controls update only local prototype state.</p>
+    <label>Scenario <select id="scenario">
+      <option value="math">Mathematics · valid</option>
+      <option value="geometry">Geometry · valid</option>
+      <option value="chemistry">Chemistry · valid</option>
+      <option value="tex-ready">TeX profile · available</option>
+      <option value="tex-missing">TeX profile · unavailable</option>
+      <option value="invalid">Draft · compiler-invalid</option>
+    </select></label>
+    <label>Description <textarea id="description" rows="7">Create a numbered equation for the area of a circle.</textarea></label>
+    <p class="notice">First-use notice: a Description and AzeMark Source draft are sent to the owner-configured model service.</p>
+    <label class="ack"><input id="acknowledged" type="checkbox"> I understand</label>
+    <button id="generate">Generate draft</button>
+    <button id="reset" class="quiet">Reset editor</button>
+    <output id="activity" aria-live="polite"></output>
+  </aside>
+  <section id="surface" aria-label="Draft Gate prototype"></section>
+</main>
+<nav class="switcher" aria-label="Prototype variants">
+  <button id="previous" aria-label="Previous variant">←</button>
+  <strong id="variant-label"></strong>
+  <button id="next" aria-label="Next variant">→</button>
+</nav>
+<script type="module" src="/draft-gate-prototype.js"></script>
+</body>
+</html>
