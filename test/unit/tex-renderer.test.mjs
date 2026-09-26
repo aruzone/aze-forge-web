@@ -16,7 +16,6 @@ import {
   texRendererEnabled,
   texRendererEnvironment,
   TEX_RENDERER_COMMAND,
-  TEX_RENDERER_PROTOCOL,
 } from "../../src/service/tex-renderer.mjs";
 
 const IMAGE = `kkumaresan/aze-forge-tex-renderer@sha256:${"a".repeat(64)}`;
@@ -28,10 +27,11 @@ test("the fixed argv is the reviewed sandbox policy, with the image as the only 
   assert.deepEqual(args.slice(0, 3), ["run", "--rm", "--interactive"]);
   assert.equal(args.at(-1), IMAGE, "the image is the last argv entry");
   assert.equal(args.at(-2), `AZEFORGE_TEX_RENDERER_IDENTITY=${IDENTITY}`);
-  for (const flag of ["--network", "--read-only", "--cap-drop", "--security-opt", "--pids-limit", "--memory", "--cpus", "--platform"]) {
+  for (const flag of ["--network", "--pull", "--read-only", "--cap-drop", "--security-opt", "--pids-limit", "--memory", "--cpus", "--platform"]) {
     assert.ok(args.includes(flag), `${flag} is part of the fixed policy`);
   }
   assert.equal(args[args.indexOf("--network") + 1], "none");
+  assert.equal(args[args.indexOf("--pull") + 1], "never", "a missing image must fail locally, never pull");
   assert.equal(args[args.indexOf("--tmpfs") + 1], "/tmp:rw,noexec,nosuid,size=64m");
   assert.equal(args[args.indexOf("--memory") + 1], "512m");
   assert.equal(args[args.indexOf("--cpus") + 1], "1");
@@ -58,33 +58,26 @@ test("the configured pair reaches the worker and becomes the compiler's adapter"
   });
 });
 
-/** A spawn that answers with one canned adapter response. */
+/** A spawn that answers with a canned Docker outcome. */
 function respondingSpawn({ status = 0, stdout = "", error = null } = {}) {
   return () => ({ status, stdout, stderr: "", error: /** @type {any} */ (error) });
 }
 
-const OK_RESPONSE = `${JSON.stringify({
-  protocol: TEX_RENDERER_PROTOCOL,
-  rendererIdentity: IDENTITY,
-  results: [{ index: 0, status: "ok", svg: "<svg/>" }],
-})}`;
-
-test("the readiness probe exercises the real adapter and demands the configured identity back", () => {
+test("the readiness probe checks the configured image without starting a renderer", () => {
   const config = { texRendererImage: IMAGE, texRendererIdentity: IDENTITY, texRenderTimeoutMs: 15_000 };
-  assert.deepEqual(probeTexRenderer({ config, spawn: respondingSpawn({ stdout: OK_RESPONSE }) }), { ok: true });
+  /** @type {string[] | undefined} */
+  let invocation;
+  const inspected = probeTexRenderer({
+    config,
+    spawn: (command, args) => {
+      invocation = [command, ...args];
+      return { status: 0, stdout: "", stderr: "", error: null };
+    },
+  });
+  assert.deepEqual(inspected, { ok: true });
+  assert.deepEqual(invocation, ["docker", "image", "inspect", IMAGE]);
 
-  const mismatched = JSON.parse(OK_RESPONSE);
-  mismatched.rendererIdentity = `sha256:${"c".repeat(64)}`;
-  assert.equal(
-    probeTexRenderer({ config, spawn: respondingSpawn({ stdout: JSON.stringify(mismatched) }) }).detail,
-    "renderer-identity-mismatch",
-  );
-  assert.equal(
-    probeTexRenderer({ config, spawn: respondingSpawn({ stdout: JSON.stringify({ protocol: "other", rendererIdentity: IDENTITY, results: [] }) }) }).detail,
-    "renderer-protocol-mismatch",
-  );
-  assert.equal(probeTexRenderer({ config, spawn: respondingSpawn({ status: 1 }) }).detail, "renderer-exit-1");
-  assert.equal(probeTexRenderer({ config, spawn: respondingSpawn({ stdout: "not json" }) }).detail, "renderer-response-invalid");
+  assert.equal(probeTexRenderer({ config, spawn: respondingSpawn({ status: 1 }) }).detail, "renderer-image-unavailable");
   assert.equal(
     probeTexRenderer({ config, spawn: respondingSpawn({ error: new Error("spawn docker ENOENT") }) }).detail,
     "executable-unavailable",
@@ -93,20 +86,10 @@ test("the readiness probe exercises the real adapter and demands the configured 
   assert.equal(
     probeTexRenderer({ config, spawn: respondingSpawn({ error: timedOut }) }).detail,
     "renderer-timeout",
-    "a hung renderer is not reported as a missing executable",
+    "a hung image check is not reported as a missing binary",
   );
   assert.deepEqual(probeTexRenderer({ config: { texRenderTimeoutMs: 15_000 } }), {
     ok: false,
     detail: "not-configured",
   });
-});
-
-test("a probe failure is a failed figure, not a passed one", () => {
-  const config = { texRendererImage: IMAGE, texRendererIdentity: IDENTITY, texRenderTimeoutMs: 15_000 };
-  const failed = {
-    protocol: TEX_RENDERER_PROTOCOL,
-    rendererIdentity: IDENTITY,
-    results: [{ index: 0, status: "error", diagnostic: { code: "compile-failed", message: "x" } }],
-  };
-  assert.equal(probeTexRenderer({ config, spawn: respondingSpawn({ stdout: JSON.stringify(failed) }) }).detail, "renderer-figure-failed");
 });

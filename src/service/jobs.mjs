@@ -476,6 +476,23 @@ export class JobManager {
       return;
     }
 
+    if (outcome.code !== 0 || outcome.signal !== null) {
+      this.#terminalize(
+        job,
+        JOB_STATES.failed,
+        serviceFailure(ERROR_CODES.jobFailed, "The job did not complete successfully.", {}),
+      );
+      this.#log.error("job-failed", {
+        jobId: job.jobId,
+        tokenId: job.contextId.slice(0, 12),
+        durationMs,
+        exitCode: outcome.code,
+        signal: outcome.signal ?? undefined,
+      });
+      this.#pump();
+      return;
+    }
+
     const raw = await readResult(resultPath);
     if (raw === null || raw.workerError !== undefined) {
       this.#terminalize(

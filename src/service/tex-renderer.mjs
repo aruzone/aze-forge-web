@@ -22,8 +22,6 @@ import { envNameFor, texRendererEnabled } from "./limits.mjs";
 
 export { texRendererEnabled };
 
-/** The batch protocol discriminant the renderer answers with. */
-export const TEX_RENDERER_PROTOCOL = "azeforge.tex-renderer/v1";
 
 /** The executable the fixed argv launches. Never configurable. */
 export const TEX_RENDERER_COMMAND = "docker";
@@ -60,7 +58,7 @@ export function isRendererIdentity(value) {
  */
 export function dockerTexRendererArgs(image, rendererIdentity) {
   return [
-    "run", "--rm", "--interactive", "--platform", "linux/amd64", "--network", "none", "--read-only",
+    "run", "--rm", "--interactive", "--pull", "never", "--platform", "linux/amd64", "--network", "none", "--read-only",
     "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m", "--cap-drop", "ALL",
     "--security-opt", "no-new-privileges", "--pids-limit", "64", "--memory", "512m", "--cpus", "1",
     "--env", `AZEFORGE_TEX_RENDERER_IDENTITY=${rendererIdentity}`,
@@ -110,26 +108,10 @@ export function texRendererCompilerOptions(env) {
   };
 }
 
-/** A trivial figure the readiness probe renders through the real adapter. */
-const PROBE_REQUEST = `${JSON.stringify({
-  protocol: TEX_RENDERER_PROTOCOL,
-  figures: [
-    {
-      index: 0,
-      profile: "tikz",
-      title: "AzeForge Web readiness",
-      description: "Readiness probe figure. It is never served and never logged.",
-      body: "\\draw (0,0) -- (1,1);",
-    },
-  ],
-})}\n`;
-
 /**
- * Prove the configured renderer is actually runnable before the service admits
- * work: the fixed command, the pinned image and the batch protocol are
- * exercised end to end, and the identity it echoes back must be the configured
- * one. A deployment that enables TeX but cannot render is not ready, rather
- * than a service that accepts a job it cannot complete.
+ * Check the configured renderer image before this deployment admits work. This
+ * intentionally inspects rather than runs the image: renderer instances belong
+ * only to qualifying compile jobs.
  *
  * @param {{ config: { texRendererImage?: string, texRendererIdentity?: string, texRenderTimeoutMs: number },
  *           timeoutMs?: number,
@@ -141,36 +123,17 @@ export function probeTexRenderer({ config, timeoutMs = 60_000, spawn = spawnSync
   const rendererIdentity = config.texRendererIdentity;
   if (image === undefined || rendererIdentity === undefined) return { ok: false, detail: "not-configured" };
 
-  const outcome = spawn(
-    TEX_RENDERER_COMMAND,
-    dockerTexRendererArgs(image, rendererIdentity),
-    {
-      input: PROBE_REQUEST,
-      encoding: "utf8",
-      timeout: timeoutMs,
-      maxBuffer: 16 * 1024 * 1024,
-      stdio: ["pipe", "pipe", "ignore"],
-    },
-  );
+  const outcome = spawn(TEX_RENDERER_COMMAND, ["image", "inspect", image], {
+    encoding: "utf8",
+    timeout: timeoutMs,
+    maxBuffer: 16 * 1024 * 1024,
+    stdio: "ignore",
+  });
   if (outcome.error !== undefined && outcome.error !== null) {
-    // spawnSync reports both "could not launch" and "the timeout expired"
-    // through `error`; a hung renderer must not read as a missing binary.
     const code = /** @type {NodeJS.ErrnoException} */ (outcome.error).code;
     return { ok: false, detail: code === "ETIMEDOUT" ? "renderer-timeout" : "executable-unavailable" };
   }
-  if (outcome.status !== 0) return { ok: false, detail: `renderer-exit-${outcome.status ?? "signal"}` };
-
-  let response;
-  try {
-    response = JSON.parse(typeof outcome.stdout === "string" ? outcome.stdout : "");
-  } catch {
-    return { ok: false, detail: "renderer-response-invalid" };
-  }
-  if (response?.protocol !== TEX_RENDERER_PROTOCOL) return { ok: false, detail: "renderer-protocol-mismatch" };
-  if (response?.rendererIdentity !== rendererIdentity) return { ok: false, detail: "renderer-identity-mismatch" };
-  if (response?.results?.length !== 1 || response.results[0]?.status !== "ok") {
-    return { ok: false, detail: "renderer-figure-failed" };
-  }
+  if (outcome.status !== 0) return { ok: false, detail: "renderer-image-unavailable" };
   return { ok: true };
 }
 

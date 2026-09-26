@@ -254,6 +254,22 @@ test("a worker that dies without a result fails the job without a fabricated dia
   }
 });
 
+test("a worker that dies after staging an Artifact cannot publish it", async () => {
+  const { jobs, executor, cleanup } = await harness();
+  try {
+    const job = await submitAnalyze(jobs);
+    const bytes = Buffer.from("artifact");
+    await writeWorkerResult(executor, compileArtifact(bytes), bytes);
+
+    executor.last.onSettled({ code: null, signal: "SIGKILL" });
+    assert.equal(await settled(job), "failed");
+    assert.equal(job.failure?.code, "job-failed");
+    assert.equal(await jobs.readArtifact(job.jobId, CONTEXT), null);
+  } finally {
+    await cleanup();
+  }
+});
+
 test("the retained-result bound refuses admission instead of evicting an advertised result", async () => {
   const { jobs, executor, cleanup } = await harness({ AZEWEB_MAX_RETAINED_JOBS: "16" });
   try {

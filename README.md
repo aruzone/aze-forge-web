@@ -241,8 +241,8 @@ Enabling it needs two things, both in the worker deployment only:
 1. **The renderer configuration.** `AZEWEB_TEX_RENDERER_IMAGE` is the official
    renderer repository pinned to the sealed release digest (or a bare image
    digest), and `AZEWEB_TEX_RENDERER_IDENTITY` is the SHA-256 of that release's
-   manifest. The argv — `docker run --rm --interactive --platform linux/amd64
-   --network none --read-only --tmpfs /tmp:… --cap-drop ALL
+   manifest. The argv — `docker run --rm --interactive --pull never --platform
+   linux/amd64 --network none --read-only --tmpfs /tmp:… --cap-drop ALL
    --no-new-privileges --pids-limit 64 --memory 512m --cpus 1`, with the
    identity passed only through `AZEFORGE_TEX_RENDERER_IDENTITY` — is fixed in
    `src/service/tex-renderer.mjs`; the image is its only variable, and author
@@ -258,9 +258,9 @@ Enabling it needs two things, both in the worker deployment only:
    it, so it is an owner decision recorded here, and the default deployment
    above does not have it. Jobs without `tex` Blocks never start an instance.
 
-Readiness is fail-closed around this: an enabled renderer that cannot answer the
-batch protocol makes the whole service not-ready (503) rather than a service
-that accepts work it cannot complete, and the capabilities document reports
+Readiness is fail-closed around the configured image: Docker must find its
+pinned digest locally without starting an instance, or the service is not-ready
+(503). The capabilities document reports
 `service.renderers.tex.hostEnabled`/`available` plus a generic remedy — never the
 image, the digest, a path or a container runtime detail.
 
