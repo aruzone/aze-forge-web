@@ -11,6 +11,7 @@
   "scripts": {
     "start": "node src/service/main.mjs",
     "prototype:workspace": "python3 -m http.server 4173 --directory src/web",
+    "prototype:responsive": "python3 -m http.server 4174 --directory src/web",
     "test": "node --test \"test/**/*.test.mjs\"",
     "test:unit": "node --test \"test/unit/*.test.mjs\"",
     "test:service": "node --test test/service-http.test.mjs test/walkthrough-http.test.mjs",

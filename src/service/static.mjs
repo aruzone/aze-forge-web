@@ -29,6 +29,9 @@ const FILES = Object.freeze([
   "workspace-composition-prototype.html",
   "workspace-composition-prototype.js",
   "workspace-composition-prototype.css",
+  "responsive-workspace-prototype.html",
+  "responsive-workspace-prototype.js",
+  "responsive-workspace-prototype.css",
 ]);
 
 /**

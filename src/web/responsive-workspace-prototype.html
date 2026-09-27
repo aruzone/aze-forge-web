@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AzeForge responsive workspace prototype</title>
+<link rel="stylesheet" href="/responsive-workspace-prototype.css">
+</head>
+<body>
+<p class="prototype-note">Throwaway prototype · simulated CSS viewport shown by the frame</p>
+<div id="frame"><div id="prototype"></div></div>
+<nav class="prototype-switcher" aria-label="Prototype controls">
+  <div class="variant-controls"><button id="previous" aria-label="Previous variant">←</button><strong id="variant-label"></strong><button id="next" aria-label="Next variant">→</button></div>
+  <div class="viewport-controls" aria-label="Simulated viewport"><button data-width="1440">1440</button><button data-width="1024">1024</button><button data-width="768">768</button></div>
+</nav>
+<script type="module" src="/responsive-workspace-prototype.js"></script>
+</body>
+</html>
