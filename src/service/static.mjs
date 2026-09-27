@@ -26,6 +26,9 @@ const FILES = Object.freeze([
   "draft-gate-prototype.html",
   "draft-gate-prototype.js",
   "draft-gate-prototype.css",
+  "workspace-composition-prototype.html",
+  "workspace-composition-prototype.js",
+  "workspace-composition-prototype.css",
 ]);
 
 /**
