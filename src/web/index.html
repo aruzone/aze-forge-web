@@ -8,23 +8,17 @@
 </head>
 <body>
 <header class="toolbar">
-  <div class="toolbar-primary">
-    <div class="brand">
-      <img class="brand-logo" src="/azeforge-logo-03-2.jpg" alt="" width="32" height="32">
-      <span>AzeForge</span>
-    </div>
-    <button id="signout" type="button" class="ghost" hidden>Sign out</button>
+  <div class="brand">
+    <img class="brand-logo" src="/azeforge-logo-03-2.jpg" alt="" width="32" height="32">
+    <span>AzeForge</span>
   </div>
-  <div class="toolbar-secondary">
-    <label class="field">Example
-      <select id="example"></select>
-    </label>
+  <div class="toolbar-actions" aria-label="Document actions">
     <label class="field">Theme
       <select id="theme"></select>
     </label>
     <span class="actions">
       <button id="analyze" type="button">Analyze</button>
-      <button id="format" type="button">Format Source</button>
+      <button id="format" type="button">Format</button>
     </span>
     <span class="actions exports">
       <span class="label">Export</span>
@@ -34,53 +28,94 @@
       <button type="button" data-format="pdf">PDF</button>
     </span>
     <span id="activity" class="activity" role="status" aria-live="polite"></span>
+    <button id="signout" type="button" class="ghost" hidden>Sign out</button>
   </div>
 </header>
 <div id="preview-toast" class="preview-toast" role="status" aria-live="polite" hidden></div>
+<textarea id="source" spellcheck="false" aria-label="Current editor Source" hidden></textarea>
 
-<main id="workspace" hidden>
-  <section class="authoring-pane" aria-labelledby="authoring-title">
-    <h2 id="authoring-title" class="pane-title">AzeMark authoring</h2>
-    <label class="authoring-field">Description
-      <textarea id="description" rows="3" maxlength="32768"></textarea>
+<main id="workspace" class="notebook-layout" hidden>
+  <aside class="notebook-sidebar" aria-labelledby="navigator-title">
+    <div class="sidebar-header">
+      <h2 id="navigator-title">Document</h2>
+      <label class="sidebar-field">Example
+        <select id="example"></select>
+      </label>
+    </div>
+    <label class="sidebar-search">Find a cell or text
+      <input id="cell-search" type="search" placeholder="Search this document" autocomplete="off">
     </label>
-    <label class="authoring-consent"><input id="authoring-consent" type="checkbox"> I understand that my Description and AzeMark Source draft are sent to the owner-configured authoring service.</label>
-    <p id="authoring-status" role="status" aria-live="polite"></p>
-    <button id="generate-draft" type="button">Generate draft</button>
-  </section>
-
-  <section class="pane">
-    <h2 class="pane-title">Current editor Source <span id="source-meta" class="meta"></span></h2>
-    <textarea id="source" spellcheck="false" aria-label="Current editor Source"></textarea>
-  </section>
-
-  <section id="draft-gate" class="pane draft-gate" hidden aria-labelledby="draft-title">
-    <h2 id="draft-title" class="pane-title" tabindex="-1">Proposed AzeMark Source draft</h2>
-    <p id="draft-status" role="status" aria-live="polite"></p>
-    <textarea id="draft-source" readonly spellcheck="false" aria-label="Proposed AzeMark Source draft"></textarea>
-    <pre id="draft-diagnostics" hidden></pre>
-    <div class="draft-actions">
-      <button id="apply-draft" type="button">Apply draft</button>
-      <button id="discard-draft" type="button">Discard draft</button>
+    <p id="cell-count" class="cell-count"></p>
+    <nav id="cell-list" class="cell-list" aria-label="Cell navigation"></nav>
+    <div class="authoring-controls">
+      <h3>Generate with LLM</h3>
+      <label class="authoring-consent"><input id="authoring-consent" type="checkbox"> I understand that each cell request and AzeMark Source draft are sent to the owner-configured authoring service.</label>
+      <p id="authoring-status" role="status" aria-live="polite"></p>
     </div>
-  </section>
+  </aside>
 
-  <section class="pane split">
-    <div class="diagnostics">
-      <h2 class="pane-title">Diagnostics <span id="diagnostics-summary" class="meta"></span></h2>
+  <section class="notebook-editor" aria-labelledby="editor-title">
+    <section class="front-matter" aria-labelledby="front-matter-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Document settings</p>
+          <h1 id="front-matter-title">Front matter</h1>
+        </div>
+        <span class="fixed-label">Fixed</span>
+      </div>
+      <div class="front-matter-fields">
+        <label>Title
+          <input id="document-title" type="text" placeholder="Untitled AzeMark document">
+        </label>
+        <label>Authors
+          <textarea id="document-author" rows="2" spellcheck="false" placeholder="One author per line"></textarea>
+        </label>
+        <label>Date
+          <input id="document-date" type="date">
+        </label>
+        <label class="metadata-field">Additional metadata
+          <textarea id="document-metadata" rows="2" spellcheck="false" placeholder="theme: default&#10;x-document-key: value"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="notebook-content" aria-labelledby="editor-title">
+      <div class="notebook-heading">
+        <div>
+          <p class="eyebrow">AzeMark Source</p>
+          <h2 id="editor-title">Notebook editor</h2>
+        </div>
+        <span id="source-meta" class="meta"></span>
+      </div>
+      <div id="notebook-cells" class="notebook-cells"></div>
+      <button id="add-cell" type="button" class="add-cell">Add AzeMark cell</button>
+      <div id="execution-dock" class="execution-dock">
+        <section id="rendered-output" class="rendered-output" aria-labelledby="preview-title">
+          <div class="output-heading">
+            <h2 id="preview-title">Rendered output</h2>
+            <span id="output-label" class="output-label">Run a cell to refresh</span>
+          </div>
+          <div class="preview-frame" id="preview-frame">
+            <p class="placeholder" id="preview-placeholder">Run a cell to render the current AzeMark document.</p>
+            <iframe id="preview" sandbox="" referrerpolicy="no-referrer" title="Artifact preview" hidden></iframe>
+          </div>
+          <div class="preview-bar">
+            <p class="preview-status" id="preview-status"></p>
+            <button id="download-artifact" type="button" hidden>Download</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="diagnostics-panel" aria-labelledby="diagnostics-title">
+      <div class="notebook-heading">
+        <div>
+          <p class="eyebrow">Compiler feedback</p>
+          <h2 id="diagnostics-title">Diagnostics <span id="diagnostics-summary" class="meta"></span></h2>
+        </div>
+      </div>
       <div id="diagnostics-list" class="diagnostic-list"></div>
-    </div>
-    <div class="preview">
-      <h2 class="pane-title">Preview</h2>
-      <div class="preview-frame" id="preview-frame">
-        <p class="placeholder" id="preview-placeholder">Run an HTML export to preview the current revision.</p>
-        <iframe id="preview" sandbox="" referrerpolicy="no-referrer" title="Artifact preview" hidden></iframe>
-      </div>
-      <div class="preview-bar">
-        <p class="preview-status" id="preview-status"></p>
-        <button id="download-artifact" type="button" hidden>Download</button>
-      </div>
-    </div>
+    </section>
   </section>
 </main>
 

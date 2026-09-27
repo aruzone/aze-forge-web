@@ -42,18 +42,21 @@ const els = {
   activity: element("activity"),
   previewToast: element("preview-toast"),
   source: /** @type {HTMLTextAreaElement} */ (element("source", HTMLTextAreaElement)),
-  description: /** @type {HTMLTextAreaElement} */ (element("description", HTMLTextAreaElement)),
+  sourceMeta: element("source-meta"),
+  documentTitle: /** @type {HTMLInputElement} */ (element("document-title", HTMLInputElement)),
+  documentAuthor: /** @type {HTMLTextAreaElement} */ (element("document-author", HTMLTextAreaElement)),
+  documentDate: /** @type {HTMLInputElement} */ (element("document-date", HTMLInputElement)),
+  documentMetadata: /** @type {HTMLTextAreaElement} */ (element("document-metadata", HTMLTextAreaElement)),
+  cellSearch: /** @type {HTMLInputElement} */ (element("cell-search", HTMLInputElement)),
+  cellCount: element("cell-count"),
+  cellList: element("cell-list"),
+  notebookCells: element("notebook-cells"),
+  addCell: /** @type {HTMLButtonElement} */ (element("add-cell", HTMLButtonElement)),
+  executionDock: element("execution-dock"),
+  renderedOutput: element("rendered-output"),
+  outputLabel: element("output-label"),
   authoringConsent: /** @type {HTMLInputElement} */ (element("authoring-consent", HTMLInputElement)),
   authoringStatus: element("authoring-status"),
-  generateDraft: /** @type {HTMLButtonElement} */ (element("generate-draft", HTMLButtonElement)),
-  draftGate: element("draft-gate"),
-  draftTitle: element("draft-title"),
-  draftStatus: element("draft-status"),
-  draftSource: /** @type {HTMLTextAreaElement} */ (element("draft-source", HTMLTextAreaElement)),
-  draftDiagnostics: element("draft-diagnostics"),
-  applyDraft: /** @type {HTMLButtonElement} */ (element("apply-draft", HTMLButtonElement)),
-  discardDraft: /** @type {HTMLButtonElement} */ (element("discard-draft", HTMLButtonElement)),
-  sourceMeta: element("source-meta"),
   diagnosticsList: element("diagnostics-list"),
   diagnosticsSummary: element("diagnostics-summary"),
   preview: /** @type {HTMLIFrameElement} */ (element("preview", HTMLIFrameElement)),
@@ -112,7 +115,9 @@ const els = {
  *   revision: number, analyzeController: AbortController | null, analyzeJobId: string | null,
  *   preview: { objectUrl: string | null, revision: string | null, theme: string | null },
  *   artifact: { format: string, bytes: ArrayBuffer, revision: string, theme: string } | null,
- *   draft: any, debounceTimer: ReturnType<typeof setTimeout> | undefined,
+ *   frontMatter: { version: string, title: string, authors: string[], date: string, metadata: string },
+ *   cells: { id: string, text: string }[], activeCellId: string | null, executedCellId: string | null,
+ *   cellExecution: number, draftGeneration: number, cellSearch: string, draft: any, debounceTimer: ReturnType<typeof setTimeout> | undefined,
  *   previewToastTimer: ReturnType<typeof setTimeout> | undefined }} */
 const state = {
   token: sessionStorage.getItem(TOKEN_KEY) ?? "",
@@ -123,6 +128,13 @@ const state = {
   analyzeJobId: null,
   preview: { objectUrl: null, revision: null, theme: null },
   artifact: null,
+  frontMatter: { version: "2", title: "", authors: [], date: "", metadata: "" },
+  cells: [],
+  activeCellId: null,
+  executedCellId: null,
+  cellExecution: 0,
+  draftGeneration: 0,
+  cellSearch: "",
   debounceTimer: undefined,
   previewToastTimer: undefined,
   draft: null,
@@ -235,61 +247,555 @@ async function fetchArtifact(jobId) {
   return response.arrayBuffer();
 }
 
-// ------------------------------------------------------------- Draft Gate
+// --------------------------------------------------------- notebook editing
 
-async function generateDraft() {
-  if (!els.authoringConsent.checked) {
-    els.authoringStatus.textContent = "Acknowledge data transfer before generating a draft.";
-    return;
-  }
-  els.generateDraft.disabled = true;
-  els.authoringStatus.textContent = "Generating draft…";
-  try {
-    const draft = await request("POST", "/v1/authoring/drafts", {
-      body: JSON.stringify({ protocolVersion: 1, requestId: crypto.randomUUID(), description: els.description.value }),
-      contentType: "application/json",
-    });
-    state.draft = draft;
-    els.draftGate.hidden = false;
-    els.draftDiagnostics.hidden = true;
-    els.draftDiagnostics.textContent = "";
-    if (draft.outcome === "source") {
-      els.draftSource.value = draft.source.text;
-      const valid = draft.analysis.valid === true;
-      els.draftStatus.textContent = valid ? "Draft analyzed — ready to apply." : "Draft needs changes — it has not replaced your Source.";
-      els.applyDraft.disabled = !valid;
-      if (!valid) {
-        els.draftDiagnostics.hidden = false;
-        els.draftDiagnostics.textContent = (draft.analysis.diagnostics ?? []).map((/** @type {{ message: string }} */ item) => item.message).join("\n");
-      }
-    } else {
-      els.draftSource.value = "";
-      els.applyDraft.disabled = true;
-      els.draftStatus.textContent = draft.outcome === "clarification"
-        ? `More detail is needed. ${draft.question}`
-        : "This request is not available in this deployment.";
+/** @param {string} text */
+function createCell(text = "") {
+  return { id: crypto.randomUUID(), text };
+}
+
+/** @param {string} value @returns {string} */
+function frontMatterValue(value) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+    try {
+      return String(JSON.parse(trimmed));
+    } catch {
+      return trimmed.slice(1, -1);
     }
-  } catch (error) {
-    els.authoringStatus.textContent = "Draft generation is temporarily unavailable. Your Description and Source are unchanged.";
-  } finally {
-    els.generateDraft.disabled = false;
+  }
+  if (trimmed.startsWith("'") && trimmed.endsWith("'")) return trimmed.slice(1, -1).replaceAll("''", "'");
+  return trimmed;
+}
+
+/** @param {string} value */
+function authorsFromFlow(value) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+    return trimmed.length === 0 ? [] : [frontMatterValue(trimmed)];
+  }
+  /** @type {string[]} */
+  const authors = [];
+  let start = 1;
+  let quote = "";
+  for (let index = 1; index < trimmed.length - 1; index += 1) {
+    const character = trimmed[index];
+    if (quote.length > 0) {
+      if (quote === "\"" && character === "\\") {
+        index += 1;
+        continue;
+      }
+      if (character === quote) quote = "";
+      continue;
+    }
+    if (character === "\"" || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character !== ",") continue;
+    const author = frontMatterValue(trimmed.slice(start, index));
+    if (author.length > 0) authors.push(author);
+    start = index + 1;
+  }
+  const author = frontMatterValue(trimmed.slice(start, -1));
+  if (author.length > 0) authors.push(author);
+  return authors;
+}
+
+/** @param {string[]} lines */
+function parseFrontMatter(lines) {
+  /** @type {{ version: string, title: string, authors: string[], date: string, metadata: string }} */
+  const frontMatter = { version: "2", title: "", authors: [], date: "", metadata: "" };
+  /** @type {string[]} */
+  const metadata = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const match = /^([A-Za-z][A-Za-z0-9_-]*):(?:\s*(.*))?$/.exec(line);
+    if (match === null) {
+      metadata.push(line);
+      continue;
+    }
+
+    const [, key, value = ""] = match;
+    if (key === "author" && value.length === 0) {
+      /** @type {string[]} */
+      const authors = [];
+      while (index + 1 < lines.length && /^\s*-\s+/.test(lines[index + 1])) {
+        index += 1;
+        authors.push(frontMatterValue(lines[index].replace(/^\s*-\s+/, "")));
+      }
+      frontMatter.authors = authors;
+      continue;
+    }
+    if (key === "azemark") frontMatter.version = frontMatterValue(value);
+    else if (key === "title") frontMatter.title = frontMatterValue(value);
+    else if (key === "author") frontMatter.authors = authorsFromFlow(value);
+    else if (key === "date" || key === "x-date") frontMatter.date = frontMatterValue(value);
+    else metadata.push(line);
+  }
+
+  frontMatter.metadata = metadata.join("\n").trim();
+  return frontMatter;
+}
+
+/** @param {string} source */
+function parseNotebookSource(source) {
+  const normalized = source.replace(/\r\n?/g, "\n");
+  /** @type {{ version: string, title: string, authors: string[], date: string, metadata: string }} */
+  let frontMatter = { version: "2", title: "", authors: [], date: "", metadata: "" };
+  let body = normalized;
+  if (normalized.startsWith("---\n")) {
+    const delimiter = normalized.indexOf("\n---", 4);
+    if (delimiter !== -1) {
+      frontMatter = parseFrontMatter(normalized.slice(4, delimiter).split("\n"));
+      body = normalized.slice(delimiter + 4).replace(/^\n+/, "");
+    }
+  }
+
+  const cells = body.trim().length === 0
+    ? [createCell()]
+    : body.trim().split(/(?=^#{1,6}\s)/m).filter((text) => text.trim().length > 0).map((text) => createCell(text.trim()));
+  return { frontMatter, cells };
+}
+
+/** @param {string} value */
+function yamlString(value) {
+  return JSON.stringify(value);
+}
+
+/** @param {string} value */
+function authorsFromInput(value) {
+  return value.split("\n").map((author) => author.trim()).filter((author) => author.length > 0);
+}
+
+function sourceFromNotebook() {
+  const { frontMatter } = state;
+  const authors = frontMatter.authors.map((author) => author.trim()).filter((author) => author.length > 0);
+  const lines = [
+    "---",
+    `azemark: ${frontMatter.version || "2"}`,
+    ...(frontMatter.title.trim().length === 0 ? [] : [`title: ${yamlString(frontMatter.title.trim())}`]),
+    ...(authors.length === 0 ? [] : authors.length === 1
+      ? [`author: ${yamlString(authors[0])}`]
+      : ["author:", ...authors.map((author) => `  - ${yamlString(author)}`)]),
+    ...(frontMatter.date.trim().length === 0 ? [] : [`x-date: ${yamlString(frontMatter.date.trim())}`]),
+    ...(frontMatter.metadata.trim().length === 0 ? [] : [frontMatter.metadata.trim()]),
+    "---",
+  ];
+  const cells = state.cells.map((cell) => cell.text).filter((text) => text.trim().length > 0);
+  return `${lines.join("\n")}\n${cells.length === 0 ? "" : `\n${cells.join("\n\n")}\n`}`;
+}
+
+function renderFrontMatter() {
+  els.documentTitle.value = state.frontMatter.title;
+  els.documentAuthor.value = state.frontMatter.authors.join("\n");
+  els.documentDate.value = state.frontMatter.date;
+  els.documentMetadata.value = state.frontMatter.metadata;
+}
+
+/** @param {{ id: string, text: string }} cell @param {number} index */
+function cellLabel(cell, index) {
+  const firstLine = cell.text.split("\n").find((line) => line.trim().length > 0)?.trim() ?? "";
+  const heading = /^#{1,6}\s+(.+)$/.exec(firstLine);
+  const label = heading?.[1] ?? firstLine;
+  return label.length === 0 ? `Empty cell ${index + 1}` : label.slice(0, 72);
+}
+
+/** @param {string} text @param {string} action @param {string} cellId @param {string} label */
+function cellTool(text, action, cellId, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = text;
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.dataset.action = action;
+  button.dataset.cellId = cellId;
+  return button;
+}
+
+/** @param {{ id: string, text: string }} cell @param {number} index */
+function renderCell(cell, index) {
+  const item = document.createElement("article");
+  item.className = "notebook-cell";
+  item.id = `cell-${cell.id}`;
+  item.dataset.cellId = cell.id;
+  item.dataset.active = String(state.activeCellId === cell.id);
+  item.setAttribute("aria-label", `AzeMark cell ${index + 1}`);
+
+  const gutter = document.createElement("div");
+  gutter.className = "cell-gutter";
+  const run = document.createElement("button");
+  run.type = "button";
+  run.className = "cell-run";
+  run.textContent = "▶";
+  run.title = `Run cell ${index + 1}`;
+  run.setAttribute("aria-label", `Run cell ${index + 1}`);
+  run.dataset.action = "run";
+  run.dataset.cellId = cell.id;
+  gutter.append(run);
+
+  const body = document.createElement("div");
+  body.className = "cell-body";
+  const toolbar = document.createElement("div");
+  toolbar.className = "cell-toolbar";
+  const count = document.createElement("span");
+  count.className = "execution-count";
+  count.textContent = `Cell ${index + 1}`;
+  const tools = document.createElement("span");
+  tools.className = "cell-tools";
+  tools.append(
+    cellTool("⧉", "copy", cell.id, "Copy cell"),
+    cellTool("↑", "move-up", cell.id, "Move cell up"),
+    cellTool("↓", "move-down", cell.id, "Move cell down"),
+    cellTool("+", "insert-after", cell.id, "Add cell below"),
+  );
+  const remove = cellTool("×", "delete", cell.id, "Delete cell");
+  remove.disabled = state.cells.length === 1;
+  tools.append(remove);
+  toolbar.append(count, tools);
+
+  const source = document.createElement("textarea");
+  source.className = "cell-source";
+  source.spellcheck = false;
+  source.value = cell.text;
+  source.dataset.role = "source";
+  source.dataset.cellId = cell.id;
+  source.setAttribute("aria-label", `AzeMark cell ${index + 1} source`);
+
+  const authoring = document.createElement("div");
+  authoring.className = "cell-authoring";
+  const description = document.createElement("textarea");
+  description.className = "cell-description";
+  description.rows = 2;
+  description.dataset.role = "description";
+  description.dataset.cellId = cell.id;
+  description.placeholder = "Describe AzeMark content to generate in this cell";
+  description.setAttribute("aria-label", `Description for cell ${index + 1} generation`);
+  const generate = document.createElement("button");
+  generate.type = "button";
+  generate.textContent = "Generate";
+  generate.dataset.action = "generate";
+  generate.dataset.cellId = cell.id;
+  generate.disabled = state.capabilities?.service.authoring?.available !== true;
+  authoring.append(description, generate);
+
+  body.append(toolbar, source, authoring);
+  if (state.draft?.cellId === cell.id) body.append(renderCellDraft(cell.id));
+
+  const output = document.createElement("div");
+  output.className = "cell-output";
+  output.id = `cell-output-${cell.id}`;
+  body.append(output);
+  item.append(gutter, body);
+  return item;
+}
+
+/** @param {string} cellId */
+function renderCellDraft(cellId) {
+  const draft = state.draft;
+  const wrapper = document.createElement("div");
+  wrapper.className = "cell-draft";
+  const status = document.createElement("p");
+  status.className = "cell-draft-status";
+  status.textContent = draft.outcome === "source"
+    ? draft.valid ? "Draft Gate: proposed AzeMark Source analyzed. Apply it to replace this cell." : "Proposed AzeMark Source has compiler diagnostics and cannot replace this cell."
+    : draft.outcome === "clarification" ? `More detail is needed. ${draft.question}` : "This request is not available in this deployment.";
+  wrapper.append(status);
+
+  if (draft.outcome === "source") {
+    const source = document.createElement("textarea");
+    source.readOnly = true;
+    source.spellcheck = false;
+    source.value = draft.cells.map((/** @type {{ text: string }} */ cell) => cell.text).join("\n\n");
+    source.setAttribute("aria-label", "Proposed AzeMark Source draft");
+    wrapper.append(source);
+    if (!draft.valid) {
+      const diagnostics = document.createElement("pre");
+      diagnostics.textContent = (draft.diagnostics ?? []).map((/** @type {{ message: string }} */ item) => item.message).join("\n");
+      wrapper.append(diagnostics);
+    }
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "cell-draft-actions";
+  const apply = document.createElement("button");
+  apply.type = "button";
+  apply.textContent = "Apply draft";
+  apply.dataset.action = "apply-draft";
+  apply.dataset.cellId = cellId;
+  apply.disabled = draft.outcome !== "source" || !draft.valid;
+  const discard = document.createElement("button");
+  discard.type = "button";
+  discard.textContent = "Discard";
+  discard.dataset.action = "discard-draft";
+  discard.dataset.cellId = cellId;
+  actions.append(apply, discard);
+  wrapper.append(actions);
+  return wrapper;
+}
+
+function renderCellList() {
+  const search = state.cellSearch.trim().toLocaleLowerCase();
+  const frontMatterMatch = search.length === 0 ? undefined : [
+    ["title", state.frontMatter.title],
+    ["authors", state.frontMatter.authors.join("\n")],
+    ["date", state.frontMatter.date],
+    ["metadata", state.frontMatter.metadata],
+  ].find(([, value]) => value.toLocaleLowerCase().includes(search));
+  const matchesFrontMatter = frontMatterMatch !== undefined;
+  const matching = state.cells.filter((cell, index) => {
+    const searchable = `${cellLabel(cell, index)}\n${cell.text}`.toLocaleLowerCase();
+    return search.length === 0 || searchable.includes(search);
+  });
+  const resultCount = matching.length + Number(matchesFrontMatter);
+  els.cellCount.textContent = search.length === 0
+    ? `${state.cells.length} ${state.cells.length === 1 ? "cell" : "cells"}`
+    : `${resultCount} matching ${resultCount === 1 ? "item" : "items"}`;
+
+  const fragment = document.createDocumentFragment();
+  if (resultCount === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No matching content.";
+    fragment.append(empty);
+  }
+  if (frontMatterMatch !== undefined) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.frontMatter = "true";
+    button.dataset.frontMatterField = frontMatterMatch[0];
+    const number = document.createElement("span");
+    number.className = "cell-number";
+    number.textContent = "Document";
+    const name = document.createElement("span");
+    name.className = "cell-name";
+    name.textContent = `Front matter: ${{
+      title: "Title",
+      authors: "Authors",
+      date: "Date",
+      metadata: "Additional metadata",
+    }[frontMatterMatch[0]]}`;
+    button.append(number, name);
+    fragment.append(button);
+  }
+  for (const cell of matching) {
+    const index = state.cells.indexOf(cell);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.cellId = cell.id;
+    button.dataset.active = String(cell.id === state.activeCellId);
+    const number = document.createElement("span");
+    number.className = "cell-number";
+    number.textContent = `Cell ${index + 1}`;
+    const name = document.createElement("span");
+    name.className = "cell-name";
+    name.textContent = cellLabel(cell, index);
+    button.append(number, name);
+    fragment.append(button);
+  }
+  for (const item of document.querySelectorAll(".notebook-cell")) {
+    if (!(item instanceof HTMLElement)) continue;
+    item.dataset.active = String(item.dataset.cellId === state.activeCellId);
+  }
+  els.cellList.replaceChildren(fragment);
+}
+
+function renderNotebook() {
+  els.executionDock.append(els.renderedOutput);
+  renderFrontMatter();
+  const cells = document.createDocumentFragment();
+  state.cells.forEach((cell, index) => cells.append(renderCell(cell, index)));
+  els.notebookCells.replaceChildren(cells);
+  renderCellList();
+  if (state.executedCellId !== null) moveRenderedOutputToCell(state.executedCellId);
+}
+
+/** @param {string} source */
+function loadNotebookSource(source) {
+  const notebook = parseNotebookSource(source);
+  state.frontMatter = notebook.frontMatter;
+  state.cells = notebook.cells;
+  state.activeCellId = notebook.cells[0]?.id ?? null;
+  state.executedCellId = null;
+  state.draftGeneration += 1;
+  state.draft = null;
+  renderNotebook();
+}
+
+function syncSourceFromNotebook({ fromUser = false } = {}) {
+  if (fromUser) invalidateDrafts();
+  setSource(sourceFromNotebook(), { fromUser, fromNotebook: true });
+}
+
+function invalidateDrafts() {
+  state.draftGeneration += 1;
+  if (state.draft !== null) {
+    state.draft = null;
+    renderNotebook();
+  }
+  for (const button of document.querySelectorAll("button[data-action=\"generate\"]")) {
+    if (button instanceof HTMLButtonElement) button.disabled = state.capabilities?.service.authoring?.available !== true;
   }
 }
 
-function applyDraft() {
-  if (state.draft?.outcome !== "source" || state.draft.analysis.valid !== true) return;
-  setSource(state.draft.source.text);
-  els.source.focus();
-  els.source.select();
-  els.draftGate.hidden = true;
+/** @param {string} cellId */
+function moveRenderedOutputToCell(cellId) {
+  const target = document.getElementById(`cell-output-${cellId}`);
+  if (target !== null) target.append(els.renderedOutput);
+}
+/** @param {string} cellId */
+function cellNumber(cellId) {
+  const index = state.cells.findIndex((cell) => cell.id === cellId);
+  return index === -1 ? null : index + 1;
+}
+
+
+/** @param {string} cellId */
+function runCell(cellId) {
+  const number = cellNumber(cellId);
+  if (number === null) return;
+  state.activeCellId = cellId;
+  state.executedCellId = cellId;
+  state.cellExecution += 1;
+  els.outputLabel.textContent = `Running cell ${number}`;
+  renderCellList();
+  moveRenderedOutputToCell(cellId);
+  void exportFormat("html", {
+    previewLabel: `cell ${number}`,
+    cellId,
+    cellExecution: state.cellExecution,
+  });
+}
+
+/** @param {string} cellId */
+async function copyCell(cellId) {
+  const cell = state.cells.find((candidate) => candidate.id === cellId);
+  if (cell === undefined) return;
+  if (navigator.clipboard === undefined) {
+    setActivity("Clipboard access is unavailable.", "error");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(cell.text);
+    setActivity(`Copied cell ${state.cells.indexOf(cell) + 1}`, "ok");
+  } catch {
+    setActivity("Could not copy this cell.", "error");
+  }
+}
+
+/** @param {string} cellId @param {-1 | 1} direction */
+function moveCell(cellId, direction) {
+  const index = state.cells.findIndex((cell) => cell.id === cellId);
+  const destination = index + direction;
+  if (index === -1 || destination < 0 || destination >= state.cells.length) return;
+  [state.cells[index], state.cells[destination]] = [state.cells[destination], state.cells[index]];
+  state.activeCellId = cellId;
+  syncSourceFromNotebook({ fromUser: true });
+  renderNotebook();
+}
+
+/** @param {string} cellId */
+function insertCellAfter(cellId) {
+  const index = state.cells.findIndex((cell) => cell.id === cellId);
+  if (index === -1) return;
+  insertCell(index + 1);
+}
+
+/** @param {number} index */
+function insertCell(index) {
+  const cell = createCell();
+  state.cells.splice(index, 0, cell);
+  state.activeCellId = cell.id;
+  syncSourceFromNotebook({ fromUser: true });
+  renderNotebook();
+  document.getElementById(`cell-${cell.id}`)?.querySelector("textarea")?.focus();
+}
+
+/** @param {string} cellId */
+function deleteCell(cellId) {
+  if (state.cells.length === 1) return;
+  const index = state.cells.findIndex((cell) => cell.id === cellId);
+  if (index === -1) return;
+  state.cells.splice(index, 1);
+  state.activeCellId = state.cells[Math.max(0, index - 1)]?.id ?? null;
+  if (state.executedCellId === cellId) {
+    state.executedCellId = null;
+    state.cellExecution += 1;
+  }
+  if (state.draft?.cellId === cellId) state.draft = null;
+  syncSourceFromNotebook({ fromUser: true });
+  renderNotebook();
+}
+
+function addCell() {
+  insertCell(state.cells.length);
+}
+
+/** @param {string} cellId */
+async function generateDraft(cellId) {
+  const description = /** @type {HTMLTextAreaElement | null} */ (document.querySelector(`textarea[data-role="description"][data-cell-id="${cellId}"]`));
+  if (description === null || description.value.trim().length === 0) {
+    els.authoringStatus.textContent = "Describe the content to generate in the cell.";
+    description?.focus();
+    return;
+  }
+  if (!els.authoringConsent.checked) {
+    els.authoringStatus.textContent = "Acknowledge data transfer before generating a draft.";
+    els.authoringConsent.focus();
+    return;
+  }
+  const draftGeneration = ++state.draftGeneration;
+  const button = /** @type {HTMLButtonElement | null} */ (document.querySelector(`button[data-action="generate"][data-cell-id="${cellId}"]`));
+  if (button !== null) button.disabled = true;
+  els.authoringStatus.textContent = "Generating cell draft…";
+  try {
+    const draft = await request("POST", "/v1/authoring/drafts", {
+      body: JSON.stringify({ protocolVersion: 1, requestId: crypto.randomUUID(), description: description.value.trim() }),
+      contentType: "application/json",
+    });
+    if (draftGeneration !== state.draftGeneration || !state.cells.some((cell) => cell.id === cellId)) return;
+    const generated = draft.outcome === "source" ? parseNotebookSource(draft.source.text).cells : [];
+    state.draft = {
+      cellId,
+      outcome: draft.outcome,
+      question: draft.question,
+      cells: generated,
+      valid: draft.analysis?.valid === true,
+      diagnostics: draft.analysis?.diagnostics ?? [],
+    };
+    els.authoringStatus.textContent = draft.outcome === "source" ? "Generated a cell draft. Review it before applying." : "The authoring service needs more information.";
+    renderNotebook();
+  } catch {
+    if (draftGeneration === state.draftGeneration) {
+      els.authoringStatus.textContent = "Draft generation is temporarily unavailable. The notebook is unchanged.";
+    }
+  } finally {
+    const activeButton = /** @type {HTMLButtonElement | null} */ (document.querySelector(`button[data-action="generate"][data-cell-id="${cellId}"]`));
+    if (activeButton !== null) activeButton.disabled = state.capabilities?.service.authoring?.available !== true;
+  }
+}
+
+/** @param {string} cellId */
+function applyDraft(cellId) {
+  if (state.draft?.cellId !== cellId || state.draft.outcome !== "source" || !state.draft.valid) return;
+  const index = state.cells.findIndex((cell) => cell.id === cellId);
+  if (index === -1) return;
+  const generated = state.draft.cells;
+  state.cells.splice(index, 1, ...generated);
+  state.activeCellId = generated[0]?.id ?? null;
   state.draft = null;
+  syncSourceFromNotebook({ fromUser: true });
+  renderNotebook();
   void analyze();
 }
 
-function discardDraft() {
-  els.draftGate.hidden = true;
+/** @param {string} cellId */
+function discardDraft(cellId) {
+  if (state.draft?.cellId !== cellId) return;
   state.draft = null;
-  els.description.focus();
+  els.authoringStatus.textContent = "Discarded the generated draft.";
+  renderNotebook();
 }
 
 // -------------------------------------------------------------- source state
@@ -298,12 +804,13 @@ function currentRevision() {
   return String(state.revision);
 }
 
-/** @param {string} text @param {{ fromUser?: boolean }} [options] */
-function setSource(text, { fromUser = false } = {}) {
-  els.source.value = text;
+/** @param {string} text @param {{ fromUser?: boolean, fromNotebook?: boolean }} [options] */
+function setSource(text, { fromUser = false, fromNotebook = false } = {}) {
+  els.source.value = text.replace(/\r\n?/g, "\n");
   state.revision += 1;
   updateSourceMeta();
   markPreviewStale();
+  if (!fromNotebook) loadNotebookSource(els.source.value);
   if (fromUser) scheduleAnalyze();
 }
 
@@ -494,8 +1001,59 @@ function renderDiagnostic(diagnostic) {
 function revealRange(start, end) {
   const startIndex = indexForPosition(els.source.value, start);
   const endIndex = indexForPosition(els.source.value, end ?? start);
-  els.source.focus();
-  els.source.setSelectionRange(startIndex, Math.max(startIndex, endIndex));
+  if (focusFrontMatterControl(startIndex)) return;
+  let searchStart = 0;
+  /** @type {{ cell: { id: string, text: string }, start: number } | null} */
+  let target = null;
+  for (const cell of state.cells) {
+    const cellStart = els.source.value.indexOf(cell.text, searchStart);
+    if (cellStart === -1) continue;
+    const cellEnd = cellStart + cell.text.length;
+    searchStart = cellEnd;
+    if (startIndex < cellStart) {
+      target = { cell, start: cellStart };
+      break;
+    }
+    if (startIndex >= cellStart && startIndex < cellEnd) {
+      target = { cell, start: cellStart };
+      break;
+    }
+  }
+  if (target === null) {
+    setActivity("The diagnostic location is outside the editable cells.", "error");
+    return;
+  }
+  state.activeCellId = target.cell.id;
+  renderCellList();
+  const editor = /** @type {HTMLTextAreaElement | null} */ (document.querySelector(`textarea[data-role="source"][data-cell-id="${target.cell.id}"]`));
+  if (editor === null) return;
+  const selectionStart = Math.min(Math.max(startIndex - target.start, 0), target.cell.text.length);
+  const selectionEnd = Math.min(Math.max(endIndex - target.start, selectionStart), target.cell.text.length);
+  editor.focus();
+  editor.setSelectionRange(selectionStart, selectionEnd);
+  editor.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+/** @param {number} sourceIndex */
+function focusFrontMatterControl(sourceIndex) {
+  const source = els.source.value;
+  const closingDelimiter = source.indexOf("\n---");
+  if (closingDelimiter === -1 || sourceIndex > closingDelimiter + 3) return false;
+  const key = source
+    .slice(0, sourceIndex + 1)
+    .split("\n")
+    .reverse()
+    .map((line) => /^([A-Za-z][A-Za-z0-9_-]*):/.exec(line)?.[1])
+    .find((value) => value !== undefined);
+  const control = key === "title"
+    ? els.documentTitle
+    : key === "author"
+      ? els.documentAuthor
+      : key === "date" || key === "x-date"
+        ? els.documentDate
+        : els.documentMetadata;
+  control.focus();
+  return true;
 }
 
 /**
@@ -536,16 +1094,26 @@ function applyFix(fix) {
 }
 
 // ------------------------------------------------------------------- exports
+/** @param {string | undefined} cellId @param {number | undefined} cellExecution */
+function isCurrentCellExecution(cellId, cellExecution) {
+  return cellExecution === undefined || (
+    cellExecution === state.cellExecution &&
+    cellId !== undefined &&
+    state.cells.some((cell) => cell.id === cellId)
+  );
+}
+
 
 /**
  * @param {string} format
- * @param {{ previewLabel?: string }} [options]
+ * @param {{ previewLabel?: string, cellId?: string, cellExecution?: number }} [options]
  * @returns {Promise<void>}
  */
-async function exportFormat(format, { previewLabel } = {}) {
+async function exportFormat(format, { previewLabel, cellId, cellExecution } = {}) {
   const revision = currentRevision();
   const source = els.source.value;
   const theme = els.theme.value;
+  const previewTheme = selectedTheme();
   showToast(`Compiling ${format.toUpperCase()}…`, "progress");
   setExporting(format, true);
 
@@ -561,10 +1129,11 @@ async function exportFormat(format, { previewLabel } = {}) {
     });
     const job = await pollJob(accepted.jobId, { pollAfterMs: accepted.pollAfterMs });
 
-    if (job.revision !== currentRevision()) {
+    if (job.revision !== currentRevision() || previewTheme !== selectedTheme()) {
       showToast(`Discarded a stale ${format.toUpperCase()} result from revision ${job.revision}.`, "error");
       return;
     }
+    if (!isCurrentCellExecution(cellId, cellExecution)) return;
 
     if (job.status !== "completed") {
       showToast(job.failure?.message ?? `${format.toUpperCase()} export failed.`, "error");
@@ -578,13 +1147,14 @@ async function exportFormat(format, { previewLabel } = {}) {
     }
 
     const bytes = await fetchArtifact(job.jobId);
+    if (!isCurrentCellExecution(cellId, cellExecution) || previewTheme !== selectedTheme()) return;
     // Exports and previews are for the revision *and* Theme that were submitted.
-    state.artifact = { format, bytes, revision: job.revision, theme: selectedTheme() };
+    state.artifact = { format, bytes, revision: job.revision, theme: previewTheme };
     els.downloadArtifact.hidden = false;
     markPreviewStale();
 
     if (format === "html") {
-      showPreview(job, bytes, previewLabel);
+      showPreview(job, bytes, previewLabel, cellId, previewTheme);
       const action = previewLabel === undefined ? "Preview updated" : `Preview refreshed for ${previewLabel}`;
       showToast(`${action} (revision ${job.revision})`);
     } else {
@@ -592,7 +1162,7 @@ async function exportFormat(format, { previewLabel } = {}) {
       showToast(`${format.toUpperCase()} downloaded (revision ${job.revision})`);
     }
   } catch (error) {
-    if (isAbort(error)) return;
+    if (isAbort(error) || !isCurrentCellExecution(cellId, cellExecution)) return;
     handleRequestFailure(asFailure(error), `${format.toUpperCase()} export failed`, showToast);
   } finally {
     setExporting(format, false);
@@ -607,20 +1177,29 @@ function setExporting(format, busy) {
   }
 }
 
-/** @param {Job} job @param {ArrayBuffer} bytes @param {string} [previewLabel] */
-function showPreview(job, bytes, previewLabel) {
+/** @param {Job} job @param {ArrayBuffer} bytes @param {string | undefined} previewLabel @param {string | undefined} cellId @param {string} previewTheme */
+function showPreview(job, bytes, previewLabel, cellId, previewTheme) {
+  const number = cellId === undefined ? null : cellNumber(cellId);
+  if (cellId !== undefined && number === null) return;
   const artifact = /** @type {ArtifactInfo} */ (job.result?.artifact);
   const blob = new Blob([bytes], { type: artifact.mimeType });
   const url = URL.createObjectURL(blob);
   if (state.preview.objectUrl !== null) URL.revokeObjectURL(state.preview.objectUrl);
-  state.preview = { objectUrl: url, revision: job.revision, theme: selectedTheme() };
+  state.preview = { objectUrl: url, revision: job.revision, theme: previewTheme };
   els.preview.src = url;
   els.preview.hidden = false;
   els.previewPlaceholder.hidden = true;
+  if (cellId !== undefined && number !== null) {
+    state.executedCellId = cellId;
+    moveRenderedOutputToCell(cellId);
+    els.outputLabel.textContent = `Rendered from cell ${number}`;
+  }
   const metadata = artifact.metadata ?? {};
-  const revision = previewLabel === undefined
-    ? `Revision ${job.revision}`
-    : `Example: ${previewLabel} · revision ${job.revision}`;
+  const revision = number === null
+    ? previewLabel === undefined
+      ? `Revision ${job.revision}`
+      : `Example: ${previewLabel} · revision ${job.revision}`
+    : `Cell ${number} · revision ${job.revision}`;
   setPreviewStatus(
     `${revision} · ${bytes.byteLength} bytes · ${shortHash(artifact.artifactHash)}${
       job.cacheHit ? " · cache hit" : ""
@@ -715,10 +1294,10 @@ async function loadCapabilities() {
     els.theme.append(option);
   }
   const authoring = capabilities.service.authoring;
-  els.generateDraft.disabled = authoring?.available !== true;
   if (authoring?.available !== true) {
     els.authoringStatus.textContent = "This request is not available in this deployment.";
   }
+  renderNotebook();
 
   els.serviceMeta.textContent = [
     `compiler ${capabilities.compatibility.compilerRelease}`,
@@ -810,14 +1389,112 @@ function bindEvents() {
     location.reload();
   });
 
-  els.source.addEventListener("input", () => setSource(els.source.value, { fromUser: true }));
+  const syncFrontMatter = () => {
+    syncSourceFromNotebook({ fromUser: true });
+    renderCellList();
+  };
+  els.documentTitle.addEventListener("input", () => {
+    state.frontMatter.title = els.documentTitle.value;
+    syncFrontMatter();
+  });
+  els.documentAuthor.addEventListener("input", () => {
+    state.frontMatter.authors = authorsFromInput(els.documentAuthor.value);
+    syncFrontMatter();
+  });
+  els.documentDate.addEventListener("input", () => {
+    state.frontMatter.date = els.documentDate.value;
+    syncFrontMatter();
+  });
+  els.documentMetadata.addEventListener("input", () => {
+    state.frontMatter.metadata = els.documentMetadata.value;
+    syncFrontMatter();
+  });
+  els.cellSearch.addEventListener("input", () => {
+    state.cellSearch = els.cellSearch.value;
+    renderCellList();
+  });
+  els.cellList.addEventListener("click", (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    const button = event.target.closest("button[data-cell-id], button[data-front-matter]");
+    if (!(button instanceof HTMLButtonElement)) return;
+    if (button.dataset.frontMatter === "true") {
+      state.activeCellId = null;
+      renderCellList();
+      const control = button.dataset.frontMatterField === "authors"
+        ? els.documentAuthor
+        : button.dataset.frontMatterField === "date"
+          ? els.documentDate
+          : button.dataset.frontMatterField === "metadata"
+            ? els.documentMetadata
+            : els.documentTitle;
+      control.scrollIntoView({ block: "center", behavior: "smooth" });
+      control.focus();
+      return;
+    }
+    const cellId = button.dataset.cellId;
+    if (cellId === undefined) return;
+    state.activeCellId = cellId;
+    renderCellList();
+    const cell = document.getElementById(`cell-${cellId}`);
+    cell?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    /** @type {HTMLTextAreaElement | null} */ (cell?.querySelector(".cell-source"))?.focus();
+  });
+  els.notebookCells.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLTextAreaElement) || target.dataset.role !== "source") return;
+    const cell = state.cells.find((candidate) => candidate.id === target.dataset.cellId);
+    if (cell === undefined) return;
+    cell.text = target.value;
+    state.activeCellId = cell.id;
+    syncSourceFromNotebook({ fromUser: true });
+    renderCellList();
+  });
+  els.notebookCells.addEventListener("focusin", (event) => {
+    if (!(event.target instanceof HTMLTextAreaElement) || event.target.dataset.role !== "source") return;
+    state.activeCellId = event.target.dataset.cellId ?? null;
+    renderCellList();
+  });
+  els.notebookCells.addEventListener("click", (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    const button = event.target.closest("button[data-action]");
+    if (!(button instanceof HTMLButtonElement)) return;
+    const cellId = button.dataset.cellId;
+    if (cellId === undefined) return;
+    switch (button.dataset.action) {
+      case "run":
+        runCell(cellId);
+        break;
+      case "copy":
+        void copyCell(cellId);
+        break;
+      case "move-up":
+        moveCell(cellId, -1);
+        break;
+      case "move-down":
+        moveCell(cellId, 1);
+        break;
+      case "insert-after":
+        insertCellAfter(cellId);
+        break;
+      case "delete":
+        deleteCell(cellId);
+        break;
+      case "generate":
+        void generateDraft(cellId);
+        break;
+      case "apply-draft":
+        applyDraft(cellId);
+        break;
+      case "discard-draft":
+        discardDraft(cellId);
+        break;
+    }
+  });
+  els.addCell.addEventListener("click", addCell);
   els.analyze.addEventListener("click", () => void analyze());
   els.format.addEventListener("click", () => void formatSource());
   els.example.addEventListener("change", () => loadExample(els.example.value));
   els.theme.addEventListener("change", markPreviewStale);
-  els.generateDraft.addEventListener("click", () => void generateDraft());
-  els.applyDraft.addEventListener("click", applyDraft);
-  els.discardDraft.addEventListener("click", discardDraft);
   els.downloadArtifact.addEventListener("click", () => {
     const artifact = state.artifact;
     if (artifact === null) return;

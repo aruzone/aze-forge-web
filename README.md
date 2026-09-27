@@ -58,6 +58,14 @@ stale-result rejection, Theme and format controls, explicit replacement
 application and downloads. It does not reproduce compiler policy: what a
 diagnostic means, what may be fixed and what renders all come from the compiler.
 
+The editor is a notebook over one current AzeMark Source. Its fixed front
+matter panel exposes title, author, date and additional metadata. Authors can
+search and jump between cells, edit or reorder cells, generate a proposed
+AzeMark Source draft for a selected cell through the owner-configured authoring
+service, and run a cell to render the complete current document directly below
+that cell. Generated AzeMark Source drafts stay separate until the author
+applies them.
+
 The preloaded examples are the compiler's own reference library
 (`docs/language/*.aze.md`), reused verbatim: fourteen complete Sources spanning
 every family, graded within each section from the minimal idiomatic form to the
