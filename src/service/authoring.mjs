@@ -112,7 +112,8 @@ export function createOpenAIAuthoringProvider(config) {
   const client = new OpenAI({ apiKey: config.apiKey, timeout: 30_000, maxRetries: 0 });
   const instruction = [
     "Return only a typed AzeMark Block body, never a full document, prose explanation, Markdown, TeX delimiters, or code fences.",
-    `Supported families: ${config.catalogue.join(", ")}. blockType must be exactly equation, derivation, plot, chart, geometry, formula, reaction, or structure.`,
+    `Supported families: ${config.catalogue.join(", ")}. blockType must be exactly one of equation, derivation, plot, chart, geometry, formula, reaction, or structure.`,
+    "The families split as mathematics (equation, derivation, plot, chart), geometry (geometry), and chemistry (formula, reaction, structure). A mathematical formula, identity, theorem, or equation is always equation, or derivation when it shows steps; formula, reaction, and structure are chemistry only and are wrong for any mathematics request.",
     "For source outcomes, title is a short document title, blockType is the exact native Block type, and text is only the content after `----`.",
     "Use AzeMark's readable mathematics grammar, never LaTeX: an equation body is `x = frac(-b + sqrt(b^2 - 4 a c), 2 a)`; a derivation body uses `- expression: x = 1` lines. Use symbolic operators `+`, `-`, `*`, `/`, `=`, `^`, and `sqrt`, never English operator words such as `minus`, `plus`, `times`, `divided by`, or `equals`.",
     "A formula body is exactly one chemical expression such as `H2O` or `Fe(CN)6·2H2O4-`, never a sentence. A reaction body is one species line such as `Ag+(aq) + Cl-(aq) -> AgCl(s)`.",

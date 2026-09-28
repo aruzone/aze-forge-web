@@ -77,6 +77,27 @@ test("a proposal is revision-bound, becomes stale after a Source edit, and canno
   assert.equal(unchanged.cells[0].source, "# Manual edit");
 });
 
+test("a proposal keeps the compiler diagnostics that explain its status", () => {
+  let state = createWorkspaceState([sourceCell()]);
+  state = transition(state, { type: "description.edit", cellId: "cell-a", description: "An equation" });
+  state = transition(state, { type: "generation.start", cellId: "cell-a", requestId: "request-1" });
+  state = transition(state, {
+    type: "generation.resolve",
+    requestId: "request-1",
+    outcome: {
+      kind: "source",
+      source: ":::: formula\n----\na^2 + b^2 = c^2\n::::",
+      valid: false,
+      diagnostics: [{ severity: "error", code: "azeforge.chemistry.formula#chem-formula-syntax", message: "Formula character \"a\" does not parse." }],
+    },
+  });
+  assert.equal(state.proposal?.status, "invalid");
+  assert.deepEqual(state.proposal?.diagnostics, [
+    { severity: "error", code: "azeforge.chemistry.formula#chem-formula-syntax", message: "Formula character \"a\" does not parse." },
+  ]);
+  assert.strictEqual(transition(state, { type: "proposal.apply" }), state);
+});
+
 test("Apply updates Last-applied Source atomically and Discard preserves Pending Description", () => {
   let state = createWorkspaceState([sourceCell()]);
   state = transition(state, { type: "description.edit", cellId: "cell-a", description: "Rewrite it" });

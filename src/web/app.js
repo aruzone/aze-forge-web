@@ -251,6 +251,24 @@ function proposalCopy(status) {
       : "Document changed; this proposal is out of date.";
 }
 
+/** @param {import("./workspace-state.js").Diagnostic} diagnostic */
+function diagnosticHeadline(diagnostic) {
+  return `<strong>${esc(diagnostic.severity)} · ${esc(diagnostic.code ?? "")}</strong>`;
+}
+
+/**
+ * The compiler's own reason a proposal cannot be applied, so the author can act
+ * on it instead of guessing. Document diagnostics stay authoritative for a
+ * proposal that is valid.
+ * @param {import("./workspace-state.js").Proposal} proposal
+ */
+function proposalReasons(proposal) {
+  if (proposal.status === "valid" || proposal.diagnostics.length === 0) return "";
+  const items = proposal.diagnostics.map((diagnostic) =>
+    `<li data-severity="${esc(diagnostic.severity)}">${diagnosticHeadline(diagnostic)} ${esc(diagnostic.message)}</li>`).join("");
+  return `<ul class="proposal-diagnostics">${items}</ul>`;
+}
+
 /**
  * A Source or structural edit stales a surviving proposal without re-rendering
  * the editor (which would move focus), so the proposal panel is patched in place.
@@ -259,14 +277,16 @@ function updateProposalState() {
   const proposal = model.proposal;
   for (const node of el.cells.querySelectorAll("[data-proposal-cell]")) {
     if (!(node instanceof HTMLElement)) continue;
-    const status = proposal !== null && proposal.cellId === node.dataset.proposalCell ? proposal.status : null;
-    if (status === null) continue;
+    const owned = proposal !== null && proposal.cellId === node.dataset.proposalCell ? proposal : null;
+    if (owned === null) continue;
     const heading = node.querySelector("h3");
-    if (heading !== null) heading.textContent = `Draft Gate · ${status}`;
+    if (heading !== null) heading.textContent = `Draft Gate · ${owned.status}`;
     const copy = node.querySelector("p");
-    if (copy !== null) copy.textContent = proposalCopy(status);
+    if (copy !== null) copy.textContent = proposalCopy(owned.status);
+    const reasons = node.querySelector("[data-role=proposal-reasons]");
+    if (reasons instanceof HTMLElement) reasons.innerHTML = proposalReasons(owned);
     const apply = node.querySelector("[data-action=apply-proposal]");
-    if (apply instanceof HTMLButtonElement) apply.disabled = status !== "valid";
+    if (apply instanceof HTMLButtonElement) apply.disabled = owned.status !== "valid";
   }
 }
 
@@ -305,7 +325,7 @@ function renderCells() {
   <div class="editor-tabs" role="tablist" aria-label="Cell editor mode"><button type="button" role="tab" id="cell-${cell.id}-source-tab" aria-controls="cell-${cell.id}-source-panel" aria-selected="${!descriptionMode}" data-action="mode-source" data-cell-id="${cell.id}">Source</button><button type="button" role="tab" id="cell-${cell.id}-description-tab" aria-controls="cell-${cell.id}-description-panel" aria-selected="${descriptionMode}" data-action="mode-description" data-cell-id="${cell.id}">Description</button><small data-role="size" data-cell-id="${cell.id}">${cell.source.length} chars</small></div>
   <div id="cell-${cell.id}-source-panel" role="tabpanel" aria-labelledby="cell-${cell.id}-source-tab" data-panel="source" ${descriptionMode ? "hidden" : ""}><textarea data-role="source" data-cell-id="${cell.id}" aria-label="Cell ${index + 1} AzeMark Source" spellcheck="false" ${model.mutationLocked ? "disabled" : ""}>${esc(cell.source)}</textarea></div>
   <div id="cell-${cell.id}-description-panel" role="tabpanel" aria-labelledby="cell-${cell.id}-description-tab" class="description-panel" data-panel="description" ${descriptionMode ? "" : "hidden"}><textarea data-role="description" data-cell-id="${cell.id}" aria-label="Cell ${index + 1} Description" placeholder="Describe the AzeMark Source to generate">${esc(cell.pendingDescription)}</textarea><div class="description-actions"><button type="button" data-action="back-source" data-cell-id="${cell.id}">Back to Source</button><button type="button" data-action="${generating ? "cancel-generation" : "generate"}" data-cell-id="${cell.id}" ${!generating && (model.proposal !== null || capabilities?.service?.authoring?.available !== true) ? "disabled" : ""}>${generating ? "Cancel generation" : "Generate AzeMark Source"}</button></div></div>
-  ${proposal ? `<section class="proposal" data-proposal-cell="${cell.id}" aria-labelledby="proposal-${cell.id}"><h3 id="proposal-${cell.id}">Draft Gate · ${proposal.status}</h3><p>${proposalCopy(proposal.status)}</p><textarea readonly aria-label="Proposed AzeMark Source" spellcheck="false">${esc(proposal.source)}</textarea><footer><button type="button" data-action="discard-proposal" data-cell-id="${cell.id}">Discard</button><button type="button" data-action="apply-proposal" data-cell-id="${cell.id}" ${proposal.status !== "valid" ? "disabled" : ""}>Apply</button></footer></section>` : ""}
+  ${proposal ? `<section class="proposal" data-proposal-cell="${cell.id}" aria-labelledby="proposal-${cell.id}"><h3 id="proposal-${cell.id}">Draft Gate · ${proposal.status}</h3><p>${proposalCopy(proposal.status)}</p><div data-role="proposal-reasons">${proposalReasons(proposal)}</div><textarea readonly aria-label="Proposed AzeMark Source" spellcheck="false">${esc(proposal.source)}</textarea><footer><button type="button" data-action="discard-proposal" data-cell-id="${cell.id}">Discard</button><button type="button" data-action="apply-proposal" data-cell-id="${cell.id}" ${proposal.status !== "valid" ? "disabled" : ""}>Apply</button></footer></section>` : ""}
   ${response ? `<section class="proposal generation-response"><h3>${response.kind === "clarification" ? "Clarification needed" : response.kind === "refusal" ? "Request refused" : "Generation failed"}</h3><p>${esc(response.message)}</p><button type="button" data-action="${response.kind === "refusal" ? "dismiss-response" : "revise-description"}" data-cell-id="${cell.id}">${response.kind === "refusal" ? "Dismiss" : "Return to Description"}</button></section>` : ""}
 </article>`;
   }).join("");
@@ -413,7 +433,7 @@ function renderDiagnostics() {
       : diagnostics.length ? `${errors} error · ${warnings} warning` : "Valid";
   el.diagnosticsTitle.textContent = diagnostics.length ? `${diagnostics.length} diagnostics` : "No diagnostics";
   el.diagnosticsList.innerHTML = diagnostics.length
-    ? diagnostics.map((diagnostic) => `<article class="diagnostic" data-severity="${esc(diagnostic.severity)}"><strong>${esc(diagnostic.severity)} · ${esc(diagnostic.code ?? "")}</strong><p>${esc(diagnostic.message)}</p>${diagnostic.location?.range ? `<button type="button" data-diagnostic="${model.diagnostics.indexOf(diagnostic)}">Line ${diagnostic.location.range.start.line}, column ${diagnostic.location.range.start.column}</button>` : ""}</article>`).join("")
+    ? diagnostics.map((diagnostic) => `<article class="diagnostic" data-severity="${esc(diagnostic.severity)}">${diagnosticHeadline(diagnostic)}<p>${esc(diagnostic.message)}</p>${diagnostic.location?.range ? `<button type="button" data-diagnostic="${model.diagnostics.indexOf(diagnostic)}">Line ${diagnostic.location.range.start.line}, column ${diagnostic.location.range.start.column}</button>` : ""}</article>`).join("")
     : "<p>No diagnostics.</p>";
   renderMetadataFeedback();
   renderOperations();
