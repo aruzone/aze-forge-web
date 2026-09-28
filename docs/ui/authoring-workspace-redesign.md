@@ -15,8 +15,8 @@ Reading order: skip links → application navigation → Current document naviga
 | Token | Value |
 | --- | --- |
 | `nav`, `nav-raised`, `canvas`, `surface`, `border` | `#111827`, `#202b3c`, `#eef1f5`, `#fff`, `#d7dee8` |
-| `text`, `muted`, `accent`, `accent-surface` | `#162033`, `#68758a`, `#2563eb`, `#eaf1ff` |
-| `success`, `stale`, `error` | `#16825b`, `#c76b13`, `#b42318` |
+| `text`, `muted`, `accent`, `accent-surface` | `#162033`, `#5f6b80`, `#2563eb`, `#eaf1ff` |
+| `success`, `stale`, `error` | `#16825b`, `#9a530f`, `#b42318` |
 | UI / Source type | system sans 14/1.4; system mono 12/1.55 desktop, 11/1.55 tablet |
 | spacing | 4, 8, 12, 16, 24, 32 px |
 | radii | 6 px controls; 8 px panels and Cells |
@@ -107,6 +107,8 @@ Required keyboard-only workflows: mode switch; generation/cancellation; Draft Ga
 
 Required viewport captures: 1440×900, 1200 boundary, 1199 boundary, 1024×768, 768×1024, 767 boundary reflow check, and 320 CSS px zoom reflow. Run minimum, typical, and stress fixtures. Record browser screenshots, request/state walkthroughs, automated accessibility output, keyboard Chromium/Safari, VoiceOver/Safari, and NVDA/Windows when available. Unavailable NVDA coverage is an explicit gap, never a pass.
 
+Recorded captures: `acceptance/workspace/workspace-{1440x900,1200x900,1199x900,1024x768,768x1024,767x1024,320x800}.png`, plus `workspace-1024x768-drawer-open.png` and the 200 % zoom reflow `workspace-zoom200-720x900.png`.
+
 | Decision | Sections | IDs | Planned evidence |
 | --- | --- | --- | --- |
 | #15 state model | Cell editor; state matrix | DRAFT-01–03 | reducer tests; generation walkthrough |
@@ -117,6 +119,31 @@ Required viewport captures: 1440×900, 1200 boundary, 1199 boundary, 1024×768, 
 | #20 preview | preview; state matrix | PREVIEW-01–04 | stale/failure/resize/modal scenarios |
 | #21 responsive | tokens | A11Y-01 | boundary captures |
 | #22 accessibility | keyboard/accessibility | A11Y-01–02 | scans and manual assistive-technology evidence |
+
+## Observed evidence
+
+Recorded 2026-09-28 against headless Chromium (CDP) driving the real service with a stubbed authoring provider. Captures live in `acceptance/workspace/`. Every row names what was observed, not what was planned.
+
+| ID | Observation |
+| --- | --- |
+| NAV-01 | The rendered navigation contains one static `This session` row, search, outline, and Add Cell; no new/open/save/recent/project control exists in the DOM. |
+| NAV-02 | Two Cells sharing the label `Duplicate label` kept distinct outline entries, and clicking the second focused that Cell. |
+| NAV-03 | Searching `Thermal` and a Source/Pending-Description term filtered the outline only (3 and 1 entries) while all 14 Cells stayed rendered; Escape cleared the query. |
+| CELL-01 | Insert focused the new Cell, move preserved the moved Cell's editor focus, delete focused the following Cell and exposed Undo, and Undo restored the Cell, its position, and its focus. |
+| DRAFT-01 | Clicking Generate locked Source, Add Cell, and document fields, kept outline navigation available, and returned to Description with focus on Cancel; the late stub result produced no proposal. |
+| DRAFT-02 | A Source edit while a valid proposal was shown moved it to `stale` in place, disabled Apply, and kept editor focus (reducer tests cover invalid and apply guards). |
+| DRAFT-03 | Apply replaced Source with the proposed text and focused the Source editor; Discard restored Description mode with the same Last-applied Source and preserved Pending Description. |
+| PREVIEW-01 | Loading, Source edits, Theme changes, and modal expansion issued zero `/v1/jobs` requests; only Refresh compiled. |
+| PREVIEW-02 | Reducer tests reject obsolete request, revision, and Theme responses; the browser retained the current Artifact across edits. |
+| PREVIEW-03 | A refresh whose Source carried `STUB:INVALID` reported `Preview blocked by Source errors`, exposed the diagnostics action, and kept the previous Artifact. |
+| PREVIEW-04 | Arrow keys moved the separator by 16 px, End/Home clamped to 540/180 px, and reload restored the stored height (212 px) with no Artifact. |
+| DOC-01 | An analysis diagnostic inside the front matter auto-opened Document details, populated field-local feedback, and its diagnostic action focused the metadata field. |
+| FORMAT-01 | Format opened a `Formatted Source` dialog; Source changed only after Apply. |
+| EXPORT-01 | Export issued its own compile job with the current Source and Theme and showed `Exporting…` then completion; an invalid Source opened diagnostics and showed `Export failed`. |
+| A11Y-01 | At 1440/768/320 no interactive target measured below 24×24 px, no text pair measured below its WCAG AA threshold, `prefers-reduced-motion` collapsed the drawer transition to `0s`, and forced colors applied CanvasText borders. |
+| A11Y-02 | A keyboard-only Tab walk (25 stops) never lost focus to `body`; menus, the service dialog, tab lists, the outline, and Cell insertion completed with Escape restoring the exact trigger. |
+
+Evidence gaps, never passes: VoiceOver/Safari and NVDA/Windows passes were not run in this session, and Safari rendering was not exercised. The headless Chromium results above are the only first-hand observations.
 
 ## Decision history
 

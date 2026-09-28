@@ -18,9 +18,16 @@ deployment acceptance smoke suite. [Build the AzeForge Web service and
 edit-preview-export frontend](https://github.com/aruzone/aze-forge-web/issues/1)
 is the service and frontend work itself.
 
+The authoring workspace is specified in
+[`docs/ui/authoring-workspace-redesign.md`](docs/ui/authoring-workspace-redesign.md):
+one ephemeral Current document of stable-identity Cells, a shared
+Source/Description editor with the Draft Gate review step, and one manually
+refreshed Document preview. That document holds the tokens, state matrix, and
+acceptance IDs, and the observed verification evidence for them.
+
 Explicitly out of scope, by decision: accounts, signup, saved cloud projects,
-collaboration, LLM integration, durable storage, cross-client sharing, remote
-asset fetching, browser-only compilation, and hosted raw LaTeX.
+collaboration, durable storage, cross-client sharing, remote asset fetching,
+browser-only compilation, and hosted raw LaTeX.
 
 ## Quick start
 
