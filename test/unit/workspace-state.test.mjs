@@ -46,6 +46,19 @@ test("clarification remains visible beside its owning Cell and preserves Descrip
   assert.equal(state.mutationLocked, false);
 });
 
+test("refusal and infrastructure failure are responses, never Draft Gate proposals", () => {
+  for (const kind of ["refusal", "failure"]) {
+    let state = createWorkspaceState([sourceCell()]);
+    state = transition(state, { type: "description.edit", cellId: "cell-a", description: "Do the thing" });
+    state = transition(state, { type: "generation.start", cellId: "cell-a", requestId: "request-1" });
+    state = transition(state, { type: "generation.resolve", requestId: "request-1", outcome: { kind, message: `${kind} message` } });
+    assert.equal(state.proposal, null);
+    assert.equal(state.mutationLocked, false);
+    assert.deepEqual(state.generationResponse, { cellId: "cell-a", kind, message: `${kind} message` });
+    assert.equal(state.cells[0].pendingDescription, "Do the thing");
+  }
+});
+
 test("a proposal is revision-bound, becomes stale after a Source edit, and cannot apply", () => {
   let state = createWorkspaceState([sourceCell()]);
   state = transition(state, { type: "description.edit", cellId: "cell-a", description: "Rewrite it" });
