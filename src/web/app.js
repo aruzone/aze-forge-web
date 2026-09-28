@@ -141,15 +141,32 @@ function parseDocument(source) {
     const end = normalized.indexOf("\n---", 4);
     if (end >= 0) {
       const extra = [];
-      for (const line of normalized.slice(4, end).split("\n")) {
-        const match = /^([\w-]+):\s*(.*)$/.exec(line);
+      const lines = normalized.slice(4, end).split("\n");
+      for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        const match = /^([\w-]+):[ \t]*(.*)$/.exec(line);
         if (!match) { extra.push(line); continue; }
+        const key = match[1];
         const raw = match[2];
+        // An author may be a block sequence (`author:` then `  - Name` lines).
+        if (key === "author" && raw.trim() === "") {
+          const named = [];
+          while (index + 1 < lines.length && /^[ \t]+-[ \t]+/.test(lines[index + 1])) {
+            named.push(lines[index + 1].replace(/^[ \t]+-[ \t]+/, "").trim());
+            index += 1;
+          }
+          if (named.length > 0) document.authors = named;
+          continue;
+        }
+        if (raw.trim() === "") { extra.push(line); continue; }
         const value = parseValue(raw);
-        if (match[1] === "azemark") document.version = String(value);
-        else if (match[1] === "title") document.title = String(value);
-        else if (match[1] === "author") document.authors = Array.isArray(value) ? value.map(String) : [String(value)];
-        else if (match[1] === "date" || match[1] === "x-date") document.date = String(value);
+        if (key === "azemark") document.version = String(value);
+        else if (key === "title") document.title = String(value);
+        else if (key === "author") {
+          document.authors = Array.isArray(value)
+            ? value.map(String)
+            : String(value).trim() === "" ? [] : [String(value)];
+        } else if (key === "date" || key === "x-date") document.date = String(value);
         else extra.push(line);
       }
       document.metadata = extra.join("\n");
@@ -232,8 +249,14 @@ function renderOutline() {
   const tabbable = matching.some((cell) => cell.id === model.activeCellId) ? model.activeCellId : matching[0]?.id ?? null;
   el.cellList.innerHTML = matching.map((cell) => {
     const index = model.cells.indexOf(cell);
-    const descriptionMatch = query !== "" && cell.pendingDescription.toLocaleLowerCase().includes(query);
-    return `<button type="button" data-cell-id="${cell.id}" tabindex="${cell.id === tabbable ? "0" : "-1"}" aria-current="${cell.id === model.activeCellId}"><b>${String(index + 1).padStart(2, "0")}</b><span>${esc(label(cell))}<small>${esc(kind(cell))}${descriptionMatch ? " · Pending Description match" : ""}</small></span></button>`;
+    const text = label(cell);
+    const origin = query === ""
+      ? ""
+      : cell.pendingDescription.toLocaleLowerCase().includes(query) ? " · Pending Description match"
+        : cell.source.toLocaleLowerCase().includes(query) ? " · Source match"
+          : text.toLocaleLowerCase().includes(query) ? " · Label match"
+            : "";
+    return `<button type="button" data-cell-id="${cell.id}" tabindex="${cell.id === tabbable ? "0" : "-1"}" aria-current="${cell.id === model.activeCellId}"><b>${String(index + 1).padStart(2, "0")}</b><span>${esc(text)}<small>${esc(kind(cell))}${origin}</small></span></button>`;
   }).join("");
 }
 
@@ -347,8 +370,9 @@ function renderPreview() {
 
 function renderOperations() {
   const running = /** @param {"analyze" | "format" | "export"} kind */ (kind) => model.operations[kind]?.status === "running";
+  // The trigger stays enabled so selecting a format can restore focus to it;
+  // progress and failure are carried by its label.
   const exportToggle = /** @type {HTMLButtonElement} */ (el.exportToggle);
-  exportToggle.disabled = running("export");
   exportToggle.textContent = model.operations.export?.status === "running"
     ? "Exporting…"
     : model.operations.export?.status === "failed" ? "Export failed" : "Export";
@@ -366,6 +390,14 @@ function orderedDiagnostics() {
   return [...model.diagnostics].sort((a, b) => rank(a.severity) - rank(b.severity) || offset(a) - offset(b));
 }
 
+/** @param {string} message @returns {"title" | "author" | "date" | "metadata"} */
+function metadataFieldFor(message) {
+  return /title/i.test(message) ? "title" : /author/i.test(message) ? "author" : /date/i.test(message) ? "date" : "metadata";
+}
+
+/** @type {Record<"title" | "author" | "date" | "metadata", HTMLInputElement | HTMLTextAreaElement>} */
+const metadataInputs = { title: el.title, author: el.author, date: el.date, metadata: el.metadata };
+
 /** Metadata diagnostics expand Document details and surface field-local feedback. */
 function renderMetadataFeedback() {
   const source = assembledSource();
@@ -382,10 +414,7 @@ function renderMetadataFeedback() {
     const offset = indexForPosition(source, start);
     if (offset >= frontMatterEnd) continue;
     const message = diagnostic.message;
-    const field = /title/i.test(message) ? "title"
-      : /author/i.test(message) ? "author"
-        : /date/i.test(message) ? "date"
-          : "metadata";
+    const field = metadataFieldFor(message);
     const node = fields[field];
     if (node.hidden) node.textContent = `${diagnostic.severity}: ${message}`;
     node.hidden = false;
@@ -481,6 +510,13 @@ function toggleMenu(menu, trigger) {
     if (first instanceof HTMLElement) first.focus();
   }
 }
+/** Closing a menu by choosing an item returns focus to its trigger. @param {HTMLElement} menu @param {HTMLElement} trigger */
+function closeMenu(menu, trigger) {
+  menu.hidden = true;
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.focus();
+}
+
 /** @param {KeyboardEvent} event @param {HTMLElement} menu @param {HTMLElement} trigger */
 function menuKeys(event, menu, trigger) {
   const items = /** @type {HTMLButtonElement[]} */ ([...menu.querySelectorAll("button:not(:disabled)")]);
@@ -623,6 +659,13 @@ async function exportFormat(format) {
     });
     const job = await pollJob(accepted.jobId, accepted.pollAfterMs);
     if (model.operations.export?.requestId !== requestId) return;
+    if (revision !== model.revision || theme !== model.theme) {
+      // The compiled bytes no longer describe the Current document.
+      dispatch({ type: "export.resolve", requestId });
+      renderOperations();
+      announce("Document changed; export discarded");
+      return;
+    }
     if (job.result?.ok !== true || !job.result.artifact) {
       dispatch({ type: "diagnostics.set", diagnostics: job.result?.diagnostics ?? [] });
       dispatch({ type: "export.fail", requestId, message: "Export blocked by Source errors" });
@@ -654,13 +697,20 @@ async function formatSource() {
   dispatch({ type: "format.start", requestId });
   renderOperations();
   announce("Formatting Source");
+  const revision = model.revision;
   try {
     const accepted = await submitJob({
-      protocolVersion: 1, requestId, revision: String(model.revision), operation: "format",
+      protocolVersion: 1, requestId, revision: String(revision), operation: "format",
       source: { text: assembledSource(), name: "document.aze.md" },
     });
     const job = await pollJob(accepted.jobId, accepted.pollAfterMs);
     if (model.operations.format?.requestId !== requestId) return;
+    if (revision !== model.revision) {
+      dispatch({ type: "format.fail", requestId, message: "Document changed; formatting discarded" });
+      renderOperations();
+      announce("Document changed; formatting discarded");
+      return;
+    }
     if (job.result?.ok !== true || !job.result.proposal) {
       dispatch({ type: "diagnostics.set", diagnostics: job.result?.diagnostics ?? [] });
       dispatch({ type: "format.fail", requestId, message: "Source errors block formatting" });
@@ -790,6 +840,16 @@ function bind() {
     if (button instanceof HTMLButtonElement && button.dataset.cellId) focusCell(button.dataset.cellId);
   });
   el.cellList.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && el.search.value !== "") {
+      event.preventDefault();
+      el.search.value = "";
+      renderOutline();
+      const current = el.cellList.querySelector('button[tabindex="0"]');
+      if (current instanceof HTMLElement) current.focus();
+      else el.search.focus();
+      announce("Search cleared");
+      return;
+    }
     if (!["ArrowDown", "ArrowUp", "Home", "End", "Enter"].includes(event.key)) return;
     const buttons = /** @type {HTMLButtonElement[]} */ ([...el.cellList.querySelectorAll("button")]);
     const current = buttons.indexOf(/** @type {HTMLButtonElement} */ (event.target));
@@ -968,13 +1028,12 @@ function bind() {
   el.moreToggle.addEventListener("click", () => toggleMenu(el.moreMenu, el.moreToggle));
   el.exportMenu.addEventListener("keydown", (event) => menuKeys(event, el.exportMenu, el.exportToggle));
   el.moreMenu.addEventListener("keydown", (event) => menuKeys(event, el.moreMenu, el.moreToggle));
-  byId("analyze").addEventListener("click", () => { el.moreMenu.hidden = true; el.moreToggle.setAttribute("aria-expanded", "false"); void analyze(); });
-  byId("format").addEventListener("click", () => { el.moreMenu.hidden = true; el.moreToggle.setAttribute("aria-expanded", "false"); void formatSource(); });
+  byId("analyze").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void analyze(); });
+  byId("format").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void formatSource(); });
   el.exportMenu.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-format]") : null;
     if (button instanceof HTMLButtonElement && !button.disabled) {
-      el.exportMenu.hidden = true;
-      el.exportToggle.setAttribute("aria-expanded", "false");
+      closeMenu(el.exportMenu, el.exportToggle);
       void exportFormat(button.dataset.format ?? "html");
     }
   });
@@ -992,10 +1051,8 @@ function bind() {
     const endIndex = indexForPosition(source, range.end);
     const bodyStart = source.indexOf("\n---", 3);
     if (bodyStart >= 0 && startIndex < bodyStart + 4) {
-      const message = diagnostic.message;
-      const field = /title/i.test(message) ? el.title : /author/i.test(message) ? el.author : /date/i.test(message) ? el.date : el.metadata;
       el.details.open = true;
-      field.focus();
+      metadataInputs[metadataFieldFor(diagnostic.message)].focus();
       return;
     }
     let offset = 0;
