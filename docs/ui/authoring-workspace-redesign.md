@@ -244,7 +244,7 @@ The traceability table covers every closed child listed by wayfinder #14. Later 
 
 ## Observed evidence
 
-Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T12-01-22-547Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
+Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T12-08-08-172Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
 
 | ID | Observation |
 | --- | --- |

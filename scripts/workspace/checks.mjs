@@ -155,6 +155,7 @@ async function fixtures(ctx) {
   const staysOpen = await page.evaluate(async () => {
     const details = /** @type {HTMLDetailsElement | null} */ (document.getElementById("document-details"));
     const summary = /** @type {HTMLElement | null} */ (document.querySelector("#document-details summary"));
+    const marker = summary === null ? "" : getComputedStyle(summary, "::before").transform;
     summary?.click();
     const opened = details?.open === true;
     const field = /** @type {HTMLInputElement | null} */ (document.getElementById("document-title"));
@@ -163,10 +164,16 @@ async function fixtures(ctx) {
       field.value = "Document basics edited";
       field.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return { opened, stillOpen: details?.open === true, title: field?.value ?? "" };
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const openedMarker = summary === null ? "" : getComputedStyle(summary, "::before").transform;
+    return { opened, stillOpen: details?.open === true, marker, openedMarker, effective: field?.value ?? "" };
   });
   expect(staysOpen.opened && staysOpen.stillOpen, "editing metadata closed Document details under the author");
+  // The disclosure shows its state: the marker points elsewhere once open.
+  expect(
+    staysOpen.marker !== staysOpen.openedMarker,
+    `the disclosure marker does not change with the section's state (${staysOpen.marker} in both)`,
+  );
   const typicalDetail = await page.evaluate(() => {
     const kinds = [...document.querySelectorAll("#cell-list button small")].map((node) => node.textContent ?? "");
     const labels = [...document.querySelectorAll("#notebook-cells .cell")].map((cell, index) => ({
@@ -202,7 +209,7 @@ async function fixtures(ctx) {
   expect(roundTrip.hasSource && roundTrip.unchanged, "switching editor mode changed the Source");
   evidence.push(
     `typical: ${typicalDetail.map((/** @type {any} */ cell) => cell.label).join(" · ")}; kinds ${kinds}; boundary moves disabled; Pending Description preserved across the mode switch; ` +
-      `Document details collapsed to a ${typicalDetails.summaryHeight}px summary row that stays open while its fields are edited`,
+      `Document details collapsed to a ${typicalDetails.summaryHeight}px summary row whose marker turns when opened and that stays open while its fields are edited`,
   );
 
   await loadFixture(page, "stress");

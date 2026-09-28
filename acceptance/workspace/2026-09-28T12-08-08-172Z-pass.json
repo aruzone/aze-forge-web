@@ -1,9 +1,9 @@
 {
   "schema": "azeforge.web.workspace-audit-evidence/v1",
-  "startedAt": "2026-09-28T12:01:22.547Z",
-  "finishedAt": "2026-09-28T12:02:26.273Z",
+  "startedAt": "2026-09-28T12:08:08.172Z",
+  "finishedAt": "2026-09-28T12:09:11.647Z",
   "target": {
-    "base": "http://127.0.0.1:51475",
+    "base": "http://127.0.0.1:51637",
     "started": true
   },
   "browser": "/Users/kumaresan/.cache/puppeteer/chrome-headless-shell/mac_arm-152.0.7977.75/chrome-headless-shell-mac-arm64/chrome-headless-shell",
@@ -50,7 +50,7 @@
       "detail": null,
       "evidence": [
         "minimum: 1 empty Cell labelled \"Untitled cell\", preview \"Preview not generated\", empty Source, empty metadata",
-        "typical: Thermal balance · equation · callout · | Symbol | Value |; kinds Markdown | Directive | Markdown + directive | Markdown; boundary moves disabled; Pending Description preserved across the mode switch; Document details collapsed to a 48px summary row that stays open while its fields are edited",
+        "typical: Thermal balance · equation · callout · | Symbol | Value |; kinds Markdown | Directive | Markdown + directive | Markdown; boundary moves disabled; Pending Description preserved across the mode switch; Document details collapsed to a 48px summary row whose marker turns when opened and that stays open while its fields are edited",
         "stress: 30 Cells and 30 outline entries; Cell 3 long label and the 4-author title render without overflow; the second \"Duplicate label\" entry focused its own Cell; Cell 25 is \"Untitled cell\"",
         "stress analysis: 40 diagnostics grouped eeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwiiiiiiii (16 error · 16 warning), heading \"40 diagnostics\"; the first error focused Cell 1's Source at offset 0-0 and the first warning Cell 17, each with the dock open and unobscured"
       ]
