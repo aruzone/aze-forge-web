@@ -38,7 +38,7 @@ Desktop navigation is persistent. Tablet navigation is a modal drawer beside the
 
 ### Cell editor and Draft Gate
 
-Source and Description are tabs over one editor surface. Each Cell owns `Last-applied Source` and `Pending Description`. AI submits only explicit non-empty Description. One document-level generation or proposal may exist. Generation captures owner identity, Description, document revision, and request identity; all Source mutations lock until resolution/cancellation. Cancellation invalidates all later responses and returns to Description.
+Source and Description are tabs over one editor surface. A Cell never carries front matter: it belongs to the Current document, is authored only in Document details, and any front-matter block found in a Cell's Source — an applied AI draft, which the service returns as a complete document, or a pasted document — is removed from that Cell without touching Document details. Each Cell owns `Last-applied Source` and `Pending Description`. AI submits only explicit non-empty Description. One document-level generation or proposal may exist. Generation captures owner identity, Description, document revision, and request identity; all Source mutations lock until resolution/cancellation. Cancellation invalidates all later responses and returns to Description.
 
 A source outcome becomes valid, invalid, or stale Draft Gate. Apply is enabled only for a valid proposal at its captured revision and atomically updates Last-applied Source. Discard leaves Source unchanged and preserves Pending Description. Source or structural mutation stales a surviving proposal permanently. Clarification, refusal, and infrastructure failure are responses, never Draft Gates. Proposal arrival announces but never steals focus.
 
@@ -90,6 +90,7 @@ Required keyboard-only workflows: mode switch; generation/cancellation; Draft Ga
 | NAV-02 | Given duplicate labels and reordered Cells, when navigating/mutating, then stable identity selects the intended Cell. | state test + keyboard walkthrough |
 | NAV-03 | Given a Source/Pending Description query, when searching, then only the outline filters and match origin is exposed. | browser walkthrough |
 | CELL-01 | Given insert/move/delete, when invoked by keyboard, then focus follows the specified target and Undo restores complete state. | state test + walkthrough |
+| CELL-02 | Given a Cell Source carrying a front-matter block (an applied draft or a pasted document), then the Cell keeps only the body and Document details is unchanged. | unit test + browser scenario |
 | DRAFT-01 | Given explicit Description, when generation starts/cancels, then mutation locks and every late result is ignored. | state test + browser scenario |
 | DRAFT-02 | Given valid/invalid/stale proposals, when Apply is considered, then only exact-revision valid Source can apply. | state test |
 | DRAFT-03 | Given Apply/Discard, then Last-applied Source and Pending Description follow the component contract. | state test |
@@ -114,7 +115,7 @@ Recorded captures: `acceptance/workspace/workspace-{1440x900,1200x900,1199x900,1
 | #15 state model | Cell editor; state matrix | DRAFT-01–03 | reducer tests; generation walkthrough |
 | #16 specification contract | all | all | traceability review |
 | #17 composition | IA; tokens | NAV-01, A11Y-01 | desktop captures |
-| #18 navigation | navigation | NAV-01–03 | keyboard/search/stress |
+| #18 navigation | navigation | NAV-01–03, CELL-02 | keyboard/search/stress |
 | #19 controls | document controls | DOC-01, FORMAT-01, EXPORT-01 | operation walkthroughs |
 | #20 preview | preview; state matrix | PREVIEW-01–04 | stale/failure/resize/modal scenarios |
 | #21 responsive | tokens | A11Y-01 | boundary captures |
@@ -130,6 +131,7 @@ Recorded 2026-09-28 against headless Chromium (CDP) driving the real service wit
 | NAV-02 | Two Cells sharing the label `Duplicate label` kept distinct outline entries, and clicking the second focused that Cell. |
 | NAV-03 | Searching `Thermal` and a Source/Pending-Description term filtered the outline only (3 and 1 entries) while all 14 Cells stayed rendered; Escape cleared the query. |
 | CELL-01 | Insert focused the new Cell, move preserved the moved Cell's editor focus, delete focused the following Cell and exposed Undo, and Undo restored the Cell, its position, and its focus. |
+| CELL-02 | An applied draft titled `Pythagorean Theorem` showed only `:::: equation …` in the Draft Gate and left only that body in the Cell, with Document details still reading `Document basics` / `AzeForge examples`; pasting the same block into a Cell removed it on blur and announced the removal, while a thematic break with prose between dashes was kept. `test/unit/front-matter.test.mjs` covers the split and strip, including the service's `buildSourceDraft` output. |
 | DRAFT-01 | Clicking Generate locked Source, Add Cell, and document fields, kept outline navigation available, and returned to Description with focus on Cancel; the late stub result produced no proposal. |
 | DRAFT-02 | A Source edit while a valid proposal was shown moved it to `stale` in place, disabled Apply, and kept editor focus (reducer tests cover invalid and apply guards). |
 | DRAFT-03 | Apply replaced Source with the proposed text and focused the Source editor; Discard restored Description mode with the same Last-applied Source and preserved Pending Description. |

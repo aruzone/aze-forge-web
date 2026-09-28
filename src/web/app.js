@@ -1,6 +1,7 @@
 // @ts-check
-import { createWorkspaceState, emptyDocument, transition } from "./workspace-state.js";
+import { createWorkspaceState, transition } from "./workspace-state.js";
 import { indexForPosition } from "./coordinates.js";
+import { splitFrontMatter, stripFrontMatter } from "./front-matter.js";
 
 const TOKEN_KEY = "azeweb.token";
 const PREVIEW_HEIGHT_KEY = "azeweb.previewHeight";
@@ -119,60 +120,15 @@ async function artifact(id) {
 // ---------------------------------------------------------------------------
 // Document source
 
-/** @param {string} raw */
-function parseValue(raw) {
-  if (raw.startsWith('"') || raw.startsWith("[")) {
-    try { return JSON.parse(raw); } catch { /* fall through to quote stripping */ }
-  }
-  return raw.replace(/^['"]|['"]$/g, "");
-}
-
 /**
  * Split a complete AzeMark Source into the Current document and its Cell
- * sources. Cell boundaries are top-level headings, matching the design.
+ * sources. Front matter is document-level; Cell boundaries are top-level
+ * headings, matching the design.
  * @param {string} source
  * @returns {{ document: CurrentDocument, sources: string[] }}
  */
 function parseDocument(source) {
-  const normalized = source.replace(/\r\n?/g, "\n");
-  const document = emptyDocument();
-  let body = normalized;
-  if (normalized.startsWith("---\n")) {
-    const end = normalized.indexOf("\n---", 4);
-    if (end >= 0) {
-      const extra = [];
-      const lines = normalized.slice(4, end).split("\n");
-      for (let index = 0; index < lines.length; index += 1) {
-        const line = lines[index];
-        const match = /^([\w-]+):[ \t]*(.*)$/.exec(line);
-        if (!match) { extra.push(line); continue; }
-        const key = match[1];
-        const raw = match[2];
-        // An author may be a block sequence (`author:` then `  - Name` lines).
-        if (key === "author" && raw.trim() === "") {
-          const named = [];
-          while (index + 1 < lines.length && /^[ \t]+-[ \t]+/.test(lines[index + 1])) {
-            named.push(lines[index + 1].replace(/^[ \t]+-[ \t]+/, "").trim());
-            index += 1;
-          }
-          if (named.length > 0) document.authors = named;
-          continue;
-        }
-        if (raw.trim() === "") { extra.push(line); continue; }
-        const value = parseValue(raw);
-        if (key === "azemark") document.version = String(value);
-        else if (key === "title") document.title = String(value);
-        else if (key === "author") {
-          document.authors = Array.isArray(value)
-            ? value.map(String)
-            : String(value).trim() === "" ? [] : [String(value)];
-        } else if (key === "date" || key === "x-date") document.date = String(value);
-        else extra.push(line);
-      }
-      document.metadata = extra.join("\n");
-      body = normalized.slice(end + 4).replace(/^\n+/, "");
-    }
-  }
+  const { document, body } = splitFrontMatter(source);
   const trimmed = body.trim();
   const sources = trimmed ? trimmed.split(/(?=^#{1,6}\s)/m).filter(Boolean) : [""];
   return { document, sources };
@@ -314,6 +270,28 @@ function updateProposalState() {
   }
 }
 
+/**
+ * Commit one Cell Source edit and refresh only what depends on it, so a Source
+ * change never rebuilds the editor under the caret.
+ * @param {HTMLTextAreaElement} area @param {string} source
+ * @returns {boolean} whether the model changed
+ */
+function commitSourceEdit(area, source) {
+  const cellId = area.dataset.cellId;
+  if (cellId === undefined) return false;
+  const before = model;
+  dispatch({ type: "source.edit", cellId, source });
+  if (model === before) return false;
+  if (area.value !== source) area.value = source;
+  const size = el.cells.querySelector(`[data-role=size][data-cell-id="${cellId}"]`);
+  if (size instanceof HTMLElement) size.textContent = `${source.length} chars`;
+  renderOutline();
+  renderSourceMeta();
+  renderPreview();
+  updateProposalState();
+  return true;
+}
+
 function renderCells() {
   const snapshot = focusSnapshot();
   el.cells.innerHTML = model.cells.map((cell, index) => {
@@ -401,8 +379,7 @@ const metadataInputs = { title: el.title, author: el.author, date: el.date, meta
 /** Metadata diagnostics expand Document details and surface field-local feedback. */
 function renderMetadataFeedback() {
   const source = assembledSource();
-  const bodyStart = source.indexOf("\n---", 3);
-  const frontMatterEnd = bodyStart < 0 ? 0 : bodyStart + 4;
+  const { bodyStart } = splitFrontMatter(source);
   /** @type {Record<string, HTMLElement>} */
   const fields = el.feedback;
   for (const node of Object.values(fields)) { node.hidden = true; node.textContent = ""; }
@@ -412,7 +389,7 @@ function renderMetadataFeedback() {
     const start = diagnostic.location?.range?.start;
     if (!start) continue;
     const offset = indexForPosition(source, start);
-    if (offset >= frontMatterEnd) continue;
+    if (offset >= bodyStart) continue;
     const message = diagnostic.message;
     const field = metadataFieldFor(message);
     const node = fields[field];
@@ -767,7 +744,9 @@ async function generate(cellId) {
     });
     const outcome = /** @type {import("./workspace-state.js").GenerationOutcome} */ (
       draft.outcome === "source"
-        ? { kind: "source", source: draft.source.text, valid: draft.analysis?.valid === true, diagnostics: draft.analysis?.diagnostics ?? [] }
+        // A draft is a complete document; its front matter belongs to the
+        // Current document, so only the body may become a Cell's Source.
+        ? { kind: "source", source: stripFrontMatter(draft.source.text).source, valid: draft.analysis?.valid === true, diagnostics: draft.analysis?.diagnostics ?? [] }
         : draft.outcome === "clarification"
           ? { kind: "clarification", message: draft.question ?? "More detail is needed." }
           : { kind: "refusal", message: draft.message ?? "The request was refused." }
@@ -868,18 +847,22 @@ function bind() {
     const area = event.target;
     if (!(area instanceof HTMLTextAreaElement) || !area.dataset.cellId) return;
     if (area.dataset.role === "source") {
-      const before = model;
-      dispatch({ type: "source.edit", cellId: area.dataset.cellId, source: area.value });
-      if (model === before) return;
-      const size = el.cells.querySelector(`[data-role=size][data-cell-id="${area.dataset.cellId}"]`);
-      if (size instanceof HTMLElement) size.textContent = `${area.value.length} chars`;
-      renderOutline();
-      renderSourceMeta();
-      renderPreview();
-      updateProposalState();
+      commitSourceEdit(area, area.value);
     } else if (area.dataset.role === "description") {
       dispatch({ type: "description.edit", cellId: area.dataset.cellId, description: area.value });
       renderOutline();
+    }
+  });
+
+  // A pasted front-matter block stays in the Current document, not the Cell.
+  el.cells.addEventListener("focusout", (event) => {
+    const area = event.target;
+    if (!(area instanceof HTMLTextAreaElement) || area.dataset.role !== "source" || !area.dataset.cellId) return;
+    if (model.mutationLocked) return;
+    const { source, removed } = stripFrontMatter(area.value);
+    if (!removed) return;
+    if (commitSourceEdit(area, source)) {
+      announce("Front matter removed from the Cell; document metadata is edited in Document details.");
     }
   });
 
@@ -1049,8 +1032,7 @@ function bind() {
     const source = assembledSource();
     const startIndex = indexForPosition(source, range.start);
     const endIndex = indexForPosition(source, range.end);
-    const bodyStart = source.indexOf("\n---", 3);
-    if (bodyStart >= 0 && startIndex < bodyStart + 4) {
+    if (startIndex < splitFrontMatter(source).bodyStart) {
       el.details.open = true;
       metadataInputs[metadataFieldFor(diagnostic.message)].focus();
       return;
