@@ -61,7 +61,7 @@ export async function loadFixture(page, id) {
       if (description === null) throw new Error(`no Description editor for Cell ${index + 1}`);
       description.value = cell.pendingDescription ?? "";
       description.dispatchEvent(new Event("input", { bubbles: true }));
-      void cellId;
+      if (cellId === "") throw new Error(`Cell ${index + 1} has no stable identity`);
     });
     document.getElementById("document-metadata")?.blur();
   }, {
@@ -111,6 +111,32 @@ export async function analyzeDocument(page) {
     { timeout: 30_000 },
   );
   await settle(page);
+}
+
+/**
+ * Record every job submission the page makes, so "no compilation" is exact
+ * rather than inferred from resource timings that also count polling.
+ * @param {import("puppeteer-core").Page} page
+ */
+export async function recordJobSubmissions(page) {
+  await page.evaluate(() => {
+    const scope = /** @type {any} */ (window);
+    if (scope.__jobSubmissions !== undefined) return;
+    scope.__jobSubmissions = [];
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (/** @type {any} */ input, /** @type {any} */ init) => {
+      const url = typeof input === "string" ? input : "";
+      if (url.endsWith("/v1/jobs") && typeof init?.body === "string") {
+        scope.__jobSubmissions.push(JSON.parse(init.body));
+      }
+      return nativeFetch(input, init);
+    };
+  });
+}
+
+/** @param {import("puppeteer-core").Page} page @returns {Promise<any[]>} */
+export async function jobSubmissions(page) {
+  return page.evaluate(() => /** @type {any} */ (window).__jobSubmissions ?? []);
 }
 
 /** The keyboard-only walk recognises a control by its label. */

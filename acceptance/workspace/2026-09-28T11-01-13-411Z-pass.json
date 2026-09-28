@@ -1,9 +1,9 @@
 {
   "schema": "azeforge.web.workspace-audit-evidence/v1",
-  "startedAt": "2026-09-28T10:49:14.145Z",
-  "finishedAt": "2026-09-28T10:50:13.645Z",
+  "startedAt": "2026-09-28T11:01:13.411Z",
+  "finishedAt": "2026-09-28T11:02:16.604Z",
   "target": {
-    "base": "http://127.0.0.1:50063",
+    "base": "http://127.0.0.1:50373",
     "started": true
   },
   "browser": "/Users/kumaresan/.cache/puppeteer/chrome-headless-shell/mac_arm-152.0.7977.75/chrome-headless-shell-mac-arm64/chrome-headless-shell",
@@ -216,14 +216,15 @@
         "Cell insert, move, delete, undo [CELL-01]: insert focused the new editor; move kept editor focus; delete focused the following Cell and offered Undo; Undo restored 5 Cells with focus on the restored Cell's heading",
         "editor mode switch [CELL-03, A11Y-02]: Left/Right moved the tab-list roving focus; Enter activated Description; Home returned to Source, both with aria-selected tracking",
         "generation and cancellation [DRAFT-01]: generate locked Source, Add Cell, and Document details while the outline stayed usable and focus moved to Cancel; cancelling restored Description focus and kept the Pending Description",
-        "Draft Gate [DRAFT-01, DRAFT-02, DRAFT-03]: generation produced a valid Draft Gate with Apply disabled-until-valid and a review affordance; Discard restored Description and the Pending Description; Apply replaced the Source, focused its start (0-0), and announced",
+        "Draft Gate [DRAFT-01, DRAFT-02, DRAFT-03]: generation produced a valid Draft Gate with Apply disabled-until-valid and a review affordance; Discard returned to Description with the Pending Description and identical Source; Apply replaced the Source (59 → 50 chars), focused its start (0-0), and announced",
         "front matter boundary [CELL-02]: pasted front matter was stripped to \"# Body only\" and announced; Document details stayed \"Document basics\" / \"AzeForge examples\" / \"2026-09-28\"",
         "generation responses [DRAFT-04]: clarification (\"Which audience should this target?\") offered Revise Description and kept the Pending Description; refusal offered Dismiss; provider failure offered Return to Description — none opened a Draft Gate",
-        "preview refresh, sizing, expansion [PREVIEW-01, PREVIEW-04, PREVIEW-05]: an edit issued no compile request; refresh reached \"current\"; separator moved from 252 through Home 180 and End 540 to 524 (opened by tab); the expanded preview shared the Artifact, contained focus, and Escape restored #refresh-preview",
+        "preview refresh, sizing, expansion [PREVIEW-01, PREVIEW-04, PREVIEW-05]: load 0, a Theme change +0, a Source edit +0 and expansion +0 submitted jobs; the single Refresh submitted one html compile (reaching \"current\"); separator moved from 252 through Home 180 and End 540 to 524; the expanded preview shared the Artifact, contained focus, and Escape restored #refresh-preview",
         "preview failure retains the Artifact [PREVIEW-03]: a refresh over an invalid document reported \"Preview blocked by Source errors\" and kept the previous Artifact visible with the diagnostics action, without discarding or re-fetching it",
         "diagnostics navigation [DOC-02, DOC-01]: a warning-only analysis left the dock closed (summary \"0 error · 1 warning\") while expanding Document details and marking the Date field invalid with described feedback; the summary trigger opened the dock with heading focus and Tab could leave it; Escape closed it and restored #diagnostics-toggle; activating the entry focused the Date field; an error analysis (16 error · 16 warning) revealed the dock and retained focus on the initiating surface (#more-toggle)",
         "format review [FORMAT-01]: Format opened a compiler-labelled \"Formatted Source\" review with focus inside and the Source untouched; Escape discarded nothing and restored the invoking control; Apply replaced the Source and focused it",
-        "export [EXPORT-01, EXPORT-02]: Export opened on the first item with 4 capability-advertised formats; the chosen item showed per-item progress then \"SVG export complete\" with one download and focus back on the trigger; the error fixture blocked export (item \"HTML — failed\"), revealed diagnostics without taking focus (#export-toggle), and downloaded nothing — keyboard throughout",
+        "menus [A11Y-01]: menus open on the first item (Tab-walked), Home/End/ArrowUp move and wrap, and Escape restored each exact trigger (#more-toggle, #export-toggle) with aria-expanded false",
+        "export [EXPORT-01, EXPORT-02]: Export opened on the first item with 4 capability-advertised formats; the chosen item showed per-item progress then \"SVG export complete\" with one download and focus back on the trigger; it compiled the current Source (330 chars) with theme default (omitted) in format svg, independent of the preview Artifact (loaded); the error fixture blocked export (item \"HTML — failed\"), revealed diagnostics without taking focus (#export-toggle), and downloaded nothing — keyboard throughout",
         "service dialog [SERVICE-01]: health opened progressively disclosed details (rail label \"Service details: healthy\") with focus inside; Escape closed it and restored the trigger",
         "preview frame navigation [A11Y-02]: Tab reached the rendered preview frame and left it again, continuing to preview-separator — no iframe trap"
       ]

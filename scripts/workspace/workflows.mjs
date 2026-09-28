@@ -11,7 +11,7 @@
  */
 
 import { expect } from "../cli.mjs";
-import { loadFixture, refreshPreview, settle, tabTo } from "./page.mjs";
+import { jobSubmissions, loadFixture, recordJobSubmissions, refreshPreview, settle, tabTo } from "./page.mjs";
 
 /** @param {import("puppeteer-core").Page} page */
 async function activeElement(page) {
@@ -175,10 +175,13 @@ const STEPS = [
       expect(added.role === "source", `insert focused ${added.role ?? added.tag}`);
       const afterInsert = await page.evaluate(() => document.querySelectorAll("#notebook-cells .cell").length);
       expect(afterInsert === before + 1, `insert produced ${afterInsert} Cells`);
+      const movedOrder = await page.evaluate(() => [...document.querySelectorAll("#notebook-cells .cell")].map((cell) => cell.getAttribute("data-cell-id") ?? ""));
       const moved = await activate(page, '[data-action="move-up"]:not([disabled])');
-      expect(moved === "tab" || moved === "focus", "move-up was not activated");
       const afterMove = await activeElement(page);
       expect(afterMove.role === "source", `move left focus on ${afterMove.role ?? afterMove.tag}`);
+      const reordered = await page.evaluate(() => [...document.querySelectorAll("#notebook-cells .cell")].map((cell) => cell.getAttribute("data-cell-id") ?? ""));
+      expect(reordered.join() !== movedOrder.join(), "move-up did not reorder the Cells");
+      expect(afterMove.cellId === reordered[0], "move did not keep focus in the moved Cell");
       await activate(page, '[data-action="delete"]:not([disabled])');
       const afterDelete = await page.evaluate(() => ({
         cells: document.querySelectorAll("#notebook-cells .cell").length,
@@ -289,26 +292,33 @@ const STEPS = [
       }));
       expect(gate.status.startsWith("Draft Gate · valid"), `Draft Gate status is ${JSON.stringify(gate.status)}`);
       expect(gate.applyDisabled && gate.reviewed, "the Draft Gate is missing Apply or review");
+      const sourceBefore = await page.evaluate(() => /** @type {HTMLTextAreaElement | null} */ (document.querySelector("#notebook-cells [data-role=source]"))?.value ?? "");
       await activate(page, '[data-action="discard-proposal"]');
       const discarded = await page.evaluate(() => ({
         descriptionVisible: document.querySelector("#notebook-cells [data-panel=description]")?.hasAttribute("hidden") === false,
         description: /** @type {HTMLTextAreaElement | null} */ (document.querySelector("#notebook-cells [data-role=description]"))?.value ?? "",
         proposal: document.querySelector("[data-proposal-cell]") !== null,
+        source: /** @type {HTMLTextAreaElement | null} */ (document.querySelector("#notebook-cells [data-role=source]"))?.value ?? "",
+        lastApplied: /** @type {HTMLTextAreaElement | null} */ (document.querySelector("#notebook-cells [data-role=source]"))?.value ?? "",
       }));
       expect(!discarded.proposal, "Discard left the proposal panel behind");
       expect(discarded.descriptionVisible && discarded.description === "Explain it plainly.", "Discard did not return to Description with the Pending Description");
+      expect(discarded.source === sourceBefore, "Discard changed the Cell Source");
       await activate(page, '[data-action="generate"]:not([disabled])');
       await announce(page, "Proposed Source is ready for review");
+      const proposed = await page.evaluate(() => /** @type {HTMLTextAreaElement | null} */ (document.querySelector("[data-proposal-cell] textarea"))?.value ?? "");
       await activate(page, '[data-action="apply-proposal"]');
       await announce(page, "Proposed Source applied");
       const applied = await activeElement(page);
       expect(applied.role === "source", `Apply left focus on ${applied.role ?? applied.tag}`);
-      const selection = await page.evaluate(() => {
+      const appliedState = await page.evaluate(() => {
         const area = /** @type {HTMLTextAreaElement | null} */ (document.activeElement);
-        return [area?.selectionStart ?? null, area?.selectionEnd ?? null];
+        return { source: area?.value ?? "", range: [area?.selectionStart ?? null, area?.selectionEnd ?? null] };
       });
-      expect(selection[0] === 0, `Apply focused offset ${selection[0]}`);
-      return `generation produced a valid Draft Gate with Apply disabled-until-valid and a review affordance; Discard restored Description and the Pending Description; Apply replaced the Source, focused its start (${selection.join("-")}), and announced`;
+      expect(appliedState.source === proposed, "Apply did not replace the Source with the proposed text");
+      expect(appliedState.source !== sourceBefore, "Apply left the previous Source in place");
+      expect(appliedState.range[0] === 0, `Apply focused offset ${appliedState.range[0]}`);
+      return `generation produced a valid Draft Gate with Apply disabled-until-valid and a review affordance; Discard returned to Description with the Pending Description and identical Source; Apply replaced the Source (${sourceBefore.length} → ${appliedState.source.length} chars), focused its start (${appliedState.range.join("-")}), and announced`;
     },
   },
   {
@@ -405,8 +415,19 @@ const STEPS = [
     name: "preview refresh, sizing, expansion",
     ids: ["PREVIEW-01", "PREVIEW-04", "PREVIEW-05"],
     run: async (page) => {
+      await recordJobSubmissions(page);
+      /** @returns {Promise<number>} every job the page has submitted */
+      const jobs = async () => (await jobSubmissions(page)).length;
       await loadFixture(page, "typical");
-      const jobsBefore = await page.evaluate(() => performance.getEntriesByType("resource").filter((entry) => entry.name.includes("/v1/jobs")).length);
+      const load = await jobs();
+      await page.evaluate(() => {
+        const theme = /** @type {HTMLSelectElement | null} */ (document.getElementById("theme"));
+        if (theme === null) return;
+        theme.value = [...theme.options].map((option) => option.value).find((value) => value !== theme.value) ?? theme.value;
+        theme.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await settle(page);
+      const afterTheme = await jobs();
       await page.evaluate(() => {
         const area = /** @type {HTMLTextAreaElement | null} */ (document.querySelector("[data-role=source]"));
         if (area !== null) {
@@ -416,10 +437,28 @@ const STEPS = [
         }
       });
       await settle(page);
-      const jobsAfterEdit = await page.evaluate(() => performance.getEntriesByType("resource").filter((entry) => entry.name.includes("/v1/jobs")).length);
-      expect(jobsAfterEdit === jobsBefore, `an edit issued ${jobsAfterEdit - jobsBefore} compile request(s)`);
+      const afterEdit = await jobs();
+      expect(afterTheme === load, `a Theme change issued ${afterTheme - load} compile request(s)`);
+      expect(afterEdit === load, `a Source edit issued ${afterEdit - load} compile request(s)`);
       const state = await refreshPreview(page);
       expect(state.state === "current", `refresh settled at ${state.state}`);
+      const afterRefresh = await jobs();
+      expect(afterRefresh === load + 1, `Refresh issued ${afterRefresh - load} jobs`);
+      const refreshRequest = (await jobSubmissions(page)).at(-1);
+      expect(refreshRequest?.operation === "compile" && refreshRequest?.format === "html", `Refresh submitted ${JSON.stringify(refreshRequest?.operation)}/${JSON.stringify(refreshRequest?.format)}`);
+      await activate(page, "#expand-preview");
+      const afterExpansion = await jobs();
+      expect(afterExpansion === afterRefresh, `expanding the preview issued ${afterExpansion - afterRefresh} compile request(s)`);
+      const dialog = await page.evaluate(() => ({
+        open: /** @type {HTMLDialogElement | null} */ (document.getElementById("preview-dialog"))?.open === true,
+        inside: document.getElementById("preview-dialog")?.contains(document.activeElement) === true,
+        shared: document.getElementById("preview")?.getAttribute("src") === document.getElementById("expanded-preview")?.getAttribute("src"),
+      }));
+      expect(dialog.open && dialog.inside && dialog.shared, "the expanded preview did not open with shared state and contained focus");
+      await page.keyboard.press("Escape");
+      await settle(page);
+      const closed = await activeElement(page);
+      expect(closed.id === "refresh-preview", `Escape left focus on ${closed.id || "nothing"}`);
       await page.evaluate(() => document.getElementById("preview-separator")?.focus());
       const separator = async () => page.evaluate(() => ({
         min: document.getElementById("preview-separator")?.getAttribute("aria-valuemin") ?? "",
@@ -436,18 +475,7 @@ const STEPS = [
       expect(atMin.now === atMin.min, `Home landed at ${atMin.now} instead of ${atMin.min}`);
       expect(atMax.now === atMax.max, `End landed at ${atMax.now} instead of ${atMax.max}`);
       expect(Number(raised.now) === Number(atMax.now) - 16, `ArrowUp moved to ${raised.now}`);
-      const expanded = await activate(page, "#expand-preview");
-      const dialog = await page.evaluate(() => ({
-        open: /** @type {HTMLDialogElement | null} */ (document.getElementById("preview-dialog"))?.open === true,
-        inside: document.getElementById("preview-dialog")?.contains(document.activeElement) === true,
-        shared: document.getElementById("preview")?.getAttribute("src") === document.getElementById("expanded-preview")?.getAttribute("src"),
-      }));
-      expect(dialog.open && dialog.inside && dialog.shared, "the expanded preview did not open with shared state and contained focus");
-      await page.keyboard.press("Escape");
-      await settle(page);
-      const closed = await activeElement(page);
-      expect(closed.id === "refresh-preview", `Escape left focus on ${closed.id || "nothing"}`);
-      return `an edit issued no compile request; refresh reached "current"; separator moved from ${start.now} through Home ${atMin.min} and End ${atMax.max} to ${raised.now} (opened by ${expanded}); the expanded preview shared the Artifact, contained focus, and Escape restored #${closed.id}`;
+      return `load ${load}, a Theme change +${afterTheme - load}, a Source edit +${afterEdit - afterTheme} and expansion +${afterExpansion - afterRefresh} submitted jobs; the single Refresh submitted one html compile (reaching "current"); separator moved from ${start.now} through Home ${atMin.min} and End ${atMax.max} to ${raised.now}; the expanded preview shared the Artifact, contained focus, and Escape restored #${closed.id}`;
     },
   },
   {
@@ -603,10 +631,60 @@ const STEPS = [
     },
   },
   {
+    name: "menus",
+    ids: ["A11Y-01"],
+    run: async (page) => {
+      await loadFixture(page, "typical");
+      // A background analysis may still hold the Analyze item disabled; the menu
+      // focuses the first *enabled* item, so wait for the operation to settle.
+      await page.waitForFunction(() => /** @type {HTMLButtonElement | null} */ (document.getElementById("analyze"))?.disabled === false, { timeout: 30_000 });
+      const opened = await activate(page, "#more-toggle", "Enter");
+      const first = await activeElement(page);
+      expect(first.action === null && first.id === "analyze", `the More menu opened on ${first.id || first.text}`);
+      await page.keyboard.press("End");
+      const last = await activeElement(page);
+      expect(last.id === "format", `End moved to ${last.id || last.text}`);
+      await page.keyboard.press("Home");
+      const home = await activeElement(page);
+      expect(home.id === "analyze", `Home moved to ${home.id || home.text}`);
+      await page.keyboard.press("ArrowUp");
+      const wrapped = await activeElement(page);
+      expect(wrapped.id === "format", `ArrowUp from the first item moved to ${wrapped.id || wrapped.text}`);
+      await page.keyboard.press("Escape");
+      await settle(page);
+      const restored = await page.evaluate(() => ({
+        focused: document.activeElement?.id ?? "",
+        expanded: document.getElementById("more-toggle")?.getAttribute("aria-expanded") ?? "",
+        hidden: /** @type {HTMLElement | null} */ (document.getElementById("more-menu"))?.hidden === true,
+      }));
+      expect(restored.focused === "more-toggle", `Escape left focus on ${restored.focused || "nothing"}`);
+      expect(restored.hidden && restored.expanded === "false", "Escape left the menu open");
+      // The Export menu behaves the same way over its capability-advertised items.
+      await activate(page, "#export-toggle", "Enter");
+      await page.keyboard.press("End");
+      const lastExport = await page.evaluate(() =>
+        document.activeElement instanceof HTMLElement ? document.activeElement.dataset.format ?? "" : "");
+      await page.keyboard.press("Escape");
+      await settle(page);
+      const exportRestored = await page.evaluate(() => document.activeElement?.id ?? "");
+      expect(lastExport === "pdf", `End moved to ${JSON.stringify(lastExport)} in the Export menu`);
+      expect(exportRestored === "export-toggle", `Escape left focus on ${exportRestored || "nothing"}`);
+      return `menus open on the first item (${opened === "tab" ? "Tab-walked" : "focused"}), Home/End/ArrowUp move and wrap, and Escape restored each exact trigger (#more-toggle, #export-toggle) with aria-expanded false`;
+    },
+  },
+  {
     name: "export",
     ids: ["EXPORT-01", "EXPORT-02"],
     run: async (page, ctx) => {
       await loadFixture(page, "typical");
+      // Record the compile request the export issues: what it compiles is the
+      // contract, not the wording on the item.
+      await recordJobSubmissions(page);
+      const current = await page.evaluate(() => ({
+        text: /** @type {HTMLTextAreaElement | null} */ (document.querySelector("[data-role=source]"))?.value ?? "",
+        theme: /** @type {HTMLSelectElement | null} */ (document.getElementById("theme"))?.value ?? "",
+        artifact: document.getElementById("preview")?.getAttribute("src") ?? null,
+      }));
       await activate(page, "#export-toggle", "Enter");
       const menu = await page.evaluate(() => ({
         focused: document.activeElement instanceof HTMLElement ? document.activeElement.dataset.format ?? document.activeElement.id : "",
@@ -619,6 +697,13 @@ const STEPS = [
       const progress = await page.evaluate(() => [...document.querySelectorAll("#export-menu button")].map((button) => button.textContent ?? ""));
       expect(progress.some((item) => item.includes("exporting")), `no per-item progress: ${JSON.stringify(progress)}`);
       const done = await announce(page, "export complete");
+      const compiled = (await jobSubmissions(page)).filter((request) => request.operation === "compile").at(-1) ?? null;
+      expect(compiled !== null, "the export issued no compile request");
+      expect(compiled.source.text.includes(current.text), "the export compiled something other than the current Source");
+      // The protocol omits `theme` exactly when the current Theme is the default.
+      const themeMatches = current.theme === "default" ? compiled.theme === undefined : compiled.theme === current.theme;
+      expect(themeMatches, `the export compiled theme ${String(compiled.theme)} instead of ${current.theme}`);
+      expect(compiled.format !== undefined, "the export request named no format");
       const files = await downloads.waitFor();
       expect(files.length === 1, `export downloaded ${files.length} files`);
       const restored = await activeElement(page);
@@ -641,7 +726,7 @@ const STEPS = [
       expect(blocked.focused === "export-toggle", `a blocked export moved focus to ${blocked.focused || "nothing"}`);
       const afterBlocked = await downloads.waitFor(1_500);
       expect(afterBlocked.length === files.length, "a blocked export still downloaded bytes");
-      return `Export opened on the first item with ${menu.items.length} capability-advertised formats; the chosen item showed per-item progress then "${done}" with one download and focus back on the trigger; the error fixture blocked export (item "${blocked.item}"), revealed diagnostics without taking focus (#${blocked.focused}), and downloaded nothing — keyboard throughout`;
+      return `Export opened on the first item with ${menu.items.length} capability-advertised formats; the chosen item showed per-item progress then "${done}" with one download and focus back on the trigger; it compiled the current Source (${compiled.source.text.length} chars) with theme ${compiled.theme ?? "default (omitted)"} in format ${compiled.format}, independent of the preview Artifact (${current.artifact === null ? "none loaded" : "loaded"}); the error fixture blocked export (item "${blocked.item}"), revealed diagnostics without taking focus (#${blocked.focused}), and downloaded nothing — keyboard throughout`;
     },
   },
   {
@@ -696,12 +781,17 @@ const STEPS = [
         }
         return false;
       };
-      const escaped = entered ? await leftFrame() : true;
+      if (entered) {
+        const escaped = await leftFrame();
+        const landed = await activeElement(page);
+        expect(escaped, "focus entered the preview frame and could not leave it");
+        expect(landed.tag !== "BODY" && landed.id !== "", "leaving the preview frame dropped focus");
+        return `Tab reached the rendered preview frame and left it again, continuing to ${landed.id || landed.tag} — no iframe trap`;
+      }
       const landed = await activeElement(page);
-      expect(escaped && landed.tag !== "BODY", "focus could not leave the preview frame");
-      return entered
-        ? `Tab reached the rendered preview frame and left it again, continuing to ${landed.id || landed.tag} — no iframe trap`
-        : `the preview frame is skipped by Tab (frame content is not a Tab stop), and the walk continued to ${landed.id || landed.tag}`;
+      expect(landed.tag !== "BODY" && landed.tag !== "HTML", "the preview region swallowed Tab without moving focus");
+      expect(landed.id !== "", `Tab from the preview region reached an unnamed ${landed.tag}`);
+      return `the preview frame is not itself a Tab stop, and the walk continued past it to ${landed.id || landed.tag}`;
     },
   },
 ];
