@@ -58,13 +58,16 @@ stale-result rejection, Theme and format controls, explicit replacement
 application and downloads. It does not reproduce compiler policy: what a
 diagnostic means, what may be fixed and what renders all come from the compiler.
 
-The editor is a notebook over one current AzeMark Source. Its fixed front
-matter panel exposes title, author, date and additional metadata. Authors can
-search and jump between cells, edit or reorder cells, generate a proposed
-AzeMark Source draft for a selected cell through the owner-configured authoring
-service, and run a cell to render the complete current document directly below
-that cell. Generated AzeMark Source drafts stay separate until the author
-applies them.
+The authoring workspace edits one ephemeral Current document as stable-identity
+Cells. Its dark application rail, Current document navigation, manually
+refreshed Document preview, Document details, and single-column Cell canvas
+reflow from desktop through tablet and 320 CSS px accessibility zoom. Authors
+can search Source and Pending Descriptions, insert/reorder/delete Cells with
+complete Undo, generate a revision-bound proposed AzeMark Source through the
+Draft Gate, inspect diagnostics, review formatting, and export current Source
+independently of preview freshness. There are no persistence, multi-document,
+project, or per-Cell execution affordances. The canonical interaction and
+accessibility contract is [`docs/ui/authoring-workspace-redesign.md`](docs/ui/authoring-workspace-redesign.md).
 
 The preloaded examples are the compiler's own reference library
 (`docs/language/*.aze.md`), reused verbatim: fourteen complete Sources spanning

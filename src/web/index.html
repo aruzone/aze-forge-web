@@ -7,134 +7,91 @@
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-<header class="toolbar">
-  <div class="brand">
-    <img class="brand-logo" src="/azeforge-logo-03-2.jpg" alt="" width="32" height="32">
-    <span>AzeForge</span>
-  </div>
-  <div class="toolbar-actions" aria-label="Document actions">
-    <label class="field">Theme
-      <select id="theme"></select>
-    </label>
-    <span class="actions">
-      <button id="analyze" type="button">Analyze</button>
-      <button id="format" type="button">Format</button>
-    </span>
-    <span class="actions exports">
-      <span class="label">Export</span>
-      <button type="button" data-format="html">HTML</button>
-      <button type="button" data-format="svg">SVG</button>
-      <button type="button" data-format="png">PNG</button>
-      <button type="button" data-format="pdf">PDF</button>
-    </span>
-    <span id="activity" class="activity" role="status" aria-live="polite"></span>
-    <button id="signout" type="button" class="ghost" hidden>Sign out</button>
-  </div>
-</header>
-<div id="preview-toast" class="preview-toast" role="status" aria-live="polite" hidden></div>
-<textarea id="source" spellcheck="false" aria-label="Current editor Source" hidden></textarea>
+<a class="skip-link" href="#cell-canvas">Skip to editor</a>
+<a class="skip-link" href="#document-preview">Skip to Document preview</a>
+<a class="skip-link" href="#document-navigation">Skip to Current document navigation</a>
+<textarea id="source" hidden aria-label="Assembled AzeMark Source"></textarea>
+<div id="workspace" class="workspace" hidden>
+  <nav class="app-rail" aria-label="Application">
+    <img src="/azeforge-logo-03-2.jpg" alt="AzeForge" width="36" height="36">
+    <button class="rail-destination" type="button" aria-current="page"><span aria-hidden="true">▤</span><span class="visually-hidden">Author workspace</span></button>
+    <span class="rail-spacer"></span>
+    <button id="service-health" class="rail-destination" type="button" aria-haspopup="dialog"><span aria-hidden="true">●</span><span class="visually-hidden">Service details</span></button>
+    <button id="signout" class="rail-destination" type="button"><span aria-hidden="true">⇥</span><span class="visually-hidden">Sign out</span></button>
+  </nav>
 
-<main id="workspace" class="notebook-layout" hidden>
-  <aside class="notebook-sidebar" aria-labelledby="navigator-title">
-    <div class="sidebar-header">
-      <h2 id="navigator-title">Document</h2>
-      <label class="sidebar-field">Example
-        <select id="example"></select>
-      </label>
-    </div>
-    <label class="sidebar-search">Find a cell or text
-      <input id="cell-search" type="search" placeholder="Search this document" autocomplete="off">
-    </label>
-    <p id="cell-count" class="cell-count"></p>
-    <nav id="cell-list" class="cell-list" aria-label="Cell navigation"></nav>
-    <div class="authoring-controls">
-      <h3>Generate with LLM</h3>
-      <label class="authoring-consent"><input id="authoring-consent" type="checkbox"> I understand that each cell request and AzeMark Source draft are sent to the owner-configured authoring service.</label>
-      <p id="authoring-status" role="status" aria-live="polite"></p>
-    </div>
+  <aside id="document-navigation" class="document-nav" aria-labelledby="document-nav-title">
+    <header><p>Current document</p><button id="close-document-nav" type="button" aria-label="Close Current document navigation">×</button></header>
+    <button id="current-document" class="document-row" type="button"><span class="document-mark">Az</span><span><strong id="nav-document-title">Untitled document</strong><small id="document-session">This session · 1 Cell</small></span></button>
+    <label class="search">Find in document<input id="cell-search" type="search" autocomplete="off"></label>
+    <p id="search-result" class="small-status" aria-live="polite"></p>
+    <nav id="cell-list" class="cell-list" aria-label="Cell outline"></nav>
+    <button id="add-cell" class="add-cell" type="button">＋ Add Cell</button>
   </aside>
 
-  <section class="notebook-editor" aria-labelledby="editor-title">
-    <section class="front-matter" aria-labelledby="front-matter-title">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Document settings</p>
-          <h1 id="front-matter-title">Front matter</h1>
-        </div>
-        <span class="fixed-label">Fixed</span>
+  <main id="main-workspace">
+    <header class="utility-bar">
+      <button id="open-document-nav" class="document-trigger" type="button" aria-haspopup="dialog">☰ <span id="utility-title">Untitled document</span></button>
+      <div class="utility-identity"><span>Authoring /</span><strong id="desktop-title">Untitled document</strong></div>
+      <div class="utility-actions">
+        <label>Theme <select id="theme" aria-label="Theme"></select></label>
+        <button id="diagnostics-toggle" type="button" aria-controls="diagnostics-panel" aria-expanded="false"><span id="diagnostics-summary">Not analyzed</span></button>
+        <button id="export-toggle" type="button" aria-haspopup="menu" aria-expanded="false">Export</button>
+        <button id="more-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More document actions">•••</button>
       </div>
-      <div class="front-matter-fields">
-        <label>Title
-          <input id="document-title" type="text" placeholder="Untitled AzeMark document">
-        </label>
-        <label>Authors
-          <textarea id="document-author" rows="2" spellcheck="false" placeholder="One author per line"></textarea>
-        </label>
-        <label>Date
-          <input id="document-date" type="date">
-        </label>
-        <label class="metadata-field">Additional metadata
-          <textarea id="document-metadata" rows="2" spellcheck="false" placeholder="theme: default&#10;x-document-key: value"></textarea>
-        </label>
+      <div id="export-menu" class="menu" role="menu" hidden></div>
+      <div id="more-menu" class="menu more-menu" role="menu" hidden>
+        <button id="analyze" role="menuitem" type="button">Analyze</button>
+        <button id="format" role="menuitem" type="button">Format…</button>
       </div>
+    </header>
+
+    <section id="document-preview" class="document-preview" aria-labelledby="preview-title">
+      <header><div><p>Document preview</p><h1 id="preview-title">Untitled document</h1></div><div class="preview-actions"><strong id="preview-state">Preview not generated</strong><button id="view-preview-diagnostics" type="button" hidden>View diagnostics</button><button id="refresh-preview" type="button">Refresh preview</button><button id="expand-preview" type="button" disabled>Expand</button></div></header>
+      <div id="preview-frame" class="preview-frame"><iframe id="preview" title="Document preview — not generated" sandbox="allow-same-origin" hidden></iframe><p id="preview-placeholder">Preview not generated. Refresh when the Current document is ready.</p></div>
+      <div id="preview-separator" class="preview-separator" role="separator" aria-label="Resize Document preview" aria-orientation="horizontal" tabindex="0">•••</div>
     </section>
 
-    <section class="notebook-content" aria-labelledby="editor-title">
-      <div class="notebook-heading">
-        <div>
-          <p class="eyebrow">AzeMark Source</p>
-          <h2 id="editor-title">Notebook editor</h2>
+    <section id="cell-canvas" class="cell-canvas" aria-labelledby="cells-title">
+      <details id="document-details" class="document-details">
+        <summary><span><small>Document details</small><strong id="details-summary">Untitled document</strong></span></summary>
+        <div class="details-fields">
+          <label>Title<input id="document-title"></label>
+          <label>Authors, one per line<textarea id="document-author" rows="2"></textarea></label>
+          <label>Date<input id="document-date"></label>
+          <label class="metadata">Additional metadata<textarea id="document-metadata" rows="3" spellcheck="false"></textarea></label>
         </div>
-        <span id="source-meta" class="meta"></span>
-      </div>
+      </details>
+      <header class="canvas-heading"><div><p>AzeMark Source</p><h2 id="cells-title">Document Cells</h2></div><span id="source-meta"></span></header>
       <div id="notebook-cells" class="notebook-cells"></div>
-      <button id="add-cell" type="button" class="add-cell">Add AzeMark cell</button>
-      <div id="execution-dock" class="execution-dock">
-        <section id="rendered-output" class="rendered-output" aria-labelledby="preview-title">
-          <div class="output-heading">
-            <h2 id="preview-title">Rendered output</h2>
-            <span id="output-label" class="output-label">Run a cell to refresh</span>
-          </div>
-          <div class="preview-frame" id="preview-frame">
-            <p class="placeholder" id="preview-placeholder">Run a cell to render the current AzeMark document.</p>
-            <iframe id="preview" sandbox="" referrerpolicy="no-referrer" title="Artifact preview" hidden></iframe>
-          </div>
-          <div class="preview-bar">
-            <p class="preview-status" id="preview-status"></p>
-            <button id="download-artifact" type="button" hidden>Download</button>
-          </div>
-        </section>
-      </div>
+      <button id="add-cell-bottom" class="add-cell-bottom" type="button">＋ Add Cell</button>
     </section>
+  </main>
+  <button id="drawer-scrim" class="drawer-scrim" type="button" aria-label="Close Current document navigation" hidden></button>
 
-    <section class="diagnostics-panel" aria-labelledby="diagnostics-title">
-      <div class="notebook-heading">
-        <div>
-          <p class="eyebrow">Compiler feedback</p>
-          <h2 id="diagnostics-title">Diagnostics <span id="diagnostics-summary" class="meta"></span></h2>
-        </div>
-      </div>
-      <div id="diagnostics-list" class="diagnostic-list"></div>
-    </section>
-  </section>
-</main>
-
-<footer class="footer">
-  <span id="service-meta">Connecting…</span>
-</footer>
-
-<div class="gate" id="gate">
-  <form class="gate-card" id="gate-form">
-    <h1>AzeForge Web</h1>
-    <p>The alpha service accepts one deployment-issued bearer token. Paste it to continue. It is kept in this tab's session storage only.</p>
-    <label class="field">Access token
-      <input id="gate-token" type="password" autocomplete="off" spellcheck="false" required>
-    </label>
-    <p class="gate-error" id="gate-error" role="alert"></p>
-    <button type="submit">Continue</button>
-  </form>
+  <aside id="diagnostics-panel" class="diagnostics-panel" aria-labelledby="diagnostics-title" hidden>
+    <header><div><small>Document diagnostics</small><h2 id="diagnostics-title">Not analyzed</h2></div><button id="close-diagnostics" type="button" aria-label="Close diagnostics">×</button></header>
+    <div id="diagnostics-list"><p>No analysis has run.</p></div>
+  </aside>
 </div>
 
+<div id="undo-bar" class="undo-bar" role="status" hidden>Cell deleted. <button id="undo-delete" type="button">Undo</button></div>
+<div id="workspace-status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+<dialog id="preview-dialog" class="preview-dialog" aria-labelledby="expanded-preview-title">
+  <header><h2 id="expanded-preview-title">Document preview</h2><strong id="expanded-preview-state"></strong><button id="expanded-refresh" type="button">Refresh preview</button><button id="close-preview-dialog" type="button">Close</button></header>
+  <iframe id="expanded-preview" title="Expanded Document preview" sandbox="allow-same-origin"></iframe>
+</dialog>
+
+<dialog id="proposal-dialog" class="proposal-dialog" aria-labelledby="proposal-title">
+  <header><h2 id="proposal-title">Formatted Source</h2><button id="close-proposal" type="button">Close</button></header>
+  <p id="proposal-message"></p><textarea id="formatted-source" readonly></textarea>
+  <footer><button id="discard-format" type="button">Discard</button><button id="apply-format" type="button">Apply formatted Source</button></footer>
+</dialog>
+
+<dialog id="service-dialog" aria-labelledby="service-title"><h2 id="service-title">Service details</h2><p id="service-meta">Connecting…</p><button id="close-service" type="button">Close</button></dialog>
+
+<div class="gate" id="gate"><form class="gate-card" id="gate-form"><img src="/azeforge-logo-03-2.jpg" alt="" width="48" height="48"><h1>Open AzeForge Web</h1><p>Enter the deployment access token.</p><label>Access token<input id="gate-token" type="password" autocomplete="current-password"></label><p id="gate-error" class="error" role="alert"></p><button type="submit">Enter workspace</button></form></div>
 <script type="module" src="/app.js"></script>
 </body>
 </html>

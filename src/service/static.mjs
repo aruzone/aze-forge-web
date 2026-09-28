@@ -21,6 +21,7 @@ const FILES = Object.freeze([
   "app.js",
   "app.css",
   "coordinates.js",
+  "workspace-state.js",
   "examples.json",
   "azeforge-logo-03-2.jpg",
   "draft-gate-prototype.html",
