@@ -72,17 +72,38 @@ export function validateDraftRequest(body) {
   return Object.freeze({ protocolVersion: PROTOCOL_VERSION, requestId: request.requestId, description: request.description });
 }
 
+/**
+ * The structured-output schema requires every field, so a model may satisfy an
+ * unused one with `""` rather than `null`. Both mean absent here; only a real
+ * value belonging to another tag is a contract violation.
+ * @param {unknown} value
+ */
+function absent(value) {
+  return value === null || value === "";
+}
+
+/**
+ * A tag's own field has to carry the content that makes the tag meaningful: an
+ * empty question or reason would reach the author as an empty panel, so it is a
+ * contract failure like any other.
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+function present(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 /** @param {unknown} value */
 export function validateProviderOutcome(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid structured outcome");
   const outcome = /** @type {Record<string, unknown>} */ (value);
-  if (outcome.kind === "source" && typeof outcome.text === "string" && typeof outcome.title === "string" && typeof outcome.blockType === "string" && BLOCK_TYPES.includes(outcome.blockType) && outcome.question === null && outcome.reason === null && outcome.code === null) {
+  if (outcome.kind === "source" && typeof outcome.text === "string" && typeof outcome.title === "string" && typeof outcome.blockType === "string" && BLOCK_TYPES.includes(outcome.blockType) && absent(outcome.question) && absent(outcome.reason) && absent(outcome.code)) {
     return Object.freeze({ kind: "source", text: outcome.text, title: outcome.title, blockType: outcome.blockType });
   }
-  if (outcome.kind === "clarification" && outcome.text === null && outcome.title === null && outcome.blockType === null && typeof outcome.question === "string" && outcome.question.length <= 1_000 && outcome.reason === null && outcome.code === null) {
+  if (outcome.kind === "clarification" && absent(outcome.text) && absent(outcome.title) && absent(outcome.blockType) && present(outcome.question) && outcome.question.length <= 1_000 && absent(outcome.reason) && absent(outcome.code)) {
     return Object.freeze({ kind: "clarification", question: outcome.question });
   }
-  if (outcome.kind === "refusal" && outcome.text === null && outcome.title === null && outcome.blockType === null && outcome.question === null && typeof outcome.reason === "string" && outcome.reason.length <= 1_000 && typeof outcome.code === "string" && outcome.code.length <= 100) {
+  if (outcome.kind === "refusal" && absent(outcome.text) && absent(outcome.title) && absent(outcome.blockType) && absent(outcome.question) && present(outcome.reason) && outcome.reason.length <= 1_000 && typeof outcome.code === "string" && outcome.code.length <= 100) {
     return Object.freeze({ kind: "refusal", reason: outcome.reason, code: outcome.code });
   }
   throw new Error("invalid structured outcome");
@@ -105,6 +126,37 @@ export function validateSourceDraft(source) {
   const nativeBlock = /^:::: (?:equation|derivation|plot|chart|geometry|formula|reaction|structure)\n(?:[^\n]+\n)*----\n[\s\S]+?\n::::\s*$/m;
   if (!frontMatter.test(source) || !nativeBlock.test(source)) throw new Error("complete typed AzeMark Source required");
   return source;
+}
+
+/**
+ * The model answered, but not with something this boundary accepts. It is named
+ * so a deployment log can tell a model-contract failure from a transport one:
+ * the server records only `error.name`.
+ * @param {string} message
+ */
+function authoringOutcomeError(message) {
+  return Object.assign(new Error(message), { name: "AuthoringOutcomeError" });
+}
+
+/**
+ * Parse the model's structured response into a tagged outcome.
+ * @param {string} outputText
+ */
+export function parseProviderOutcome(outputText) {
+  let parsed;
+  try {
+    parsed = JSON.parse(outputText);
+  } catch {
+    throw authoringOutcomeError("Authoring provider did not return JSON.");
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw authoringOutcomeError("Authoring provider did not return a structured outcome.");
+  }
+  try {
+    return validateProviderOutcome(/** @type {Record<string, unknown>} */ (parsed).outcome);
+  } catch {
+    throw authoringOutcomeError("Authoring provider returned an unusable outcome.");
+  }
 }
 
 /** @param {{ apiKey: string, model: string, catalogue: readonly string[] }} config */
@@ -131,18 +183,9 @@ export function createOpenAIAuthoringProvider(config) {
         text: { format: RESPONSE_FORMAT },
       });
       if (response.status !== "completed" || typeof response.output_text !== "string") {
-        throw new Error("Authoring provider did not return a completed structured response.");
+        throw authoringOutcomeError("Authoring provider did not return a completed structured response.");
       }
-      let parsed;
-      try {
-        parsed = JSON.parse(response.output_text);
-      } catch {
-        throw new Error("Authoring provider did not return JSON.");
-      }
-      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Authoring provider did not return a structured outcome.");
-      }
-      return validateProviderOutcome(/** @type {Record<string, unknown>} */ (parsed).outcome);
+      return parseProviderOutcome(response.output_text);
     },
   });
 }

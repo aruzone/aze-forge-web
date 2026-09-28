@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSourceDraft, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
+import { buildSourceDraft, parseProviderOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
 
 test("accepts only the versioned Description draft request", () => {
   assert.deepEqual(
@@ -55,6 +55,57 @@ test("accepts only complete tagged provider outcomes", () => {
     () => validateProviderOutcome({ kind: "source", title: null, blockType: null, text: null, question: null, reason: null, code: null }),
     /invalid structured outcome/,
   );
+});
+
+test("treats an empty string in an unused field as absent", () => {
+  assert.deepEqual(
+    validateProviderOutcome({ kind: "source", text: "F = m a", title: "Newton's second law", blockType: "equation", question: "", reason: "", code: "" }),
+    { kind: "source", text: "F = m a", title: "Newton's second law", blockType: "equation" },
+  );
+  assert.deepEqual(
+    validateProviderOutcome({ kind: "clarification", text: "", title: "", blockType: null, question: "Which form?", reason: null, code: "" }),
+    { kind: "clarification", question: "Which form?" },
+  );
+  assert.deepEqual(
+    validateProviderOutcome({ kind: "refusal", text: "", title: null, blockType: "", question: null, reason: "Out of scope.", code: "not-supported" }),
+    { kind: "refusal", reason: "Out of scope.", code: "not-supported" },
+  );
+});
+
+test("rejects a clarification or refusal whose own field carries nothing", () => {
+  assert.throws(
+    () => validateProviderOutcome({ kind: "clarification", text: "", title: "", blockType: null, question: "", reason: "", code: "" }),
+    /invalid structured outcome/,
+  );
+  assert.throws(
+    () => validateProviderOutcome({ kind: "refusal", text: null, title: null, blockType: null, question: null, reason: "   ", code: "not-supported" }),
+    /invalid structured outcome/,
+  );
+});
+
+test("rejects an outcome that carries fields belonging to another tag", () => {
+  assert.throws(
+    () => validateProviderOutcome({ kind: "source", text: "F = m a", title: "T", blockType: "equation", question: "Which one?", reason: null, code: null }),
+    /invalid structured outcome/,
+  );
+  assert.throws(
+    () => validateProviderOutcome({ kind: "clarification", text: "# Draft", title: null, blockType: null, question: "Which?", reason: null, code: null }),
+    /invalid structured outcome/,
+  );
+});
+
+test("names a model-contract failure so a log can tell it from a transport one", () => {
+  assert.deepEqual(
+    parseProviderOutcome(JSON.stringify({ outcome: { kind: "source", text: "F = m a", title: "Newton", blockType: "equation", question: "", reason: "", code: "" } })),
+    { kind: "source", text: "F = m a", title: "Newton", blockType: "equation" },
+  );
+  for (const [label, payload] of [["json", "not json"], ["shape", "[]"], ["outcome", JSON.stringify({ outcome: { kind: "source", text: null, title: null, blockType: null, question: null, reason: null, code: null } })]]) {
+    assert.throws(
+      () => parseProviderOutcome(payload),
+      (error) => error.name === "AuthoringOutcomeError",
+      `${label} should be an AuthoringOutcomeError`,
+    );
+  }
 });
 
 test("requires a complete typed AzeMark Source document, never bare notation", () => {

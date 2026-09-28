@@ -768,8 +768,8 @@ async function generate(cellId) {
         // Current document, so only the body may become a Cell's Source.
         ? { kind: "source", source: stripFrontMatter(draft.source.text).source, valid: draft.analysis?.valid === true, diagnostics: draft.analysis?.diagnostics ?? [] }
         : draft.outcome === "clarification"
-          ? { kind: "clarification", message: draft.question ?? "More detail is needed." }
-          : { kind: "refusal", message: draft.message ?? "The request was refused." }
+          ? { kind: "clarification", message: draft.question || "More detail is needed." }
+          : { kind: "refusal", message: draft.reason || draft.message || "The request was refused." }
     );
     dispatch({ type: "generation.resolve", requestId, outcome });
     renderCells();
