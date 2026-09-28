@@ -319,3 +319,34 @@ test("Apply follows stable Cell identity, never ordinal position or label", () =
   assert.equal(state.cells[0].id, "cell-b");
   assert.equal(state.cells[1].source, "# Duplicate label");
 });
+
+test("failed analysis and format keep request ownership and clear on retry", () => {
+  let state = createWorkspaceState([sourceCell()]);
+  state = transition(state, { type: "analysis.start", requestId: "analysis-1" });
+  // A late failure from a superseded analysis never overwrites the new run.
+  state = transition(state, { type: "analysis.start", requestId: "analysis-2" });
+  const stale = transition(state, { type: "analysis.fail", requestId: "analysis-1", message: "late" });
+  assert.strictEqual(stale, state);
+  state = transition(state, { type: "analysis.fail", requestId: "analysis-2", message: "Analysis failed" });
+  assert.equal(state.operations.analyze?.status, "failed");
+  state = transition(state, { type: "analysis.start", requestId: "analysis-3" });
+  assert.equal(state.operations.analyze?.status, "running");
+
+  let formatted = createWorkspaceState([sourceCell()]);
+  formatted = transition(formatted, { type: "format.start", requestId: "format-1" });
+  formatted = transition(formatted, { type: "format.fail", requestId: "format-1", message: "Source errors block formatting" });
+  assert.equal(formatted.operations.format?.status, "failed");
+  formatted = transition(formatted, { type: "format.start", requestId: "format-2" });
+  assert.equal(formatted.operations.format?.status, "running");
+});
+
+test("failed export keeps its format so the owning menu item can present it", () => {
+  let state = createWorkspaceState([sourceCell()]);
+  state = transition(state, { type: "export.start", requestId: "export-1", format: "pdf" });
+  state = transition(state, { type: "export.fail", requestId: "export-1", message: "Export blocked by Source errors" });
+  assert.equal(state.operations.export?.status, "failed");
+  assert.equal(state.operations.export?.format, "pdf");
+  state = transition(state, { type: "export.start", requestId: "export-2", format: "html" });
+  assert.equal(state.operations.export?.format, "html");
+  assert.equal(state.operations.export?.status, "running");
+});

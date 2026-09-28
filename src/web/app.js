@@ -371,15 +371,38 @@ function renderPreview() {
 }
 
 function renderOperations() {
-  const running = /** @param {"analyze" | "format" | "export"} kind */ (kind) => model.operations[kind]?.status === "running";
-  // The trigger stays enabled so selecting a format can restore focus to it;
-  // progress and failure are carried by its label.
-  const exportToggle = /** @type {HTMLButtonElement} */ (el.exportToggle);
-  exportToggle.textContent = model.operations.export?.status === "running"
-    ? "Exporting…"
-    : model.operations.export?.status === "failed" ? "Export failed" : "Export";
-  /** @type {HTMLButtonElement} */ (byId("format")).disabled = running("format");
-  /** @type {HTMLButtonElement} */ (byId("analyze")).disabled = running("analyze");
+  const analyze = model.operations.analyze;
+  const format = model.operations.format;
+  const analyzeButton = /** @type {HTMLButtonElement} */ (byId("analyze"));
+  const formatButton = /** @type {HTMLButtonElement} */ (byId("format"));
+  analyzeButton.disabled = analyze?.status === "running";
+  analyzeButton.textContent = analyze?.status === "running" ? "Analyzing…" : analyze?.status === "failed" ? "Analyze — failed" : "Analyze";
+  formatButton.disabled = format?.status === "running";
+  formatButton.textContent = format?.status === "running" ? "Formatting…" : format?.status === "failed" ? "Format — failed" : "Format…";
+  renderExportItems();
+}
+
+/**
+ * Export progress and failure stay with the chosen item: at most one
+ * in-flight or failed item, the rest show their capability state.
+ */
+function renderExportItems() {
+  const running = model.operations.export?.status === "running" ? model.operations.export : null;
+  const failed = model.operations.export?.status === "failed" ? model.operations.export : null;
+  for (const item of el.exportMenu.querySelectorAll("button[data-format]")) {
+    if (!(item instanceof HTMLButtonElement)) continue;
+    const format = item.dataset.format ?? "";
+    const formats = /** @type {any} */ (capabilities?.compiler?.formats);
+    const supported = Array.isArray(formats) && formats.some((/** @type {any} */ entry) => (entry?.id ?? entry) === format);
+    const active = running?.format === format || failed?.format === format;
+    item.disabled = running !== null || (!supported && !active);
+    const label = format.toUpperCase();
+    item.textContent = running?.format === format
+      ? `${label} — exporting…`
+      : failed?.format === format
+        ? `${label} — failed`
+        : supported ? label : `${label} — unavailable`;
+  }
 }
 
 /** Severity, then Source order. */
@@ -404,25 +427,33 @@ const metadataInputs = { title: el.title, author: el.author, date: el.date, meta
 function renderMetadataFeedback() {
   const source = assembledSource();
   const { bodyStart } = splitFrontMatter(source);
-  /** @type {Record<string, HTMLElement>} */
-  const fields = el.feedback;
-  for (const node of Object.values(fields)) { node.hidden = true; node.textContent = ""; }
-  /** @type {string[]} */
-  const populated = [];
+  const invalid = /** @type {Set<"title" | "author" | "date" | "metadata">} */ (new Set());
   for (const diagnostic of model.diagnostics) {
     const start = diagnostic.location?.range?.start;
     if (!start) continue;
-    const offset = indexForPosition(source, start);
-    if (offset >= bodyStart) continue;
-    const message = diagnostic.message;
-    const field = metadataFieldFor(message);
-    const node = fields[field];
-    if (node.hidden) node.textContent = `${diagnostic.severity}: ${message}`;
-    node.hidden = false;
-    populated.push(field);
+    if (indexForPosition(source, start) >= bodyStart) continue;
+    invalid.add(metadataFieldFor(diagnostic.message));
   }
-  if (populated.length > 0) el.details.open = true;
-  return populated;
+  /** @type {Record<string, HTMLElement>} */
+  const fields = el.feedback;
+  for (const node of Object.values(fields)) { node.hidden = true; node.textContent = ""; }
+  for (const [name, input] of Object.entries(metadataInputs)) {
+    const field = /** @type {"title" | "author" | "date" | "metadata"} */ (name);
+    const failed = invalid.has(field);
+    input.setAttribute("aria-invalid", String(failed));
+    if (failed) input.setAttribute("aria-describedby", el.feedback[field].id);
+    else input.removeAttribute("aria-describedby");
+  }
+  for (const diagnostic of model.diagnostics) {
+    const start = diagnostic.location?.range?.start;
+    if (!start) continue;
+    if (indexForPosition(source, start) >= bodyStart) continue;
+    const node = fields[metadataFieldFor(diagnostic.message)];
+    if (node.hidden) node.textContent = `${diagnostic.severity}: ${diagnostic.message}`;
+    node.hidden = false;
+  }
+  if (invalid.size > 0) el.details.open = true;
+  return [...invalid];
 }
 
 function renderDiagnostics() {
@@ -513,12 +544,53 @@ function openDrawer() {
 function openDiagnostics() {
   el.diagnostics.hidden = false;
   byId("diagnostics-toggle").setAttribute("aria-expanded", "true");
+  sessionStorage.setItem("azeweb.diagnosticsOpen", "true");
   byId("diagnostics-title").focus();
 }
 function closeDiagnostics() {
   el.diagnostics.hidden = true;
   byId("diagnostics-toggle").setAttribute("aria-expanded", "false");
+  sessionStorage.setItem("azeweb.diagnosticsOpen", "false");
   byId("diagnostics-toggle").focus();
+}
+
+/** Rail health mirrors degraded or actionable capability states; details stay in the dialog. */
+function updateHealth() {
+  const button = byId("service-health");
+  const authoring = capabilities?.service?.authoring;
+  const unavailable = authoring?.available === false;
+  const supported = capabilities?.compatibility?.supported;
+  const label = capabilities === null
+    ? "Service details: connecting"
+    : supported === false
+      ? "Service details: upgrade required"
+      : unavailable
+        ? "Service details: degraded"
+        : "Service details: healthy";
+  const visual = /** @type {HTMLElement|null} */ (button.querySelector('[aria-hidden="true"]'));
+  if (visual !== null) visual.textContent = label.includes("healthy") ? "●" : "▲";
+  button.setAttribute("aria-label", label);
+  button.dataset.health = label.includes("healthy") ? "healthy" : label.includes("connecting") ? "connecting" : "degraded";
+}
+/**
+ * Progressive disclosure for connectivity and capability details: one line
+ * while healthy, the actionable subset when something needs attention.
+ */
+function renderServiceDetails() {
+  if (capabilities === null) {
+    el.serviceMeta.textContent = "Connecting…";
+    return;
+  }
+  const lines = [
+    `Compiler ${capabilities.compatibility.compilerRelease}. Protocol ${capabilities.protocol.version}.`,
+    `Authoring ${capabilities.service.authoring?.available ? "available" : "unavailable"}.`,
+  ];
+  const tex = capabilities.service?.renderers?.tex;
+  if (tex !== undefined && tex.available !== true) lines.push(tex.remedy ?? "TeX renderer unavailable.");
+  for (const [operation, reason] of Object.entries(capabilities.service?.unavailableOperations ?? {})) {
+    lines.push(`${operation}: ${reason}`);
+  }
+  el.serviceMeta.textContent = lines.join(" ");
 }
 
 /** @param {HTMLElement} menu @param {HTMLElement} trigger */
@@ -656,6 +728,9 @@ async function analyze() {
     if (model.operations.analyze?.requestId !== requestId) return;
     dispatch({ type: "analysis.resolve", requestId, diagnostics: job.result?.diagnostics ?? [] });
     renderDiagnostics();
+    // Errors take the author to the dock; warnings stay on the summary and
+    // the polite announcement so focus is never stolen for a non-blocking result.
+    if (model.diagnostics.some((diagnostic) => diagnostic.severity === "error")) openDiagnostics();
     announce(model.diagnostics.length ? "Analysis complete with diagnostics" : "Analysis complete: no diagnostics");
   } catch (error) {
     if (model.operations.analyze?.requestId !== requestId) return;
@@ -664,7 +739,6 @@ async function analyze() {
     announce(model.operations.analyze?.message ?? "Analysis failed");
   }
 }
-
 /** @param {string} format */
 async function exportFormat(format) {
   const requestId = crypto.randomUUID();
@@ -738,6 +812,7 @@ async function formatSource() {
       dispatch({ type: "format.fail", requestId, message: "Source errors block formatting" });
       renderDiagnostics();
       openDiagnostics();
+      announce("Source errors block formatting");
       return;
     }
     dispatch({ type: "format.resolve", requestId, source: job.result.proposal.source });
@@ -768,6 +843,8 @@ function applyFormatProposal() {
   renderCells();
   renderSourceMeta();
   renderDiagnostics();
+  const first = model.cells[0]?.id;
+  if (first !== undefined) focusAppliedSourceStart(first);
   announce("Formatted Source applied");
   void analyze();
 }
@@ -1096,6 +1173,11 @@ function bind() {
 
   byId("diagnostics-toggle").addEventListener("click", () => el.diagnostics.hidden ? openDiagnostics() : closeDiagnostics());
   byId("close-diagnostics").addEventListener("click", closeDiagnostics);
+  el.diagnostics.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    closeDiagnostics();
+  });
   el.diagnosticsList.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-diagnostic]") : null;
     if (!(button instanceof HTMLButtonElement)) return;
@@ -1197,11 +1279,10 @@ async function enter() {
     capabilities = await request("GET", "/v1/capabilities");
     el.theme.innerHTML = capabilities.compiler.themes
       .map((/** @type {any} */ theme) => `<option value="${esc(theme.id)}">${esc(theme.title)}</option>`).join("");
-    el.exportMenu.innerHTML = ["html", "svg", "png", "pdf"].map((format) => {
-      const supported = capabilities.compiler.formats.some((/** @type {any} */ entry) => (entry.id ?? entry) === format);
-      return `<button role="menuitem" type="button" data-format="${format}" ${supported ? "" : "disabled"}>${format.toUpperCase()}${supported ? "" : " — unavailable"}</button>`;
-    }).join("");
-    el.serviceMeta.textContent = `Compiler ${capabilities.compatibility.compilerRelease}. Protocol ${capabilities.protocol.version}. Authoring ${capabilities.service.authoring?.available ? "available" : "unavailable"}.`;
+    el.exportMenu.innerHTML = ["html", "svg", "png", "pdf"].map((format) =>
+      `<button role="menuitem" type="button" data-format="${format}">${format.toUpperCase()}</button>`).join("");
+    renderServiceDetails();
+    updateHealth();
     const examples = await (await fetch("/examples.json")).json();
     const parsed = parseDocument(examples[0]?.source ?? "---\nazemark: 2\n---\n");
     model = createWorkspaceState(
@@ -1214,6 +1295,7 @@ async function enter() {
     el.gate.hidden = true;
     el.workspace.hidden = false;
     renderAll();
+    if (sessionStorage.getItem("azeweb.diagnosticsOpen") === "true") openDiagnostics();
   } catch (error) {
     sessionStorage.removeItem(TOKEN_KEY);
     el.gate.hidden = false;
