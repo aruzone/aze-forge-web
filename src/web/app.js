@@ -230,7 +230,11 @@ function restoreFocus(snapshot) {
   if (snapshot === null) return;
   let selector = `[data-cell-id="${snapshot.cellId}"]`;
   if (snapshot.role !== null) selector += `[data-role="${snapshot.role}"]`;
-  else if (snapshot.action !== null) selector += `[data-action="${snapshot.action}"]`;
+  else if (snapshot.action !== null) {
+    // Generate becomes Cancel generation on the same Cell; keep focus there.
+    const action = snapshot.action === "generate" ? '[data-action="generate"],[data-action="cancel-generation"]' : `[data-action="${snapshot.action}"]`;
+    selector += action;
+  }
   const node = el.cells.querySelector(selector);
   if (!(node instanceof HTMLElement)) return;
   node.focus();
@@ -321,9 +325,9 @@ function renderCells() {
   <header><div class="cell-heading"><span aria-hidden="true">⠿ ${String(index + 1).padStart(2, "0")}</span><strong>${esc(label(cell))}</strong></div><div class="cell-actions"><button type="button" data-action="move-up" data-cell-id="${cell.id}" ${index === 0 || model.mutationLocked ? "disabled" : ""}>↑ <span class="visually-hidden">Move up</span></button><button type="button" data-action="move-down" data-cell-id="${cell.id}" ${index === model.cells.length - 1 || model.mutationLocked ? "disabled" : ""}>↓ <span class="visually-hidden">Move down</span></button><button type="button" data-action="insert-before" data-cell-id="${cell.id}" ${lock}>＋↑ <span class="visually-hidden">Add before</span></button><button type="button" data-action="insert-after" data-cell-id="${cell.id}" ${lock}>＋↓ <span class="visually-hidden">Add after</span></button><button type="button" data-action="delete" data-cell-id="${cell.id}" ${lock}>× <span class="visually-hidden">Delete Cell</span></button></div></header>
   <div class="editor-tabs" role="tablist" aria-label="Cell editor mode"><button type="button" role="tab" id="cell-${cell.id}-source-tab" aria-controls="cell-${cell.id}-source-panel" aria-selected="${!descriptionMode}" data-action="mode-source" data-cell-id="${cell.id}">Source</button><button type="button" role="tab" id="cell-${cell.id}-description-tab" aria-controls="cell-${cell.id}-description-panel" aria-selected="${descriptionMode}" data-action="mode-description" data-cell-id="${cell.id}">Description</button><small data-role="size" data-cell-id="${cell.id}">${cell.source.length} chars</small></div>
   <div id="cell-${cell.id}-source-panel" role="tabpanel" aria-labelledby="cell-${cell.id}-source-tab" data-panel="source" ${descriptionMode ? "hidden" : ""}><textarea data-role="source" data-cell-id="${cell.id}" aria-label="Cell ${index + 1} AzeMark Source" spellcheck="false" ${model.mutationLocked ? "disabled" : ""}>${esc(cell.source)}</textarea></div>
-  <div id="cell-${cell.id}-description-panel" role="tabpanel" aria-labelledby="cell-${cell.id}-description-tab" class="description-panel" data-panel="description" ${descriptionMode ? "" : "hidden"}><textarea data-role="description" data-cell-id="${cell.id}" aria-label="Cell ${index + 1} Description" placeholder="Describe the AzeMark Source to generate">${esc(cell.pendingDescription)}</textarea><div class="description-actions"><button type="button" data-action="back-source" data-cell-id="${cell.id}">Back to Source</button><button type="button" data-action="${generating ? "cancel-generation" : "generate"}" data-cell-id="${cell.id}" ${!generating && (model.proposal !== null || capabilities?.service?.authoring?.available !== true) ? "disabled" : ""}>${generating ? "Cancel generation" : "Generate AzeMark Source"}</button></div></div>
-  ${proposal ? `<section class="proposal" data-proposal-cell="${cell.id}" aria-labelledby="proposal-${cell.id}"><h3 id="proposal-${cell.id}">Draft Gate · ${proposal.status}</h3><p>${proposalCopy(proposal.status)}</p><div data-role="proposal-reasons">${proposalReasons(proposal)}</div><textarea readonly aria-label="Proposed AzeMark Source" spellcheck="false">${esc(proposal.source)}</textarea><footer><button type="button" data-action="discard-proposal" data-cell-id="${cell.id}">Discard</button><button type="button" data-action="apply-proposal" data-cell-id="${cell.id}" ${proposal.status !== "valid" ? "disabled" : ""}>Apply</button></footer></section>` : ""}
-  ${response ? `<section class="proposal generation-response"><h3>${response.kind === "clarification" ? "Clarification needed" : response.kind === "refusal" ? "Request refused" : "Generation failed"}</h3><p>${esc(response.message)}</p><button type="button" data-action="${response.kind === "refusal" ? "dismiss-response" : "revise-description"}" data-cell-id="${cell.id}">${response.kind === "refusal" ? "Dismiss" : "Return to Description"}</button></section>` : ""}
+  <div id="cell-${cell.id}-description-panel" role="tabpanel" aria-labelledby="cell-${cell.id}-description-tab" class="description-panel" data-panel="description" ${descriptionMode ? "" : "hidden"}><textarea data-role="description" data-cell-id="${cell.id}" aria-label="Cell ${index + 1} Description" placeholder="Describe the AzeMark Source to generate">${esc(cell.pendingDescription)}</textarea><div class="description-actions"><button type="button" data-action="back-source" data-cell-id="${cell.id}">Back to Source</button><button type="button" data-action="${generating ? "cancel-generation" : "generate"}" data-cell-id="${cell.id}" ${!generating && (model.proposal !== null || cell.pendingDescription.trim() === "" || capabilities?.service?.authoring?.available !== true) ? "disabled" : ""}>${generating ? "Cancel generation" : "Generate AzeMark Source"}</button></div></div>
+  ${proposal ? `<section class="proposal" data-proposal-cell="${cell.id}" aria-labelledby="proposal-${cell.id}"><h3 id="proposal-${cell.id}" tabindex="-1">Draft Gate · ${proposal.status}</h3><p id="proposal-${cell.id}-reason">${proposalCopy(proposal.status)}</p><div><button type="button" data-action="review-proposal" data-cell-id="${cell.id}">Review proposed Source</button></div><div data-role="proposal-reasons">${proposalReasons(proposal)}</div><textarea readonly aria-label="Proposed AzeMark Source" spellcheck="false">${esc(proposal.source)}</textarea><footer><button type="button" data-action="discard-proposal" data-cell-id="${cell.id}">Discard</button><button type="button" data-action="apply-proposal" data-cell-id="${cell.id}" ${proposal.status !== "valid" ? "disabled" : ""} ${proposal.status !== "valid" ? `aria-describedby="proposal-${cell.id}-reason"` : ""}>Apply</button></footer></section>` : ""}
+  ${response ? `<section class="proposal generation-response"><h3>${response.kind === "clarification" ? "Clarification needed" : response.kind === "refusal" ? "Request refused" : "Generation failed"}</h3><p>${esc(response.message)}</p><button type="button" data-action="${response.kind === "refusal" ? "dismiss-response" : "revise-description"}" data-cell-id="${cell.id}">${response.kind === "refusal" ? "Dismiss" : response.kind === "clarification" ? "Revise Description" : "Return to Description"}</button></section>` : ""}
 </article>`;
   }).join("");
   renderOutline();
@@ -445,6 +449,15 @@ function focusEditor(id) {
   const role = cell?.mode === "description" ? "description" : "source";
   const node = document.querySelector(`[data-role=${role}][data-cell-id="${id}"]`);
   if (node instanceof HTMLElement) { node.scrollIntoView({ block: "center" }); node.focus(); }
+}
+
+/** @param {string} id */
+function focusAppliedSourceStart(id) {
+  const node = el.cells.querySelector(`[data-role="source"][data-cell-id="${id}"]`);
+  if (!(node instanceof HTMLTextAreaElement)) { focusEditor(id); return; }
+  node.scrollIntoView({ block: "center" });
+  node.focus();
+  node.setSelectionRange(0, 0);
 }
 
 /** @param {string} id */
@@ -966,10 +979,18 @@ function bind() {
       case "apply-proposal":
         dispatch({ type: "proposal.apply" });
         renderCells();
-        focusEditor(id);
+        focusAppliedSourceStart(id);
         announce("Proposed Source applied");
         void analyze();
         break;
+      case "review-proposal": {
+        const heading = el.cells.querySelector(`[data-proposal-cell="${id}"] h3`);
+        if (heading instanceof HTMLElement) {
+          heading.scrollIntoView({ block: "center" });
+          heading.focus();
+        }
+        break;
+      }
       case "discard-proposal":
         dispatch({ type: "proposal.discard" });
         renderCells();
@@ -994,11 +1015,19 @@ function bind() {
     if (!(tab instanceof HTMLButtonElement) || tab.getAttribute("role") !== "tab") return;
     const cellId = tab.dataset.cellId;
     if (cellId === undefined) return;
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      const tabs = /** @type {HTMLButtonElement[]} */ ([.../** @type {HTMLElement} */ (tab.closest('[role="tablist"]')).querySelectorAll('[role="tab"]')]);
+      const next = tabs[(tabs.indexOf(tab) + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length];
+      if (next) next.focus();
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " " && event.key !== "Home" && event.key !== "End") return;
     /** @type {import("./workspace-state.js").EditorMode | null} */
     let mode = null;
-    if (event.key === "ArrowRight" || event.key === "End") mode = "description";
-    else if (event.key === "ArrowLeft" || event.key === "Home") mode = "source";
-    if (mode === null) return;
+    if (event.key === "End") mode = "description";
+    else if (event.key === "Home") mode = "source";
+    else mode = tab.dataset.action === "mode-description" ? "description" : "source";
     event.preventDefault();
     dispatch({ type: "cell.activate", cellId });
     dispatch({ type: "editor.mode", cellId, mode });
