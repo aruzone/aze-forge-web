@@ -1,1 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc"><title id="title">AzeForge authoring workspace layouts</title><desc id="desc">Annotated desktop and tablet layouts showing fixed rail, document navigation, utility bar, preview and Cell canvas measurements.</desc><style>text{font:14px system-ui;fill:#162033}.label{font-size:12px;fill:#68758a}.nav{fill:#111827}.side{fill:#f8fafc;stroke:#d7dee8}.main{fill:#eef1f5}.surface{fill:white;stroke:#d7dee8}.accent{fill:#eaf1ff;stroke:#2563eb}</style><text x="20" y="28" font-weight="700">Desktop ≥1200 CSS px</text><rect class="nav" x="20" y="45" width="64" height="620"/><rect class="side" x="84" y="45" width="248" height="620"/><rect class="main" x="332" y="45" width="848" height="620"/><rect class="surface" x="332" y="45" width="848" height="56"/><rect class="surface" x="356" y="117" width="800" height="190"/><rect class="surface" x="404" y="333" width="680" height="74"/><rect class="accent" x="404" y="423" width="680" height="120"/><rect class="surface" x="404" y="559" width="680" height="80"/><text class="label" x="35" y="690">64 rail</text><text class="label" x="150" y="690">248 Current document</text><text class="label" x="350" y="92">56 utility</text><text class="label" x="370" y="145">Preview: 28%, min 180, max 60%</text><text class="label" x="416" y="360">Document details</text><text class="label" x="416" y="450">Cell canvas, max 920</text><text class="label" x="416" y="588">Single-column Cells</text><g transform="translate(760 470) scale(.5)"><text x="20" y="28" font-weight="700">Tablet 768–1199 CSS px</text><rect class="nav" x="20" y="45" width="56" height="620"/><rect class="main" x="76" y="45" width="620" height="620"/><rect class="surface" x="76" y="45" width="620" height="52"/><rect class="surface" x="92" y="113" width="588" height="180"/><rect class="accent" x="92" y="309" width="588" height="290"/><rect class="side" x="76" y="45" width="272" height="620"/><text class="label" x="90" y="78">272 modal Current document drawer</text><text class="label" x="365" y="78">52 utility</text><text class="label" x="110" y="142">Preview: 30%, min 160, max 50%</text><text class="label" x="110" y="340">Full-width one-column canvas · 16 inset</text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1100" viewBox="0 0 1440 1100" role="img" aria-labelledby="title desc">
+  <title id="title">AzeForge authoring workspace layouts and state annotations</title>
+  <desc id="desc">Desktop Structured canvas, tablet Current document drawer, 320 CSS pixel reflow, and state overlays for the authoring workspace.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #162033; font-size: 14px; }
+    .heading { font-size: 18px; font-weight: 700; }
+    .label { font-size: 12px; fill: #68758a; }
+    .small { font-size: 11px; fill: #162033; }
+    .light { fill: #fff; }
+    .nav { fill: #111827; }
+    .side { fill: #f8fafc; stroke: #d7dee8; }
+    .canvas { fill: #eef1f5; }
+    .surface { fill: #fff; stroke: #d7dee8; }
+    .accent { fill: #eaf1ff; stroke: #2563eb; }
+    .stale { fill: #fff3df; stroke: #c76b13; }
+    .error { fill: #fef1f0; stroke: #b42318; }
+    .modal { fill: #fff; stroke: #162033; stroke-width: 2; }
+    .callout { fill: none; stroke: #2563eb; stroke-width: 1.5; }
+  </style>
+
+  <text class="heading" x="24" y="30">Desktop base, at least 1200 CSS px</text>
+  <rect class="nav" x="24" y="48" width="64" height="500" rx="2"/>
+  <rect class="side" x="88" y="48" width="248" height="500"/>
+  <rect class="canvas" x="336" y="48" width="680" height="500"/>
+  <rect class="surface" x="336" y="48" width="680" height="56"/>
+  <rect class="surface" x="360" y="120" width="632" height="168" rx="8"/>
+  <rect class="surface" x="360" y="304" width="632" height="58" rx="8"/>
+  <rect class="accent" x="360" y="378" width="632" height="90" rx="8"/>
+  <rect class="surface" x="360" y="484" width="632" height="46" rx="8"/>
+  <text class="label" x="32" y="566">64 rail</text>
+  <text class="label" x="138" y="566">248 Current document navigation</text>
+  <text class="label" x="350" y="84">56 utility bar</text>
+  <text class="label" x="374" y="146">Document preview · starts 28% · 180 px minimum · 60% maximum</text>
+  <text class="label" x="374" y="330">Document details</text>
+  <text class="label" x="374" y="404">Cell canvas · 24 px inset · 920 px maximum</text>
+  <text class="label" x="374" y="510">single-column Cells</text>
+  <path class="callout" d="M336 76H310M310 76V48"/>
+  <text class="small light" x="32" y="72">Author</text>
+  <text class="small" x="112" y="110">Current document</text>
+
+  <text class="heading" x="1040" y="30">Tablet base, 768–1199 CSS px</text>
+  <rect class="nav" x="1040" y="48" width="56" height="500" rx="2"/>
+  <rect class="canvas" x="1096" y="48" width="320" height="500"/>
+  <rect class="surface" x="1096" y="48" width="320" height="52"/>
+  <rect class="surface" x="1112" y="116" width="288" height="150" rx="8"/>
+  <rect class="surface" x="1112" y="282" width="288" height="56" rx="8"/>
+  <rect class="accent" x="1112" y="354" width="288" height="160" rx="8"/>
+  <text class="label" x="1044" y="566">56 rail</text>
+  <text class="label" x="1102" y="84">52 utility · document trigger first</text>
+  <text class="label" x="1118" y="142">Preview · 30% · 160 px min · 50% max</text>
+  <text class="small" x="1118" y="384">one-column canvas · 16 px inset</text>
+
+  <text class="heading" x="24" y="600">Tablet Current document drawer</text>
+  <rect class="canvas" x="24" y="618" width="680" height="220"/>
+  <rect class="nav" x="24" y="618" width="56" height="220"/>
+  <rect x="80" y="618" width="624" height="220" fill="#162033" opacity=".28"/>
+  <rect class="side" x="80" y="618" width="272" height="220"/>
+  <text class="label" x="98" y="646">272 px modal drawer · Current document</text>
+  <text class="small" x="98" y="674">This session · Cell count · Find in document</text>
+  <text class="small" x="98" y="700">full labels and content-kind summaries</text>
+  <text class="small" x="98" y="728">Add Cell · Close · Escape or scrim restores trigger</text>
+  <text class="label" x="398" y="648">workspace inert behind scrim</text>
+
+  <text class="heading" x="744" y="600">320 CSS px accessibility reflow</text>
+  <rect class="canvas" x="744" y="618" width="300" height="220"/>
+  <rect class="surface" x="756" y="630" width="276" height="32" rx="6"/>
+  <rect class="surface" x="756" y="674" width="276" height="58" rx="8"/>
+  <rect class="surface" x="756" y="744" width="276" height="30" rx="8"/>
+  <rect class="accent" x="756" y="786" width="276" height="40" rx="8"/>
+  <text class="label" x="1060" y="648">wrapped utility controls</text>
+  <text class="label" x="1060" y="694">preview, details, Cells stack</text>
+  <text class="label" x="1060" y="764">drawer and diagnostics sheet</text>
+  <text class="label" x="1060" y="810">no workspace horizontal scroll</text>
+
+  <text class="heading" x="24" y="880">Targeted state annotations</text>
+  <rect class="surface" x="24" y="900" width="200" height="150" rx="8"/>
+  <text x="40" y="926">Description / generating</text>
+  <rect class="accent" x="40" y="938" width="168" height="24" rx="4"/>
+  <text class="small" x="48" y="955">Source | Describe with AI</text>
+  <rect class="surface" x="40" y="970" width="168" height="34" rx="4"/>
+  <text class="small" x="48" y="991">Pending Description</text>
+  <text class="small" x="40" y="1034">AI becomes Cancel generation</text>
+
+  <rect class="surface" x="244" y="900" width="200" height="150" rx="8"/>
+  <text x="260" y="926">Draft Gate</text>
+  <rect class="accent" x="260" y="938" width="168" height="42" rx="4"/>
+  <text class="small" x="268" y="956">valid proposal + diagnostics</text>
+  <text class="small" x="268" y="972">Apply · Discard</text>
+  <rect class="error" x="260" y="990" width="168" height="24" rx="4"/>
+  <text class="small" x="268" y="1007">invalid or stale: Apply disabled</text>
+
+  <rect class="surface" x="464" y="900" width="200" height="150" rx="8"/>
+  <text x="480" y="926">Document preview</text>
+  <rect class="stale" x="480" y="938" width="168" height="24" rx="4"/>
+  <text class="small" x="488" y="955">Out of date · retained Artifact</text>
+  <rect class="accent" x="480" y="966" width="168" height="22" rx="4"/>
+  <text class="small" x="488" y="982">Refreshing… loading overlay</text>
+  <rect class="error" x="480" y="992" width="168" height="22" rx="4"/>
+  <text class="small" x="488" y="1008">Blocked · View diagnostics</text>
+  <rect class="modal" x="480" y="1018" width="168" height="24" rx="4"/>
+  <text class="small" x="488" y="1034">modal: status · Refresh preview</text>
+
+  <rect class="surface" x="684" y="900" width="200" height="150" rx="8"/>
+  <text x="700" y="926">Diagnostics / export</text>
+  <rect class="surface" x="700" y="938" width="168" height="38" rx="4"/>
+  <text class="small" x="708" y="956">dock on desktop</text>
+  <text class="small" x="708" y="972">sheet on tablet</text>
+  <rect class="accent" x="700" y="980" width="168" height="24" rx="4"/>
+  <text class="small" x="708" y="997">Exporting HTML…</text>
+  <rect class="error" x="700" y="1008" width="168" height="24" rx="4"/>
+  <text class="small" x="708" y="1025">Export failed · diagnostics link</text>
+
+  <rect class="surface" x="904" y="900" width="200" height="150" rx="8"/>
+  <text x="920" y="926">Service and empty states</text>
+  <rect class="stale" x="920" y="938" width="168" height="22" rx="4"/>
+  <text class="small" x="928" y="954">persistent degraded health</text>
+  <rect class="surface" x="920" y="966" width="168" height="22" rx="4"/>
+  <text class="small" x="928" y="982">Preview not generated</text>
+  <rect class="accent" x="920" y="994" width="168" height="22" rx="4"/>
+  <text class="small" x="928" y="1010">empty Cell · Add Cell</text>
+  <text class="small" x="920" y="1034">No matching cells</text>
+</svg>
