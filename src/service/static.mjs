@@ -24,15 +24,6 @@ const FILES = Object.freeze([
   "workspace-state.js",
   "examples.json",
   "azeforge-logo-03-2.jpg",
-  "draft-gate-prototype.html",
-  "draft-gate-prototype.js",
-  "draft-gate-prototype.css",
-  "workspace-composition-prototype.html",
-  "workspace-composition-prototype.js",
-  "workspace-composition-prototype.css",
-  "responsive-workspace-prototype.html",
-  "responsive-workspace-prototype.js",
-  "responsive-workspace-prototype.css",
 ]);
 
 /**
