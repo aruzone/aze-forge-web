@@ -448,6 +448,16 @@ function focusEditor(id) {
 }
 
 /** @param {string} id */
+function focusCellHeading(id) {
+  const node = document.querySelector(`#notebook-cells .cell[data-cell-id="${id}"] .cell-heading strong`);
+  if (node instanceof HTMLElement) {
+    if (node.tabIndex < 0) node.tabIndex = -1;
+    node.scrollIntoView({ block: "center" });
+    node.focus();
+  } else focusEditor(id);
+}
+
+/** @param {string} id */
 function focusCell(id) {
   dispatch({ type: "cell.activate", cellId: id });
   renderOutline();
@@ -1009,7 +1019,7 @@ function bind() {
     dispatch({ type: "cell.undoDelete" });
     renderCells();
     el.undoBar.hidden = true;
-    if (model.activeCellId !== null) focusEditor(model.activeCellId);
+    focusCellHeading(model.activeCellId ?? "");
     announce("Cell restored");
   });
 
