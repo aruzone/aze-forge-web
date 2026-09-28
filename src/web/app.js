@@ -350,11 +350,14 @@ function renderPreview() {
   el.previewState.dataset.state = preview.status;
   el.refresh.disabled = preview.status === "refreshing";
   el.refresh.textContent = preview.status === "refreshing" ? "Refreshing…" : "Refresh preview";
+  const expandedRefresh = /** @type {HTMLButtonElement} */ (byId("expanded-refresh"));
+  expandedRefresh.disabled = preview.status === "refreshing";
+  // Expand is enabled only with a loaded Artifact; the button stays rendered
+  // (not removed) so the toolbar shape is stable, but activation is blocked.
   el.expand.disabled = preview.artifact === null;
   const available = preview.artifact !== null;
   el.preview.hidden = !available;
   el.previewPlaceholder.hidden = available;
-  byId("view-preview-diagnostics").hidden = preview.status !== "blocked";
   el.preview.title = `Document preview — ${preview.status === "stale" ? "out of date" : preview.status}`;
   const url = preview.artifact?.url ?? null;
   if (url !== null) {
@@ -1061,8 +1064,20 @@ function bind() {
   });
   el.refresh.addEventListener("click", () => void refreshPreview());
   byId("expanded-refresh").addEventListener("click", () => void refreshPreview());
-  el.expand.addEventListener("click", () => el.previewDialog.showModal());
-  byId("close-preview-dialog").addEventListener("click", () => el.previewDialog.close());
+  el.expand.addEventListener("click", () => {
+    if (el.previewDialog.open || model.preview.artifact === null) return;
+    el.previewDialog.showModal();
+  });
+  const closePreviewDialog = () => {
+    if (el.previewDialog.open) el.previewDialog.close();
+    else el.refresh.focus();
+  };
+  byId("close-preview-dialog").addEventListener("click", closePreviewDialog);
+  el.previewDialog.addEventListener("close", () => el.refresh.focus());
+  el.previewDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closePreviewDialog();
+  });
   byId("view-preview-diagnostics").addEventListener("click", openDiagnostics);
 
   el.exportToggle.addEventListener("click", () => toggleMenu(el.exportMenu, el.exportToggle));
