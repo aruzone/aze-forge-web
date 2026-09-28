@@ -397,6 +397,12 @@ export function createService(deps) {
     try {
       source = validateSourceDraft(buildSourceDraft(/** @type {{ kind: "source", title: string, blockType: string, text: string }} */ (outcome)));
     } catch {
+      log.warn("authoring-draft-contract-rejected", {
+        kind: outcome.kind,
+        hasTitle: typeof outcome.title === "string" && outcome.title.trim().length > 0,
+        hasBlockType: typeof outcome.blockType === "string",
+        hasBody: typeof outcome.text === "string" && outcome.text.trim().length > 0,
+      });
       throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
         data: { code: "authoring-incomplete-source-draft" },
       });

@@ -57,3 +57,21 @@ test("does not return a bare notation fragment as a source draft", async () => {
     await service.close();
   }
 });
+
+test("logs only the safe reason when a model outcome cannot form a Source draft", async () => {
+  const lines = [];
+  const service = await startTestService({
+    lines,
+    authoringProvider: { async generate() { return { kind: "source", text: "x = 1" }; } },
+  });
+  try {
+    await call(service.base, "POST", "/v1/authoring/drafts", {
+      body: { protocolVersion: 1, requestId: "draft-1", description: "A title" },
+      contentType: "application/json",
+    });
+    assert.ok(lines.some((line) => line.includes("\"event\":\"authoring-draft-contract-rejected\"")));
+    assert.ok(!lines.join("").includes("x = 1"));
+  } finally {
+    await service.close();
+  }
+});
