@@ -244,13 +244,13 @@ The traceability table covers every closed child listed by wayfinder #14. Later 
 
 ## Observed evidence
 
-Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T11-01-13-411Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
+Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T11-09-33-619Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
 
 | ID | Observation |
 | --- | --- |
 | NAV-01 | Rendered landmarks are exactly `app-rail → document-navigation → main-workspace → drawer-scrim → diagnostics-panel`, `main` holds `utility-bar → document-preview → cell-canvas`, and one `main` exists. No New/Open/Recent/Duplicate/persistence control is in the DOM. |
 | NAV-02 | In the stress fixture two Cells share the label `Duplicate label` and keep distinct identities: navigating to the second entry focuses that entry's own Cell. |
-| NAV-03 | A query of `Thermal` filtered the outline to 1 of 4 entries while all 4 Cells stayed rendered, and the entry exposed `Source match`; `zzzz` produced `No matching cells`; Escape cleared the query and restored all 4 entries. |
+| NAV-03 | A query of `Thermal` filtered the outline to 1 of 4 entries while all 4 Cells stayed rendered, the entry exposed `Source match`, and the count was announced through the single polite region; `zzzz` produced `No matching cells`; Escape cleared the query and restored all 4 entries. |
 | CELL-01 | Insert focused the new editor, move kept the moved Cell's editor focused, delete focused the following Cell and offered Undo, and Undo restored the Cell, its position, and focus on its heading. |
 | CELL-02 | Front matter pasted into a Cell Source was stripped to `# Body only` with the removal announced, and Document details stayed `Document basics` / `AzeForge examples` / `2026-09-28`. |
 | CELL-03 | The typical fixture's derived labels and kinds are `Thermal balance`/Markdown, `equation`/Directive, `callout`/Markdown + directive, `| Symbol | Value |`/Markdown, boundary moves are disabled, and a mode switch preserves the Pending Description and the Source. |
@@ -269,7 +269,7 @@ Recorded 2026-09-28 by `npm run workspace` against the real service with the spe
 | EXPORT-01 | Export offers the four capability-advertised formats; the chosen item shows progress and completion, and its compile request carried the current Source (330 characters) and the current Theme (omitted, as the protocol does for the default) in the chosen format — with a preview Artifact loaded and unrelated to the request. |
 | EXPORT-02 | With the error fixture the chosen item read `HTML — failed`, diagnostics were revealed, no bytes downloaded, and focus stayed on the Export trigger. |
 | SERVICE-01 | The rail health button carries its state in its accessible name (`Service details: healthy`), and activating it opens progressively disclosed compiler, protocol, authoring, and renderer-remedy details with focus inside and Escape restoring the trigger. |
-| A11Y-01 | axe-core reported 0 violations across the WCAG 2.0/2.1/2.2 A+AA tags (105 rules) at 1440x900, 768x1024, 320x800, and on the 30-Cell stress fixture. Measured independently: 115 visible text nodes with a lowest ratio of 4.56:1, interaction boxes all ≥ 32 px (desktop) / 44 px (tablet) / 24 px (reflow), `prefers-reduced-motion: reduce` collapsing the drawer transition to `0s` with `scroll-behavior: auto`, and forced colors giving the rail Canvas/CanvasText with 1 px system borders. Menus opened on their first enabled item, moved with arrows, Home, End — wrapping at both ends — and Escape restored each exact trigger with `aria-expanded="false"`. |
+| A11Y-01 | axe-core reported 0 violations across the WCAG 2.0/2.1/2.2 A+AA tags (105 rules) at 1440x900, 768x1024, 320x800, and on the 30-Cell stress fixture. Measured independently: 115 visible text nodes with a lowest ratio of 4.56:1, the `--accent` focus indicator at 4.06:1 on the workspace surface and 4.56:1 on the canvas (1.4.11), interaction boxes all ≥ 32 px (desktop) / 44 px (tablet) / 24 px (reflow), `prefers-reduced-motion: reduce` collapsing the drawer transition to `0s` with `scroll-behavior: auto`, and forced colors giving the rail Canvas/CanvasText with 1 px system borders. Menus opened on their first enabled item, moved with arrows, Home, End — wrapping at both ends — and Escape restored each exact trigger with `aria-expanded="false"`. |
 | A11Y-02 | One pass of Tab reached 49 distinct controls in order with a visible, unclipped focus indication at every stop, left the document only at the end, and re-entered at the first skip link. Each essential workflow completed keyboard-only — activation by Tab-reached Enter or Space, or by focus followed by a keyboard event where the tab order does not reach the control — with focus retained by its initiating surface. |
 
 ### Evidence gaps
@@ -280,5 +280,5 @@ Named as gaps, never as passes:
 - **VoiceOver with Safari.** Requires an interactive assistive-technology session. Not run.
 - **NVDA on Windows.** No Windows host is available. Not run.
 
-The headless Chromium record above is the only first-hand observation for this revision.
+The headless Chromium record above is the only first-hand observation for this revision. The repository's own checks accompany it: `npm run typecheck` and `npm test` (214 tests) pass, the deployment acceptance smoke suite passes 9/9 against the `linux/amd64` image this revision builds (`acceptance/smoke/`), and the owner walkthrough's automated half passes 5/5 with the owner decision left `pending-owner-approval` (`acceptance/walkthrough/`, `acceptance/manual-evidence/`).
 

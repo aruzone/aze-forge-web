@@ -139,6 +139,8 @@ const STEPS = [
       expect(filtered.entries === 1 && filtered.cells === 4, `search filtered ${filtered.entries} outline entries and ${filtered.cells} Cells`);
       expect(filtered.result.includes("1 matching"), `search result reads ${JSON.stringify(filtered.result)}`);
       expect(filtered.origin.includes("match"), `the match origin is not exposed: ${JSON.stringify(filtered.origin)}`);
+      // The filter's outcome reaches assistive technology through the one polite region.
+      const searchAnnouncement = await announce(page, "1 matching Cell");
       const searchReach = "tab";
       await page.keyboard.press("Tab");
       await page.keyboard.press("ArrowDown");
@@ -161,7 +163,7 @@ const STEPS = [
         value: /** @type {HTMLInputElement | null} */ (document.getElementById("cell-search"))?.value,
       }));
       expect(cleared.entries === 4 && cleared.value === "", "Escape did not clear the query and restore the outline");
-      return `search filtered the outline only (1 of 4 entries, 4 Cells rendered) and reported the origin; ArrowDown+Enter focused the Cell editor (${searchReach}); "No matching cells" then Escape restored all ${cleared.entries} entries`;
+      return `search filtered the outline only (1 of 4 entries, 4 Cells rendered) and reported the origin, announcing ${JSON.stringify(searchAnnouncement)} through the single live region; ArrowDown+Enter focused the Cell editor (${searchReach}); "No matching cells" then Escape restored all ${cleared.entries} entries`;
     },
   },
   {

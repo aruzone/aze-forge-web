@@ -16,7 +16,7 @@
     "os"
   ],
   "automated": {
-    "date": "2026-09-19T04:45:27.685Z",
+    "date": "2026-09-28T11:16:55.354Z",
     "os": "darwin arm64 · node v26.8.2",
     "canonicalRuntime": {
       "os": "ubuntu",
@@ -26,8 +26,8 @@
     "containerDeviations": [
       "--security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place."
     ],
-    "compilerRelease": "0.5.0",
-    "compilerFingerprint": "sha256:328d0357fcd478fbba4b7c4851f1531ed0834853668df56cbfcac37a59a615ee",
+    "compilerRelease": "0.5.1",
+    "compilerFingerprint": "sha256:c0817f8a2eadf5b8da492a7bedf8b6283cad471e29baea9d8bab2c0b88fc1a70",
     "fixture": {
       "name": "walkthrough.aze.md",
       "contentHash": "sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8"
@@ -39,7 +39,7 @@
       "pdf": "sha256:88eea6e525b5e7b8e5da5dd1a21fd90a26e724473dc60af5d4d5205112c6f26d"
     },
     "commands": [
-      "npm run walkthrough -- --image aze-forge-web:85ff0e2"
+      "npm run walkthrough -- --image aze-forge-web:dcea2b0-amd64"
     ]
   },
   "record": null

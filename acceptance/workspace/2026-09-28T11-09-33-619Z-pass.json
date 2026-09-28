@@ -1,9 +1,9 @@
 {
   "schema": "azeforge.web.workspace-audit-evidence/v1",
-  "startedAt": "2026-09-28T11:01:13.411Z",
-  "finishedAt": "2026-09-28T11:02:16.604Z",
+  "startedAt": "2026-09-28T11:09:33.619Z",
+  "finishedAt": "2026-09-28T11:10:37.357Z",
   "target": {
-    "base": "http://127.0.0.1:50373",
+    "base": "http://127.0.0.1:50593",
     "started": true
   },
   "browser": "/Users/kumaresan/.cache/puppeteer/chrome-headless-shell/mac_arm-152.0.7977.75/chrome-headless-shell-mac-arm64/chrome-headless-shell",
@@ -100,7 +100,8 @@
       "detail": null,
       "evidence": [
         "115 visible text nodes measured; lowest ratio 4.56:1 (required 4.5, \"04\")",
-        "hardened tokens in use: --text: #162033, --muted: #5f6b80, --accent: #2563eb, --stale: #9a530f, --error: #b42318, --success: #16825b"
+        "hardened tokens in use: --text: #162033, --muted: #5f6b80, --accent: #2563eb, --stale: #9a530f, --error: #b42318, --success: #16825b",
+        "focus indicator #2563eb: 4.06:1 on the workspace surface, 4.56:1 on the canvas (1.4.11)"
       ]
     },
     {
@@ -212,7 +213,7 @@
       "evidence": [
         "skip links [A11Y-01, A11Y-02]: first Tab stop is the revealed skip link; Enter moved focus to #cell-canvas and one more Tab reached the Cell editor (source)",
         "drawer [NAV-03, A11Y-02]: drawer opened by tab with heading focus and an inert workspace; Escape closed it and restored #open-document-nav",
-        "search and outline [NAV-03, NAV-02]: search filtered the outline only (1 of 4 entries, 4 Cells rendered) and reported the origin; ArrowDown+Enter focused the Cell editor (tab); \"No matching cells\" then Escape restored all 4 entries",
+        "search and outline [NAV-03, NAV-02]: search filtered the outline only (1 of 4 entries, 4 Cells rendered) and reported the origin, announcing \"1 matching Cell\" through the single live region; ArrowDown+Enter focused the Cell editor (tab); \"No matching cells\" then Escape restored all 4 entries",
         "Cell insert, move, delete, undo [CELL-01]: insert focused the new editor; move kept editor focus; delete focused the following Cell and offered Undo; Undo restored 5 Cells with focus on the restored Cell's heading",
         "editor mode switch [CELL-03, A11Y-02]: Left/Right moved the tab-list roving focus; Enter activated Description; Home returned to Source, both with aria-selected tracking",
         "generation and cancellation [DRAFT-01]: generate locked Source, Add Cell, and Document details while the outline stayed usable and focus moved to Cancel; cancelling restored Description focus and kept the Pending Description",

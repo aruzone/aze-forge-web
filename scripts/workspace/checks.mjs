@@ -406,9 +406,23 @@ async function contrast(ctx) {
       });
     }
     const tokens = getComputedStyle(document.documentElement);
+    // The focus indicator is a graphical object: 1.4.11 asks for 3:1 against
+    // what it sits on, so measure the accent against both surfaces it uses.
+    const accentValue = tokens.getPropertyValue("--accent").trim();
+    const hex = /^#([0-9a-f]{6})$/i.exec(accentValue);
+    const accent = hex === null
+      ? accentValue
+      : `rgb(${Number.parseInt(hex[1].slice(0, 2), 16)}, ${Number.parseInt(hex[1].slice(2, 4), 16)}, ${Number.parseInt(hex[1].slice(4, 6), 16)})`;
+    const surface = getComputedStyle(document.getElementById("main-workspace") ?? document.body).backgroundColor;
+    const canvas = getComputedStyle(document.body).backgroundColor;
     return {
       rows,
       tokens: ["--text", "--muted", "--accent", "--stale", "--error", "--success"].map((token) => `${token}: ${tokens.getPropertyValue(token).trim()}`),
+      focusRing: {
+        accent: accentValue,
+        onSurface: Number(ratio(accent, surface).toFixed(2)),
+        onCanvas: Number(ratio(accent, canvas).toFixed(2)),
+      },
     };
   });
   const worst = measurement.rows.reduce((/** @type {any} */ lowest, /** @type {any} */ row) => (row.ratio < lowest.ratio ? row : lowest), measurement.rows[0] ?? { text: "", ratio: 21, required: 4.5 });
@@ -417,10 +431,15 @@ async function contrast(ctx) {
     failures.length === 0,
     `${failures.length} text pair(s) below AA: ${failures.slice(0, 4).map((/** @type {any} */ row) => `${JSON.stringify(row.text)} ${row.ratio}:1 < ${row.required}`).join("; ")}`,
   );
+  expect(
+    measurement.focusRing.onSurface >= 3 && measurement.focusRing.onCanvas >= 3,
+    `the focus indicator ${measurement.focusRing.accent} measures ${measurement.focusRing.onSurface}:1 on the surface and ${measurement.focusRing.onCanvas}:1 on the canvas (1.4.11 requires 3:1)`,
+  );
   await page.close();
   return [
     `${measurement.rows.length} visible text nodes measured; lowest ratio ${worst.ratio}:1 (required ${worst.required}, ${JSON.stringify(worst.text)})`,
     `hardened tokens in use: ${measurement.tokens.join(", ")}`,
+    `focus indicator ${measurement.focusRing.accent}: ${measurement.focusRing.onSurface}:1 on the workspace surface, ${measurement.focusRing.onCanvas}:1 on the canvas (1.4.11)`,
   ];
 }
 

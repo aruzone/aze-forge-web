@@ -1,0 +1,58 @@
+staging the deployment profile…
+AzeForge Web owner walkthrough (Checkpoint B)
+  started     2026-09-28T11:16:55.354Z
+  image       aze-forge-web:dcea2b0-amd64 (sha256:2338562b05d772f8ebd15ee8b8f25e18addd8fa0448287ba04ae31a67034acea)
+  staged      http://127.0.0.1:50726 (container azeweb-walkthrough-46111)
+  compiler    0.5.1 (pinned by package.json)
+  browser     chrome-headless-shell 152.0.7977.75 (pinned by the compiler)
+  token       sha256:15a2dd6507c6… (hashed; never printed)
+  source      acceptance/walkthrough.aze.md
+  golden      acceptance/golden-report.aze.md
+  docker run  docker run -d --name azeweb-walkthrough-46111 --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512 -e AZEWEB_ACCESS_TOKEN=<redacted> -p 127.0.0.1:50726:8080 aze-forge-web:dcea2b0-amd64
+  hardening   --read-only --tmpfs /scratch:rw,noexec,nosuid,nodev,size=2g,mode=1777 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777 --cap-drop ALL --security-opt no-new-privileges --security-opt seccomp=unconfined --memory 6g --memory-swap 6g --pids-limit 512
+  deviation   --security-opt seccomp=unconfined: Docker's default seccomp profile refuses clone(CLONE_NEWUSER) without CAP_SYS_ADMIN, and Chrome refuses to start without a usable sandbox. The compiler owns the browser's launch arguments, so --no-sandbox is not available to this deployment; the alternative is an image that cannot render. Everything else in the envelope's hardening list is in place.
+
+[1/5] capabilities · Capabilities: the exact build, the three Themes and the four exports
+    · compiler 0.5.1 · fingerprint sha256:c0817f8a2eadf5b8da492a7bedf8b6283cad471e29baea9d8bab2c0b88fc1a70
+    · themes academic, dark-presentation, default
+    · formats html, svg, png, pdf
+    · canonical runtime ubuntu/x64 · node 24
+    PASS (0.0s)
+
+[2/5] source · The representative Source: live diagnostics and ten-family coverage
+    · diagnostics: 0 (0 warning(s), no errors)
+    · covered mathematics: equation, derivation
+    · covered plotting: plot, chart
+    · covered geometry: geometry
+    · covered diagrams: diagram
+    · covered models: sequence, state, entity, class
+    · covered circuit: circuit
+    · covered timing: timing
+    · covered chemistry: formula, reaction, structure
+    · covered engineering: control, free-body
+    · covered content: table, algorithm, statement, example
+    · covered composition: figure, bibliography
+    PASS (0.8s)
+
+[3/5] themes · Theme toggle: one semantic identity, three layouts
+    · academic: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:f1d1802d7e83147…
+    · dark-presentation: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:1c42016f442d18d…
+    · default: contentHash sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8, layout sha256:06f6220af328dd5…
+    PASS (3.8s)
+
+[4/5] exports · Export: HTML, SVG, PNG and PDF from one Document
+    · html: 820786 bytes, text/html; charset=utf-8, sha256:06f6220af328dd5… verified
+    · svg: 821897 bytes, image/svg+xml, sha256:4fdf1bb7c2dc8a9… verified
+    · png: 1418399 bytes, image/png, sha256:455a052cb1dbf1f… verified
+    · pdf: 269879 bytes, application/pdf, sha256:88eea6e525b5e7b… verified
+    · contentHash identical across all four exports: sha256:51f02cf025f5ccabedd5cd5be8d74dc30cc27c5e03465f0540c77399d3a81dc8
+    PASS (14.5s)
+
+[5/5] golden · Golden spot-check: a re-render is byte-identical and matches the recording
+    · golden-report.aze.md: two renders byte-identical at sha256:9992a1f795a6e9a…
+    · golden-report.aze.md: matches the identity recorded on sha256:b4b2a25786dde069cd698c30c5eeff670f3b1a73d9a2f91197846e7194085f0c at sha256:9992a1f795a6e9a…
+    PASS (3.6s)
+
+5 steps, 5 passed, 0 failed
+  owner       owner decision not recorded in this run
+  finished    2026-09-28T11:17:20.383Z (25.0s)
