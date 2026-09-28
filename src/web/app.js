@@ -147,18 +147,42 @@ function assembledSource() {
   return `${lines.join("\n")}\n${body ? `\n${body}\n` : ""}`;
 }
 
+// AzeMark opens a directive envelope with four colons; the name is the rest of
+// that line. Mirrored from the compiler's own fence grammar.
+const DIRECTIVE_OPEN = /^ {0,3}::::[ \t]*([^ \t:]*)[ \t]*$/;
+const DIRECTIVE_FENCE = /^ {0,3}::::/;
+const DIRECTIVE_CLOSE = /^ {0,3}::::[ \t]*$/;
+
 /** @param {{ source: string }} cell */
 function label(cell) {
   const line = cell.source.split("\n").find((value) => value.trim())?.trim() ?? "";
   const heading = /^#{1,6}\s+(.+)$/.exec(line);
-  const directive = /^::([\w-]+)/.exec(line);
+  const directive = DIRECTIVE_OPEN.exec(line) ?? DIRECTIVE_FENCE.exec(line);
   return (heading?.[1] ?? directive?.[1] ?? line.replace(/^[-*]\s+/, "")).slice(0, 72) || "Untitled cell";
 }
-/** @param {{ source: string }} cell */
+/**
+ * The content kind of one Cell: directive envelopes contribute nothing, so a
+ * Cell holding only an envelope is a directive and one with prose outside it is
+ * both.
+ * @param {{ source: string }} cell
+ */
 function kind(cell) {
-  const directive = /^::[\w-]+/m.test(cell.source);
-  const markdown = /(^|\n)(?!::)\S/.test(cell.source);
-  return directive && markdown ? "Markdown + directive" : directive ? "Directive" : "Markdown";
+  let directive = false;
+  let inside = false;
+  let prose = false;
+  for (const line of cell.source.split("\n")) {
+    if (!inside && DIRECTIVE_FENCE.test(line)) {
+      directive = true;
+      inside = !DIRECTIVE_CLOSE.test(line);
+      continue;
+    }
+    if (inside) {
+      if (DIRECTIVE_CLOSE.test(line)) inside = false;
+      continue;
+    }
+    if (line.trim() !== "") prose = true;
+  }
+  return directive && prose ? "Markdown + directive" : directive ? "Directive" : "Markdown";
 }
 function documentTitle() { return model.document.title.trim() || "Untitled document"; }
 
@@ -271,6 +295,22 @@ function proposalReasons(proposal) {
 }
 
 /**
+ * A Description edit does not re-render the Cell (that would move the caret out
+ * of the field), so the Generate affordance is re-evaluated here: it is enabled
+ * only with a non-empty Description, no open proposal, and an available
+ * authoring capability.
+ * @param {string} cellId
+ */
+function updateGenerateAction(cellId) {
+  const cell = model.cells.find((candidate) => candidate.id === cellId);
+  const button = el.cells.querySelector(`[data-action="generate"][data-cell-id="${cellId}"]`);
+  if (cell === undefined || !(button instanceof HTMLButtonElement)) return;
+  button.disabled = cell.pendingDescription.trim() === ""
+    || model.proposal !== null
+    || capabilities?.service?.authoring?.available !== true;
+}
+
+/**
  * A Source or structural edit stales a surviving proposal without re-rendering
  * the editor (which would move focus), so the proposal panel is patched in place.
  */
@@ -306,6 +346,11 @@ function commitSourceEdit(area, source) {
   if (area.value !== source) area.value = source;
   const size = el.cells.querySelector(`[data-role=size][data-cell-id="${cellId}"]`);
   if (size instanceof HTMLElement) size.textContent = `${source.length} chars`;
+  // The outline is re-rendered below, but the editor is not (it would move the
+  // caret), so the Cell's own heading carries the new derived label here.
+  const edited = model.cells.find((cell) => cell.id === cellId);
+  const heading = el.cells.querySelector(`.cell[data-cell-id="${cellId}"] .cell-heading strong`);
+  if (edited !== undefined && heading instanceof HTMLElement) heading.textContent = label(edited);
   renderOutline();
   renderSourceMeta();
   renderPreview();
@@ -358,6 +403,7 @@ function renderPreview() {
   const available = preview.artifact !== null;
   el.preview.hidden = !available;
   el.previewPlaceholder.hidden = available;
+  byId("view-preview-diagnostics").hidden = preview.status !== "blocked";
   el.preview.title = `Document preview — ${preview.status === "stale" ? "out of date" : preview.status}`;
   const url = preview.artifact?.url ?? null;
   if (url !== null) {
@@ -541,11 +587,17 @@ function openDrawer() {
   else byId("document-nav-title").focus();
 }
 
-function openDiagnostics() {
+/**
+ * The dock is non-modal. An author opening it lands on its heading; a dock
+ * opened because an asynchronous result arrived (analysis, blocked export)
+ * leaves focus where the author was, because no result may take focus.
+ * @param {{ focus?: boolean }} [options]
+ */
+function openDiagnostics({ focus = true } = {}) {
   el.diagnostics.hidden = false;
   byId("diagnostics-toggle").setAttribute("aria-expanded", "true");
   sessionStorage.setItem("azeweb.diagnosticsOpen", "true");
-  byId("diagnostics-title").focus();
+  if (focus) byId("diagnostics-title").focus();
 }
 function closeDiagnostics() {
   el.diagnostics.hidden = true;
@@ -715,7 +767,11 @@ async function refreshPreview() {
   }
 }
 
-async function analyze() {
+/**
+ * @param {{ reveal?: boolean }} [options] `reveal` opens the dock when the
+ * author asked for the analysis; background analyses only update the summary.
+ */
+async function analyze({ reveal = false } = {}) {
   const requestId = crypto.randomUUID();
   dispatch({ type: "analysis.start", requestId });
   renderDiagnostics();
@@ -728,9 +784,10 @@ async function analyze() {
     if (model.operations.analyze?.requestId !== requestId) return;
     dispatch({ type: "analysis.resolve", requestId, diagnostics: job.result?.diagnostics ?? [] });
     renderDiagnostics();
-    // Errors take the author to the dock; warnings stay on the summary and
-    // the polite announcement so focus is never stolen for a non-blocking result.
-    if (model.diagnostics.some((diagnostic) => diagnostic.severity === "error")) openDiagnostics();
+    // Errors are revealed when the author asked for the analysis, but the dock
+    // never takes focus: the initiating surface keeps it, and a background
+    // analysis moves nothing at all.
+    if (reveal && model.diagnostics.some((diagnostic) => diagnostic.severity === "error")) openDiagnostics({ focus: false });
     announce(model.diagnostics.length ? "Analysis complete with diagnostics" : "Analysis complete: no diagnostics");
   } catch (error) {
     if (model.operations.analyze?.requestId !== requestId) return;
@@ -766,7 +823,7 @@ async function exportFormat(format) {
       dispatch({ type: "diagnostics.set", diagnostics: job.result?.diagnostics ?? [] });
       dispatch({ type: "export.fail", requestId, message: "Export blocked by Source errors" });
       renderDiagnostics();
-      openDiagnostics();
+      openDiagnostics({ focus: false });
       announce("Export blocked by Source errors");
       return;
     }
@@ -811,7 +868,7 @@ async function formatSource() {
       dispatch({ type: "diagnostics.set", diagnostics: job.result?.diagnostics ?? [] });
       dispatch({ type: "format.fail", requestId, message: "Source errors block formatting" });
       renderDiagnostics();
-      openDiagnostics();
+      openDiagnostics({ focus: false });
       announce("Source errors block formatting");
       return;
     }
@@ -929,7 +986,12 @@ function bind() {
     });
   }
 
-  el.search.addEventListener("input", renderOutline);
+  el.search.addEventListener("input", () => {
+    renderOutline();
+    // The visible count is not a second live region: it is announced through
+    // the workspace's one polite region.
+    announce(el.search.value.trim() === "" ? "Search cleared" : el.searchResult.textContent ?? "");
+  });
   el.search.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || el.search.value === "") return;
     el.search.value = "";
@@ -973,6 +1035,7 @@ function bind() {
     } else if (area.dataset.role === "description") {
       dispatch({ type: "description.edit", cellId: area.dataset.cellId, description: area.value });
       renderOutline();
+      updateGenerateAction(area.dataset.cellId);
     }
   });
 
@@ -1155,13 +1218,13 @@ function bind() {
     event.preventDefault();
     closePreviewDialog();
   });
-  byId("view-preview-diagnostics").addEventListener("click", openDiagnostics);
+  byId("view-preview-diagnostics").addEventListener("click", () => openDiagnostics());
 
   el.exportToggle.addEventListener("click", () => toggleMenu(el.exportMenu, el.exportToggle));
   el.moreToggle.addEventListener("click", () => toggleMenu(el.moreMenu, el.moreToggle));
   el.exportMenu.addEventListener("keydown", (event) => menuKeys(event, el.exportMenu, el.exportToggle));
   el.moreMenu.addEventListener("keydown", (event) => menuKeys(event, el.moreMenu, el.moreToggle));
-  byId("analyze").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void analyze(); });
+  byId("analyze").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void analyze({ reveal: true }); });
   byId("format").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void formatSource(); });
   el.exportMenu.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-format]") : null;
@@ -1210,6 +1273,15 @@ function bind() {
   });
 
   byId("open-document-nav").addEventListener("click", openDrawer);
+  for (const link of document.querySelectorAll(".skip-link")) {
+    link.addEventListener("click", (event) => {
+      if (link.getAttribute("href") !== "#document-navigation" || !matchMedia("(max-width:1199px)").matches) return;
+      // The navigation is an off-canvas drawer at this width: skipping to it
+      // means opening it, which is where the focus contract already lands.
+      event.preventDefault();
+      openDrawer();
+    });
+  }
   byId("close-document-nav").addEventListener("click", () => closeDrawer());
   el.drawerScrim.addEventListener("click", () => closeDrawer());
   document.addEventListener("keydown", (event) => {

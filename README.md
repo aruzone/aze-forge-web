@@ -74,7 +74,8 @@ complete Undo, generate a revision-bound proposed AzeMark Source through the
 Draft Gate, inspect diagnostics, review formatting, and export current Source
 independently of preview freshness. There are no persistence, multi-document,
 project, or per-Cell execution affordances. The canonical interaction and
-accessibility contract is [`docs/ui/authoring-workspace-redesign.md`](docs/ui/authoring-workspace-redesign.md).
+accessibility contract is [`docs/ui/authoring-workspace-redesign.md`](docs/ui/authoring-workspace-redesign.md),
+which also holds the observed verification evidence for each acceptance ID.
 
 The preloaded examples are the compiler's own reference library
 (`docs/language/*.aze.md`), reused verbatim: fourteen complete Sources spanning
@@ -492,9 +493,20 @@ npm run test:service  # HTTP policy against a stubbed worker, real HTTP
 npm run test:compiler # the real pinned compiler, real Artifacts
 npm run smoke         # the deployment acceptance suite (needs a built image)
 npm run walkthrough   # the owner walkthrough against a staged image
+npm run workspace     # the authoring-workspace acceptance audit (fixtures, a11y)
 npm run cutover       # both suites plus the alpha pass/fail decision
 npm run typecheck
 ```
+
+`npm run workspace` starts the service with the specification's deterministic
+fixture worker, drives the deployment's pinned `chrome-headless-shell`, and
+records the acceptance-indexed evidence — landmarks and reading order, the
+minimum/typical/30-Cell stress fixtures, the viewport captures, the WCAG 2.2
+A/AA axe scans, measured contrast, target sizes, the keyboard-only focus walk
+and workflow pass, reduced motion, forced colors, and the live region — into
+`acceptance/workspace/<stamp>-pass.{json,txt}`. Every acceptance ID maps to the
+check that observed it, and the specification records the observations and the
+named assistive-technology gaps.
 
 The service tests own what the service is responsible for — access, envelopes,
 admission, isolation, deadlines, cancellation, retention, Artifact delivery and

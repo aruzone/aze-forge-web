@@ -19,11 +19,11 @@
     <button id="signout" class="rail-destination" type="button"><span aria-hidden="true">⇥</span><span class="visually-hidden">Sign out</span></button>
   </nav>
 
-  <aside id="document-navigation" class="document-nav" aria-labelledby="document-nav-title">
+  <aside id="document-navigation" class="document-nav" aria-labelledby="document-nav-title" tabindex="-1">
     <header><p id="document-nav-title" tabindex="-1">Current document</p><button id="close-document-nav" type="button" aria-label="Close Current document navigation">×</button></header>
     <button id="current-document" class="document-row" type="button"><span class="document-mark">Az</span><span><strong id="nav-document-title">Untitled document</strong><small id="document-session">This session · 1 Cell</small></span></button>
     <label class="search">Find in document<input id="cell-search" type="search" autocomplete="off"></label>
-    <p id="search-result" class="small-status" aria-live="polite"></p>
+    <p id="search-result" class="small-status"></p>
     <nav id="cell-list" class="cell-list" aria-label="Cell outline"></nav>
     <button id="add-cell" class="add-cell" type="button">＋ Add Cell</button>
   </aside>
@@ -45,13 +45,13 @@
       </div>
     </header>
 
-    <section id="document-preview" class="document-preview" aria-labelledby="preview-title">
+    <section id="document-preview" class="document-preview" aria-labelledby="preview-title" tabindex="-1">
       <header><div><p>Document preview</p><h1 id="preview-title">Untitled document</h1></div><div class="preview-actions"><strong id="preview-state">Preview not generated</strong><button id="view-preview-diagnostics" type="button" hidden>View diagnostics</button><button id="refresh-preview" type="button">Refresh preview</button><button id="expand-preview" type="button" disabled>Expand</button></div></header>
       <div id="preview-frame" class="preview-frame"><iframe id="preview" title="Document preview — not generated" sandbox="allow-same-origin" hidden></iframe><p id="preview-placeholder">Preview not generated. Refresh when the Current document is ready.</p></div>
       <div id="preview-separator" class="preview-separator" role="separator" aria-label="Resize Document preview" aria-orientation="horizontal" tabindex="0">•••</div>
     </section>
 
-    <section id="cell-canvas" class="cell-canvas" aria-labelledby="cells-title">
+    <section id="cell-canvas" class="cell-canvas" aria-labelledby="cells-title" tabindex="-1">
       <details id="document-details" class="document-details">
         <summary><span><small>Document details</small><strong id="details-summary">Untitled document</strong></span></summary>
         <div class="details-fields">

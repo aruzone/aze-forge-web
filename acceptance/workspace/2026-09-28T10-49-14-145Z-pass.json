@@ -1,0 +1,395 @@
+{
+  "schema": "azeforge.web.workspace-audit-evidence/v1",
+  "startedAt": "2026-09-28T10:49:14.145Z",
+  "finishedAt": "2026-09-28T10:50:13.645Z",
+  "target": {
+    "base": "http://127.0.0.1:50063",
+    "started": true
+  },
+  "browser": "/Users/kumaresan/.cache/puppeteer/chrome-headless-shell/mac_arm-152.0.7977.75/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+  "fixtures": [
+    "minimum",
+    "typical",
+    "stress"
+  ],
+  "testBacked": {
+    "PREVIEW-02": "test/unit/workspace-state.test.mjs",
+    "DRAFT-02": "test/unit/workspace-state.test.mjs",
+    "DRAFT-03": "test/unit/workspace-state.test.mjs"
+  },
+  "checks": [
+    {
+      "id": "landmarks",
+      "title": "Landmarks, reading order, names, skip links",
+      "ids": [
+        "NAV-01",
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "landmark order: app-rail → document-navigation → main-workspace → drawer-scrim → diagnostics-panel",
+        "main children: utility-bar → document-preview → cell-canvas",
+        "cell canvas children: document-details → canvas-heading → notebook-cells → add-cell-bottom",
+        "nav landmarks: Application, Cell outline; complementary: document-nav-title, diagnostics-title",
+        "dialogs: preview-dialog, proposal-dialog, service-dialog",
+        "skip links: Skip to editor → #cell-canvas (resolves); Skip to Document preview → #document-preview (resolves); Skip to Current document navigation → #document-navigation (resolves)",
+        "positive tabindex elements: 0"
+      ]
+    },
+    {
+      "id": "fixtures",
+      "title": "Minimum, typical, and 30-Cell stress fixtures",
+      "ids": [
+        "NAV-02",
+        "CELL-03",
+        "DRAFT-03",
+        "DOC-02"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "minimum: 1 empty Cell labelled \"Untitled cell\", preview \"Preview not generated\", empty Source",
+        "typical: Thermal balance · equation · callout · | Symbol | Value |; kinds Markdown | Directive | Markdown + directive | Markdown; boundary moves disabled; Pending Description preserved across the mode switch",
+        "stress: 30 Cells and 30 outline entries; Cell 3 long label and the 4-author title render without overflow; the second \"Duplicate label\" entry focused its own Cell; Cell 25 is \"Untitled cell\"",
+        "stress analysis: 40 diagnostics grouped eeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwiiiiiiii (16 error · 16 warning), heading \"40 diagnostics\"; the first error focused Cell 1's Source at offset 0-0 and the first warning Cell 17, each with the dock open and unobscured"
+      ]
+    },
+    {
+      "id": "captures",
+      "title": "Viewport captures and reflow boundaries",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "workspace-1440x900: no horizontal overflow (scrollWidth 1440 = clientWidth 1440) → acceptance/workspace/workspace-1440x900.png",
+        "workspace-1200x900: no horizontal overflow (scrollWidth 1200 = clientWidth 1200) → acceptance/workspace/workspace-1200x900.png",
+        "workspace-1199x900: no horizontal overflow (scrollWidth 1199 = clientWidth 1199) → acceptance/workspace/workspace-1199x900.png",
+        "workspace-1024x768: no horizontal overflow (scrollWidth 1024 = clientWidth 1024) → acceptance/workspace/workspace-1024x768.png",
+        "workspace-768x1024: no horizontal overflow (scrollWidth 768 = clientWidth 768) → acceptance/workspace/workspace-768x1024.png",
+        "workspace-767x1024: no horizontal overflow (scrollWidth 767 = clientWidth 767) → acceptance/workspace/workspace-767x1024.png",
+        "workspace-320x800: no horizontal overflow (scrollWidth 320 = clientWidth 320) → acceptance/workspace/workspace-320x800.png",
+        "workspace-1024x768-drawer-open: drawer open, workspace inert, focus on document-nav-title → acceptance/workspace/workspace-1024x768-drawer-open.png",
+        "workspace-zoom200-720x900 (200 % zoom): no horizontal overflow → acceptance/workspace/workspace-zoom200-720x900.png"
+      ]
+    },
+    {
+      "id": "scans",
+      "title": "Automated WCAG 2.2 A/AA scans",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "desktop-1440x900: 0 violations across WCAG 2.0/2.1/2.2 A+AA (105 axe rules evaluated)",
+        "tablet-768x1024: 0 violations across WCAG 2.0/2.1/2.2 A+AA (105 axe rules evaluated)",
+        "reflow-320x800: 0 violations across WCAG 2.0/2.1/2.2 A+AA (105 axe rules evaluated)",
+        "stress-1440x900 with 30 Cells and 40 diagnostics: 0 violations"
+      ]
+    },
+    {
+      "id": "contrast",
+      "title": "Text contrast measurement",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "115 visible text nodes measured; lowest ratio 4.56:1 (required 4.5, \"04\")",
+        "hardened tokens in use: --text: #162033, --muted: #5f6b80, --accent: #2563eb, --stale: #9a530f, --error: #b42318, --success: #16825b"
+      ]
+    },
+    {
+      "id": "targets",
+      "title": "Interaction-box density",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "desktop-1440x900: 64 boxes all ≥ 32px; smallest add-cell 223×32",
+        "tablet-768x1024: 66 boxes all ≥ 44px; smallest skip-link 110×44",
+        "reflow-320x800: 63 boxes all ≥ 24px; smallest skip-link 110×44"
+      ]
+    },
+    {
+      "id": "focus",
+      "title": "Keyboard reachability, visible and unclipped focus",
+      "ids": [
+        "A11Y-02"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "tab walk: 49 stops (49 distinct controls), every one a real control, then focus left the document at stop 49",
+        "focus indicator: 49/49 stops matched the visible-focus rule; 0 clipped",
+        "first stops: a:Skip to editor → a:Skip to Document p → a:Skip to Current do → button:▤Author workspace → button:service-health → button:signout; re-entry after leaving: a:Skip to editor"
+      ]
+    },
+    {
+      "id": "motion",
+      "title": "Reduced-motion behaviour",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "prefers-reduced-motion:reduce → drawer transition-duration 0s, scroll-behavior auto"
+      ]
+    },
+    {
+      "id": "forced-colors",
+      "title": "Forced-colors behaviour",
+      "ids": [
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "forced-colors:active → rail rgb(255, 255, 255)/rgb(0, 0, 0), control border 1px solid, Cell border 1px solid, focus ring rgba(5, 0, 73, 0.8) / rgba(5, 0, 73, 0.8)"
+      ]
+    },
+    {
+      "id": "frames",
+      "title": "Preview frame naming, sandbox, shared state",
+      "ids": [
+        "PREVIEW-05",
+        "A11Y-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "frame names: \"Document preview — current\" / \"Expanded Document preview\"; sandbox allow-same-origin; shared Artifact and state"
+      ]
+    },
+    {
+      "id": "announcements",
+      "title": "Live region and announcements",
+      "ids": [
+        "A11Y-02"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "one polite region (workspace-status), no assertive region; alert roles only on gate-error:alert",
+        "observed announcements: preview → \"Preview updated\"; analysis → \"Analysis complete with diagnostics\""
+      ]
+    },
+    {
+      "id": "workflows",
+      "title": "Keyboard-only essential workflows",
+      "ids": [
+        "A11Y-01",
+        "A11Y-02",
+        "CELL-01",
+        "CELL-02",
+        "CELL-03",
+        "DOC-01",
+        "DOC-02",
+        "DRAFT-01",
+        "DRAFT-02",
+        "DRAFT-03",
+        "DRAFT-04",
+        "EXPORT-01",
+        "EXPORT-02",
+        "FORMAT-01",
+        "NAV-02",
+        "NAV-03",
+        "PREVIEW-01",
+        "PREVIEW-03",
+        "PREVIEW-04",
+        "PREVIEW-05",
+        "SERVICE-01"
+      ],
+      "ok": true,
+      "detail": null,
+      "evidence": [
+        "skip links [A11Y-01, A11Y-02]: first Tab stop is the revealed skip link; Enter moved focus to #cell-canvas and one more Tab reached the Cell editor (source)",
+        "drawer [NAV-03, A11Y-02]: drawer opened by tab with heading focus and an inert workspace; Escape closed it and restored #open-document-nav",
+        "search and outline [NAV-03, NAV-02]: search filtered the outline only (1 of 4 entries, 4 Cells rendered) and reported the origin; ArrowDown+Enter focused the Cell editor (tab); \"No matching cells\" then Escape restored all 4 entries",
+        "Cell insert, move, delete, undo [CELL-01]: insert focused the new editor; move kept editor focus; delete focused the following Cell and offered Undo; Undo restored 5 Cells with focus on the restored Cell's heading",
+        "editor mode switch [CELL-03, A11Y-02]: Left/Right moved the tab-list roving focus; Enter activated Description; Home returned to Source, both with aria-selected tracking",
+        "generation and cancellation [DRAFT-01]: generate locked Source, Add Cell, and Document details while the outline stayed usable and focus moved to Cancel; cancelling restored Description focus and kept the Pending Description",
+        "Draft Gate [DRAFT-01, DRAFT-02, DRAFT-03]: generation produced a valid Draft Gate with Apply disabled-until-valid and a review affordance; Discard restored Description and the Pending Description; Apply replaced the Source, focused its start (0-0), and announced",
+        "front matter boundary [CELL-02]: pasted front matter was stripped to \"# Body only\" and announced; Document details stayed \"Document basics\" / \"AzeForge examples\" / \"2026-09-28\"",
+        "generation responses [DRAFT-04]: clarification (\"Which audience should this target?\") offered Revise Description and kept the Pending Description; refusal offered Dismiss; provider failure offered Return to Description — none opened a Draft Gate",
+        "preview refresh, sizing, expansion [PREVIEW-01, PREVIEW-04, PREVIEW-05]: an edit issued no compile request; refresh reached \"current\"; separator moved from 252 through Home 180 and End 540 to 524 (opened by tab); the expanded preview shared the Artifact, contained focus, and Escape restored #refresh-preview",
+        "preview failure retains the Artifact [PREVIEW-03]: a refresh over an invalid document reported \"Preview blocked by Source errors\" and kept the previous Artifact visible with the diagnostics action, without discarding or re-fetching it",
+        "diagnostics navigation [DOC-02, DOC-01]: a warning-only analysis left the dock closed (summary \"0 error · 1 warning\") while expanding Document details and marking the Date field invalid with described feedback; the summary trigger opened the dock with heading focus and Tab could leave it; Escape closed it and restored #diagnostics-toggle; activating the entry focused the Date field; an error analysis (16 error · 16 warning) revealed the dock and retained focus on the initiating surface (#more-toggle)",
+        "format review [FORMAT-01]: Format opened a compiler-labelled \"Formatted Source\" review with focus inside and the Source untouched; Escape discarded nothing and restored the invoking control; Apply replaced the Source and focused it",
+        "export [EXPORT-01, EXPORT-02]: Export opened on the first item with 4 capability-advertised formats; the chosen item showed per-item progress then \"SVG export complete\" with one download and focus back on the trigger; the error fixture blocked export (item \"HTML — failed\"), revealed diagnostics without taking focus (#export-toggle), and downloaded nothing — keyboard throughout",
+        "service dialog [SERVICE-01]: health opened progressively disclosed details (rail label \"Service details: healthy\") with focus inside; Escape closed it and restored the trigger",
+        "preview frame navigation [A11Y-02]: Tab reached the rendered preview frame and left it again, continuing to preview-separator — no iframe trap"
+      ]
+    }
+  ],
+  "acceptanceIds": [
+    {
+      "id": "NAV-01",
+      "observedBy": [
+        "landmarks"
+      ]
+    },
+    {
+      "id": "NAV-02",
+      "observedBy": [
+        "fixtures",
+        "workflows"
+      ]
+    },
+    {
+      "id": "NAV-03",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "CELL-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "CELL-02",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "CELL-03",
+      "observedBy": [
+        "fixtures",
+        "workflows"
+      ]
+    },
+    {
+      "id": "DRAFT-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "DRAFT-02",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "DRAFT-03",
+      "observedBy": [
+        "fixtures",
+        "workflows"
+      ]
+    },
+    {
+      "id": "DRAFT-04",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "PREVIEW-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "PREVIEW-02",
+      "observedBy": [
+        "test/unit/workspace-state.test.mjs"
+      ]
+    },
+    {
+      "id": "PREVIEW-03",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "PREVIEW-04",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "PREVIEW-05",
+      "observedBy": [
+        "frames",
+        "workflows"
+      ]
+    },
+    {
+      "id": "DOC-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "DOC-02",
+      "observedBy": [
+        "fixtures",
+        "workflows"
+      ]
+    },
+    {
+      "id": "FORMAT-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "EXPORT-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "EXPORT-02",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "SERVICE-01",
+      "observedBy": [
+        "workflows"
+      ]
+    },
+    {
+      "id": "A11Y-01",
+      "observedBy": [
+        "landmarks",
+        "captures",
+        "scans",
+        "contrast",
+        "targets",
+        "motion",
+        "forced-colors",
+        "frames",
+        "workflows"
+      ]
+    },
+    {
+      "id": "A11Y-02",
+      "observedBy": [
+        "focus",
+        "announcements",
+        "workflows"
+      ]
+    }
+  ],
+  "gaps": [
+    "Safari keyboard and rendering: `safaridriver` refuses a session until \"Allow remote automation\" is enabled by hand in Safari Settings, so no Safari pass was run.",
+    "VoiceOver with Safari: requires an interactive assistive-technology session; not run.",
+    "NVDA on Windows: no Windows host available; not run."
+  ],
+  "passed": 12,
+  "failed": 0,
+  "unobserved": []
+}

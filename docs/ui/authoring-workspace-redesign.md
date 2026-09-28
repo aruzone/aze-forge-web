@@ -227,6 +227,8 @@ One polite live region coalesces generation, cancellation, preview, analysis, fo
 
 Capture 1440x900, 1200x900, 1199x900, 1024x768, 768x1024, 767x1024 reflow, and 320x800 reflow. Run minimum, typical, and stress fixtures. Collect browser captures, request and state walkthroughs, automated accessibility scans, keyboard checks in Chromium and Safari, VoiceOver with Safari, and NVDA on Windows where available. An unavailable platform is an explicit gap, never a pass.
 
+The whole matrix is one command: `npm run workspace` starts the service with the deterministic fixture worker, drives the deployment's pinned Chrome, and records `acceptance/workspace/<stamp>-pass.{json,txt}` plus the captures below. Recorded captures: `acceptance/workspace/workspace-{1440x900,1200x900,1199x900,1024x768,768x1024,767x1024,320x800}.png`, `workspace-1024x768-drawer-open.png`, and the 200 % zoom reflow `workspace-zoom200-720x900.png`.
+
 | Closed decision | Specification sections | Acceptance IDs | Required evidence |
 | --- | --- | --- | --- |
 | [#15](https://github.com/aruzone/aze-forge-web/issues/15) cell state model | Cell canvas; Generation and Draft Gate; state contract | CELL-01, DRAFT-01 through DRAFT-04, A11Y-02 | reducer tests and generation walkthrough |
@@ -239,3 +241,44 @@ Capture 1440x900, 1200x900, 1199x900, 1024x768, 768x1024, 767x1024 reflow, and 3
 | [#22](https://github.com/aruzone/aze-forge-web/issues/22) accessibility | keyboard, focus, and accessibility | A11Y-01, A11Y-02 and component IDs above | scans, manual focus, keyboard, and assistive-technology evidence |
 
 The traceability table covers every closed child listed by wayfinder #14. Later implementation issues cite these IDs instead of restating decisions.
+
+## Observed evidence
+
+Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T10-49-14-145Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
+
+| ID | Observation |
+| --- | --- |
+| NAV-01 | Rendered landmarks are exactly `app-rail → document-navigation → main-workspace → drawer-scrim → diagnostics-panel`, `main` holds `utility-bar → document-preview → cell-canvas`, and one `main` exists. No New/Open/Recent/Duplicate/persistence control is in the DOM. |
+| NAV-02 | In the stress fixture two Cells share the label `Duplicate label` and keep distinct identities: navigating to the second entry focuses that entry's own Cell. |
+| NAV-03 | A query of `Thermal` filtered the outline to 1 of 4 entries while all 4 Cells stayed rendered, and the entry exposed `Source match`; `zzzz` produced `No matching cells`; Escape cleared the query and restored all 4 entries. |
+| CELL-01 | Insert focused the new editor, move kept the moved Cell's editor focused, delete focused the following Cell and offered Undo, and Undo restored the Cell, its position, and focus on its heading. |
+| CELL-02 | Front matter pasted into a Cell Source was stripped to `# Body only` with the removal announced, and Document details stayed `Document basics` / `AzeForge examples` / `2026-09-28`. |
+| CELL-03 | The typical fixture's derived labels and kinds are `Thermal balance`/Markdown, `equation`/Directive, `callout`/Markdown + directive, `| Symbol | Value |`/Markdown, boundary moves are disabled, and a mode switch preserves the Pending Description and the Source. |
+| DRAFT-01 | Generate locked Source, Add Cell, and the Document-details fields while the outline stayed usable and focus moved to `Cancel generation`; cancelling restored the editor, kept the Pending Description, and a late response produced no proposal. |
+| DRAFT-02 | The reducer suite rejects invalid and stale proposals; in the browser, Apply is enabled only for a valid exact-revision Gate and a Discard leaves Last-applied Source untouched. |
+| DRAFT-03 | Apply replaced the Source and focused its start (offset 0); Discard returned to Description with the same Pending Description. |
+| DRAFT-04 | Clarification (`Which audience should this target?`) offered `Revise Description` and kept the Pending Description; refusal offered `Dismiss`; a provider failure offered `Return to Description`. None opened a Draft Gate. |
+| PREVIEW-01 | Load, a Source edit, a Theme change, and expansion issued zero compile requests; only Refresh compiled. |
+| PREVIEW-02 | The reducer suite admits only exact request, revision, and Theme matches. |
+| PREVIEW-03 | A refresh over an invalid document reported `Preview blocked by Source errors` and kept the previous Artifact visible with the `View diagnostics` recovery. |
+| PREVIEW-04 | Separator keyboard sizing moved from 252 px through `Home` 180 px and `End` 540 px to 524 px, all from one clamp, with the divider focused by Tab. |
+| PREVIEW-05 | The expanded dialog shared the Artifact with the inline frame and contained focus; Escape restored `#refresh-preview`. |
+| DOC-01 | A metadata diagnostic expanded Document details, marked the Date field `aria-invalid` with described feedback, and activating its entry focused that field. |
+| DOC-02 | A warning-only analysis left the dock closed while updating the summary; the trigger opened the dock with heading focus; Tab left the non-modal dock; Escape closed it and restored the trigger. In the stress fixture, 40 diagnostics rendered grouped 16 error · 16 warning · 8 information, and activating the first error focused Cell 1's Source at offset 0 with the dock open and unobscured. |
+| FORMAT-01 | Format opened a compiler-labelled `Formatted Source` review with focus inside and the Source untouched; Escape applied nothing and restored the invoking control; Apply replaced the Source and focused it. No AI labelling exists in the review. |
+| EXPORT-01 | Export offers the four capability-advertised formats; the chosen item shows progress and completion, and the compile is issued with the current Source and Theme rather than the preview Artifact. |
+| EXPORT-02 | With the error fixture the chosen item read `HTML — failed`, diagnostics were revealed, no bytes downloaded, and focus stayed on the Export trigger. |
+| SERVICE-01 | The rail health button carries its state in its accessible name (`Service details: healthy`), and activating it opens progressively disclosed compiler, protocol, authoring, and renderer-remedy details with focus inside and Escape restoring the trigger. |
+| A11Y-01 | axe-core reported 0 violations across the WCAG 2.0/2.1/2.2 A+AA tags (105 rules) at 1440x900, 768x1024, 320x800, and on the 30-Cell stress fixture. Measured independently: 115 visible text nodes with a lowest ratio of 4.56:1, interaction boxes all ≥ 32 px (desktop) / 44 px (tablet) / 24 px (reflow), `prefers-reduced-motion: reduce` collapsing the drawer transition to `0s` with `scroll-behavior: auto`, and forced colors giving the rail Canvas/CanvasText with 1 px system borders. |
+| A11Y-02 | One pass of Tab reached 49 distinct controls in order with a visible, unclipped focus indication at every stop, left the document only at the end, and re-entered at the first skip link. Each essential workflow completed keyboard-only with focus retained by its initiating surface. |
+
+### Evidence gaps
+
+Named as gaps, never as passes:
+
+- **Safari keyboard and rendering.** `safaridriver` refuses to create a session until "Allow remote automation" is enabled by hand in Safari Settings, which this environment cannot do, so no Safari pass was run.
+- **VoiceOver with Safari.** Requires an interactive assistive-technology session. Not run.
+- **NVDA on Windows.** No Windows host is available. Not run.
+
+The headless Chromium record above is the only first-hand observation for this revision.
+
