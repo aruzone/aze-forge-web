@@ -14,7 +14,7 @@
 /** @typedef {{ id: string, source: string, lastAppliedSource: string, pendingDescription: string, mode: EditorMode }} Cell */
 /** @typedef {{ severity: string, code?: string, message: string, location?: { range?: { start: { line: number, column: number, offset?: number }, end: { line: number, column: number, offset?: number } } } }} Diagnostic */
 /** @typedef {{ url: string, bytes: number }} PreviewArtifact */
-/** @typedef {{ requestId: string, cellId: string, description: string, revision: number }} Generation */
+/** @typedef {{ requestId: string, cellId: string, description: string, revision: number, requestGeneration: number }} Generation */
 /** @typedef {{ cellId: string, source: string, capturedRevision: number, status: "valid" | "invalid" | "stale", diagnostics: Diagnostic[] }} Proposal */
 /** @typedef {{ source: string, capturedRevision: number, status: "open" | "stale" }} FormatProposal */
 /** @typedef {{ requestId: string, revision: number, theme: string } | null} PreviewRequest */
@@ -157,6 +157,7 @@ export function transition(state, event) {
       return { ...state, activeCellId: event.cellId };
     }
     case "document.edit": {
+      if (state.mutationLocked) return state;
       const document = { ...state.document, ...event.patch };
       const changed = /** @type {(keyof CurrentDocument)[]} */ (Object.keys(event.patch)).some(
         (key) => document[key] !== state.document[key],
@@ -178,14 +179,16 @@ export function transition(state, event) {
       if (state.generation !== null || state.proposal !== null) return state;
       const cell = state.cells.find(({ id }) => id === event.cellId);
       if (cell === undefined || cell.pendingDescription.trim() === "") return state;
+      const requestGeneration = state.requestGeneration + 1;
       return {
         ...state,
-        requestGeneration: state.requestGeneration + 1,
+        requestGeneration,
         generation: {
           requestId: event.requestId,
           cellId: cell.id,
           description: cell.pendingDescription.trim(),
           revision: state.revision,
+          requestGeneration,
         },
         generationResponse: null,
         mutationLocked: true,
@@ -203,6 +206,7 @@ export function transition(state, event) {
       if (
         generation === null ||
         generation.requestId !== event.requestId ||
+        generation.requestGeneration !== state.requestGeneration ||
         !state.cells.some(({ id }) => id === generation.cellId)
       ) {
         return state;

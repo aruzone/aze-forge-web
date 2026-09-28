@@ -61,9 +61,6 @@ let capabilities = null;
 let model = createWorkspaceState([]);
 /** @type {AbortController | null} */
 let generationController = null;
-/** The blob URL currently displayed, tracked so a replaced Artifact can be revoked. */
-/** @type {string | null} */
-let displayedPreviewUrl = null;
 
 /** @param {string} value */
 const esc = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -604,9 +601,8 @@ async function refreshPreview() {
       throw error;
     }
     if (model.preview.request?.requestId !== requestId) { URL.revokeObjectURL(url); return; }
-    const previous = displayedPreviewUrl;
+    const previous = model.preview.artifact?.url ?? null;
     dispatch({ type: "preview.resolve", requestId, artifact: { url, bytes: bytes.byteLength } });
-    displayedPreviewUrl = url;
     if (previous !== null && previous !== url) URL.revokeObjectURL(previous);
     renderPreview();
     announce("Preview updated");

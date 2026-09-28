@@ -255,3 +255,67 @@ test("deleting and undoing restores complete Cell state and stable identity", ()
   assert.deepEqual(state.cells.map(({ id }) => id), ["cell-a", "cell-b"]);
   assert.equal(state.cells[1].pendingDescription, "Improve chart");
 });
+
+test("Current document edits lock during generation and never advance the revision", () => {
+  let state = createWorkspaceState([sourceCell()]);
+  state = transition(state, { type: "description.edit", cellId: "cell-a", description: "Rewrite it" });
+  state = transition(state, { type: "generation.start", cellId: "cell-a", requestId: "request-1" });
+  const revision = state.revision;
+  assert.strictEqual(
+    transition(state, { type: "document.edit", patch: { title: "Bench note" } }),
+    state,
+  );
+  assert.strictEqual(
+    transition(state, {
+      type: "document.replace",
+      document: { version: "2", title: "Formatted", authors: [], date: "", metadata: "" },
+      sources: ["# Applied"],
+    }),
+    state,
+  );
+  assert.equal(state.revision, revision);
+  assert.equal(state.document.title, "");
+});
+
+test("generation cannot start while a Draft Gate proposal is open", () => {
+  let state = createWorkspaceState([sourceCell("cell-a"), sourceCell("cell-b")]);
+  state = transition(state, { type: "description.edit", cellId: "cell-a", description: "Rewrite it" });
+  state = transition(state, { type: "generation.start", cellId: "cell-a", requestId: "request-1" });
+  state = transition(state, {
+    type: "generation.resolve",
+    requestId: "request-1",
+    outcome: { kind: "source", source: "# Proposed", valid: true, diagnostics: [] },
+  });
+  assert.equal(state.proposal?.status, "valid");
+  state = transition(state, { type: "description.edit", cellId: "cell-b", description: "Improve chart" });
+  assert.strictEqual(
+    transition(state, { type: "generation.start", cellId: "cell-b", requestId: "request-2" }),
+    state,
+  );
+  assert.equal(state.generation, null);
+});
+
+test("Apply follows stable Cell identity, never ordinal position or label", () => {
+  let state = createWorkspaceState([sourceCell("cell-a", "# Duplicate label"), sourceCell("cell-b", "# Duplicate label")]);
+  state = transition(state, { type: "description.edit", cellId: "cell-b", description: "Rewrite it" });
+  state = transition(state, { type: "generation.start", cellId: "cell-b", requestId: "request-1" });
+  state = transition(state, {
+    type: "generation.resolve",
+    requestId: "request-1",
+    outcome: { kind: "source", source: "# Proposed", valid: true, diagnostics: [] },
+  });
+  state = transition(state, { type: "cell.move", cellId: "cell-b", index: 0 });
+  assert.deepEqual(state.cells.map(({ id }) => id), ["cell-b", "cell-a"]);
+  assert.equal(state.proposal?.status, "stale");
+  state = transition(state, { type: "proposal.discard" });
+  state = transition(state, { type: "generation.start", cellId: "cell-b", requestId: "request-2" });
+  state = transition(state, {
+    type: "generation.resolve",
+    requestId: "request-2",
+    outcome: { kind: "source", source: "# Proposed", valid: true, diagnostics: [] },
+  });
+  state = transition(state, { type: "proposal.apply" });
+  assert.equal(state.cells[0].source, "# Proposed");
+  assert.equal(state.cells[0].id, "cell-b");
+  assert.equal(state.cells[1].source, "# Duplicate label");
+});
