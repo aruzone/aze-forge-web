@@ -152,7 +152,7 @@ function label(cell) {
   const line = cell.source.split("\n").find((value) => value.trim())?.trim() ?? "";
   const heading = /^#{1,6}\s+(.+)$/.exec(line);
   const directive = /^::([\w-]+)/.exec(line);
-  return (heading?.[1] ?? directive?.[1] ?? line.replace(/^[-*]\s+/, "")).slice(0, 72) || "Untitled Cell";
+  return (heading?.[1] ?? directive?.[1] ?? line.replace(/^[-*]\s+/, "")).slice(0, 72) || "Untitled cell";
 }
 /** @param {{ source: string }} cell */
 function kind(cell) {
@@ -196,7 +196,7 @@ function renderOutline() {
   const matching = model.cells.filter((cell) =>
     `${label(cell)}\n${cell.source}\n${cell.pendingDescription}`.toLocaleLowerCase().includes(query));
   el.searchResult.textContent = query
-    ? matching.length ? `${matching.length} matching ${matching.length === 1 ? "Cell" : "Cells"}` : "No matching Cells"
+    ? matching.length ? `${matching.length} matching ${matching.length === 1 ? "Cell" : "Cells"}` : "No matching cells"
     : "";
   // One roving tab stop: the active Cell when it is listed, otherwise the first match.
   const tabbable = matching.some((cell) => cell.id === model.activeCellId) ? model.activeCellId : matching[0]?.id ?? null;
