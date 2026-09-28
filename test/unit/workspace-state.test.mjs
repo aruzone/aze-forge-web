@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createWorkspaceState, transition } from "../../src/web/workspace-state.js";
+import { createWorkspaceState, emptyDocument, hasMetadata, transition } from "../../src/web/workspace-state.js";
 
 function sourceCell(id = "cell-a", source = "# Applied") {
   return { id, source, lastAppliedSource: source, pendingDescription: "" };
@@ -349,4 +349,14 @@ test("failed export keeps its format so the owning menu item can present it", ()
   state = transition(state, { type: "export.start", requestId: "export-2", format: "html" });
   assert.equal(state.operations.export?.format, "html");
   assert.equal(state.operations.export?.status, "running");
+});
+
+test("Document details has metadata to show only once the document carries some", () => {
+  assert.equal(hasMetadata(emptyDocument()), false);
+  assert.equal(hasMetadata({ ...emptyDocument(), title: "Document basics" }), true);
+  assert.equal(hasMetadata({ ...emptyDocument(), authors: ["AzeForge examples"] }), true);
+  assert.equal(hasMetadata({ ...emptyDocument(), date: "2026-09-28" }), true);
+  assert.equal(hasMetadata({ ...emptyDocument(), metadata: "description: x" }), true);
+  // Whitespace is not metadata, and neither is a whitespace-only author list.
+  assert.equal(hasMetadata({ ...emptyDocument(), title: "   ", metadata: "\n" }), false);
 });

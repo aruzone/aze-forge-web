@@ -1,5 +1,5 @@
 // @ts-check
-import { createWorkspaceState, transition } from "./workspace-state.js";
+import { createWorkspaceState, hasMetadata, transition } from "./workspace-state.js";
 import { indexForPosition } from "./coordinates.js";
 import { splitFrontMatter, stripFrontMatter } from "./front-matter.js";
 
@@ -194,6 +194,15 @@ function updateChrome() {
   for (const id of ["nav-document-title", "utility-title", "desktop-title", "preview-title"]) byId(id).textContent = name;
   byId("details-summary").textContent = [name, model.document.authors[0], model.document.date].filter(Boolean).join(" · ");
   byId("document-session").textContent = `This session · ${model.cells.length} ${model.cells.length === 1 ? "Cell" : "Cells"}`;
+}
+
+/**
+ * Document details is one disclosure, not a form in the canvas: it opens for
+ * metadata that is still empty, and stays collapsed once the document carries
+ * meaningful metadata. Metadata diagnostics force it open as they arrive.
+ */
+function syncDetailsDisclosure() {
+  if (!hasMetadata(model.document)) el.details.open = true;
 }
 
 /** Source-changing document controls lock while a generation owns the document. */
@@ -1367,6 +1376,7 @@ async function enter() {
     el.gate.hidden = true;
     el.workspace.hidden = false;
     renderAll();
+    syncDetailsDisclosure();
     if (sessionStorage.getItem("azeweb.diagnosticsOpen") === "true") openDiagnostics();
   } catch (error) {
     sessionStorage.removeItem(TOKEN_KEY);

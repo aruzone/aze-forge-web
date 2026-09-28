@@ -67,6 +67,18 @@ export function emptyDocument() {
 }
 
 /**
+ * Whether the Current document carries metadata worth showing: Document details
+ * starts expanded for a document that does not, and collapsed once it does.
+ * @param {CurrentDocument} document
+ */
+export function hasMetadata(document) {
+  return document.title.trim() !== ""
+    || document.authors.length > 0
+    || document.date.trim() !== ""
+    || document.metadata.trim() !== "";
+}
+
+/**
  * @param {Cell[]} cells
  * @param {string} [theme]
  * @param {CurrentDocument} [document]

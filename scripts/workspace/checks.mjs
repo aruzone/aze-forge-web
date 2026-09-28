@@ -12,7 +12,7 @@
 import { expect } from "../cli.mjs";
 import { axeViolations, emulateMedia } from "./browser.mjs";
 import { FIXTURES } from "./fixtures.mjs";
-import { analyzeDocument, loadFixture, refreshPreview, settle, workspaceState } from "./page.mjs";
+import { analyzeDocument, loadFixture, refreshPreview, resetScroll, settle, workspaceState } from "./page.mjs";
 
 /**
  * @typedef {{ base: string, token: string,
@@ -125,10 +125,48 @@ async function fixtures(ctx) {
   expect(minimum.title === "Untitled document", `minimum document title is ${JSON.stringify(minimum.title)}`);
   expect(minimum.preview.state === "empty", `minimum preview state is ${minimum.preview.state}`);
   expect(minimumEmpty.placeholderVisible && minimumEmpty.previewHidden && minimumEmpty.sourceEmpty, "minimum fixture is not the empty document");
-  evidence.push(`minimum: 1 empty Cell labelled "Untitled cell", preview "${minimum.preview.message}", empty Source`);
+  const minimumDetails = await page.evaluate(() => ({
+    fields: [...document.querySelectorAll("#document-details input, #document-details textarea")]
+      .map((field) => /** @type {HTMLInputElement | HTMLTextAreaElement} */ (field).value),
+  }));
+  expect(minimumDetails.fields.every((value) => value === ""), "the minimum fixture's metadata is not empty");
+  evidence.push(`minimum: 1 empty Cell labelled "Untitled cell", preview "${minimum.preview.message}", empty Source, empty metadata`);
 
   await loadFixture(page, "typical");
   const typical = await workspaceState(page);
+  const typicalDetails = await page.evaluate(() => {
+    const details = /** @type {HTMLDetailsElement | null} */ (document.getElementById("document-details"));
+    const summary = document.querySelector("#document-details summary");
+    return {
+      open: details?.open === true,
+      height: Math.round(details?.getBoundingClientRect().height ?? 0),
+      summaryHeight: Math.round(summary?.getBoundingClientRect().height ?? 0),
+    };
+  });
+  // Meaningful metadata collapses the section, and the collapsed row is one line
+  // that still carries the 32px desktop target size, not a form in the canvas.
+  expect(!typicalDetails.open, `meaningful metadata left Document details expanded (${typicalDetails.height}px)`);
+  expect(
+    typicalDetails.summaryHeight >= 32 && typicalDetails.summaryHeight <= 64,
+    `the collapsed Document details row measures ${typicalDetails.summaryHeight}px; it must stay a single row of at least the 32px desktop target`,
+  );
+  // An author who opens the section keeps it open while editing metadata: only
+  // arriving at an empty document, or a metadata diagnostic, changes it for them.
+  const staysOpen = await page.evaluate(async () => {
+    const details = /** @type {HTMLDetailsElement | null} */ (document.getElementById("document-details"));
+    const summary = /** @type {HTMLElement | null} */ (document.querySelector("#document-details summary"));
+    summary?.click();
+    const opened = details?.open === true;
+    const field = /** @type {HTMLInputElement | null} */ (document.getElementById("document-title"));
+    if (field !== null) {
+      field.focus();
+      field.value = "Document basics edited";
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return { opened, stillOpen: details?.open === true, title: field?.value ?? "" };
+  });
+  expect(staysOpen.opened && staysOpen.stillOpen, "editing metadata closed Document details under the author");
   const typicalDetail = await page.evaluate(() => {
     const kinds = [...document.querySelectorAll("#cell-list button small")].map((node) => node.textContent ?? "");
     const labels = [...document.querySelectorAll("#notebook-cells .cell")].map((cell, index) => ({
@@ -162,7 +200,10 @@ async function fixtures(ctx) {
   });
   expect(roundTrip.preserved === "Explain the table in plain language.", `Pending Description is ${JSON.stringify(roundTrip.preserved)}`);
   expect(roundTrip.hasSource && roundTrip.unchanged, "switching editor mode changed the Source");
-  evidence.push(`typical: ${typicalDetail.map((/** @type {any} */ cell) => cell.label).join(" · ")}; kinds ${kinds}; boundary moves disabled; Pending Description preserved across the mode switch`);
+  evidence.push(
+    `typical: ${typicalDetail.map((/** @type {any} */ cell) => cell.label).join(" · ")}; kinds ${kinds}; boundary moves disabled; Pending Description preserved across the mode switch; ` +
+      `Document details collapsed to a ${typicalDetails.summaryHeight}px summary row that stays open while its fields are edited`,
+  );
 
   await loadFixture(page, "stress");
   const stress = await workspaceState(page);
@@ -283,6 +324,7 @@ async function captures(ctx) {
     const page = await ctx.open({ width: capture.width, height: capture.height });
     await loadFixture(page, "typical");
     await refreshPreview(page);
+    await resetScroll(page);
     const size = await overflow(page);
     expect(
       size.scrollWidth <= size.clientWidth,
@@ -296,6 +338,7 @@ async function captures(ctx) {
   // The tablet drawer, open over the workspace.
   const drawer = await ctx.open({ width: 1024, height: 768 });
   await loadFixture(drawer, "typical");
+  await resetScroll(drawer);
   await drawer.evaluate(() => /** @type {HTMLElement | null} */ (document.getElementById("open-document-nav"))?.click());
   await settle(drawer);
   const drawerState = await drawer.evaluate(() => ({
@@ -312,6 +355,7 @@ async function captures(ctx) {
   const zoom = await ctx.open({ width: 720, height: 900 });
   await loadFixture(zoom, "typical");
   await refreshPreview(zoom);
+  await resetScroll(zoom);
   const zoomSize = await overflow(zoom);
   expect(zoomSize.scrollWidth <= zoomSize.clientWidth, `200 % zoom scrolls horizontally (${zoomSize.scrollWidth} > ${zoomSize.clientWidth})`);
   const zoomPath = await ctx.capture(zoom, "workspace-zoom200-720x900");
@@ -519,7 +563,7 @@ async function focus(ctx) {
     document.body.focus();
     document.body.removeAttribute("tabindex");
   });
-  /** @type {{ id: string, outline: number, visible: boolean, clipped: boolean, overshoot: number, size: string }[]} */
+  /** @type {{ id: string, outline: number, visible: boolean, obscured: boolean, fullyVisible: boolean, geometry: string }[]} */
   const stops = [];
   let lostAt = null;
   let wrappedAt = null;
@@ -538,26 +582,29 @@ async function focus(ctx) {
       const offset = Number.parseFloat(style.outlineOffset) || 0;
       const width = Number.parseFloat(style.outlineWidth) || 0;
       const cell = active.closest(".cell")?.getAttribute("data-cell-id")?.slice(0, 6) ?? "";
+      const scroller = document.getElementById("main-workspace");
       const name = active.id
         || active.getAttribute("data-action")
         || active.getAttribute("aria-label")
         || (active.textContent ?? "").trim().slice(0, 18)
         || active.tagName.toLowerCase();
+      // A focus indication must be visible: the focused box needs a substantial
+      // visible portion (WCAG 2.4.11, 2.4.13). A control the browser leaves
+      // half below the fold still shows its ring; one an overlay covers does not.
+      const visibleWidth = Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0);
+      const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+      const obscured = visibleWidth <= 0 || visibleHeight <= 0 || Math.min(visibleWidth, visibleHeight) < 24;
+      const fullyVisible = rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
       return {
         lost: false,
         id: `${active.tagName.toLowerCase()}:${name}${cell === "" ? "" : `@${cell}`}`,
         outline: width,
         visible: width >= 2 && style.outlineStyle !== "none" ? true : style.boxShadow !== "none",
-        clipped:
-          rect.left + offset < 0 ||
-          rect.top + offset < 0 ||
-          rect.right - offset > window.innerWidth ||
-          rect.bottom - offset > window.innerHeight,
-        overshoot: Math.max(
-          Math.round(Math.max(0, -(rect.left + offset), -(rect.top + offset))),
-          Math.round(Math.max(0, rect.right - offset - window.innerWidth, rect.bottom - offset - window.innerHeight)),
-        ),
-        size: `${Math.round(rect.width)}×${Math.round(rect.height)}`,
+        obscured,
+        fullyVisible,
+        geometry: obscured
+          ? `rect ${Math.round(rect.top)}–${Math.round(rect.bottom)} of ${window.innerHeight}; visible ${Math.round(visibleWidth)}×${Math.round(visibleHeight)}; scrollTop ${Math.round(scroller?.scrollTop ?? 0)}`
+          : "",
       };
     }, index);
     if (stop.lost === true) {
@@ -568,10 +615,11 @@ async function focus(ctx) {
       wrappedAt = index;
       break;
     }
-    stops.push(/** @type {{ id: string, outline: number, visible: boolean, clipped: boolean, overshoot: number, size: string }} */ (stop));
+    stops.push(/** @type {{ id: string, outline: number, visible: boolean, obscured: boolean, fullyVisible: boolean, geometry: string }} */ (stop));
   }
   const invisible = stops.filter((stop) => !stop.visible);
-  const clipped = stops.filter((stop) => stop.clipped);
+  const obscured = stops.filter((stop) => stop.obscured);
+  const scrolled = stops.filter((stop) => !stop.fullyVisible);
   const distinct = new Set(stops.map((stop) => stop.id)).size;
   // Leaving the document at the end is how a browser works; what matters is that
   // the page holds focus in order and hands it back, never trapping or dropping it.
@@ -585,14 +633,15 @@ async function focus(ctx) {
   const evidence = [
     `tab walk: ${stops.length} stops (${distinct} distinct controls), every one a real control, then focus left the document at stop ${lostAt ?? "never"}` +
       `${wrappedAt === null ? "" : ` after cycling back at ${wrappedAt}`}`,
-    `focus indicator: ${stops.length - invisible.length}/${stops.length} stops matched the visible-focus rule; ${clipped.length} clipped`,
-    `first stops: ${stops.slice(0, 6).map((stop) => stop.id).join(" → ")}; re-entry after leaving: ${reentry ?? "none"}`,
+    `focus indicator: ${stops.length - invisible.length}/${stops.length} stops matched the visible-focus rule; ${obscured.length} with no substantial visible portion`,
+    `${scrolled.length} of them were below the fold and needed the browser to scroll them into view`,
+    `first stops: ${stops.slice(0, 6).map((stop) => stop.id).join(" → ")}; re-entry after leaving: ${reentry ?? "none"}`, 
   ];
   expect(stops.length >= 25, `the tab walk only reached ${stops.length} stops`);
   expect(invisible.length === 0, `${invisible.length} stop(s) without a visible indicator: ${invisible.slice(0, 5).map((stop) => stop.id).join(", ")}`);
   expect(
-    clipped.length === 0,
-    `${clipped.length} focus rect(s) clipped by the viewport: ${clipped.slice(0, 5).map((stop) => `${stop.id} (${stop.size}, ${stop.overshoot}px outside)`).join(", ")}`,
+    obscured.length === 0,
+    `${obscured.length} focused control(s) without a substantial visible portion: ${obscured.slice(0, 5).map((stop) => `${stop.id} (${stop.geometry})`).join(" | ")}`,
   );
   expect(reentry !== null, "Tab never brought focus back into the workspace");
   await page.close();

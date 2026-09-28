@@ -127,7 +127,7 @@ Text meets 4.5:1 contrast at normal sizes. Large text, meaningful graphics, and 
 
 **Purpose, anatomy, and inputs.** A collapsible named section below preview owns title, authors, date, and additional metadata. It receives Current document front matter and authoritative metadata diagnostics.
 
-**States, actions, disabled rules, and failures.** It is expanded for empty or invalid metadata and collapses by default after meaningful metadata exists. The Current document row expands it. Metadata diagnostics auto-expand it. Invalid fields expose local programmatic invalid state, concise described feedback, and the matching diagnostics entry; they do not block unrelated navigation.
+**States, actions, disabled rules, and failures.** Collapsed, it is a single summary row (measured at 48 px) that already carries title, first author, and date, so the section costs one row of the canvas rather than a form. It starts expanded only for a document that carries no metadata at all, and collapses by default once meaningful metadata exists; the author's own open or closed choice is theirs while editing, and only a metadata diagnostic forces it open. The Current document row expands it. Invalid fields expose local programmatic invalid state, concise described feedback, and the matching diagnostics entry; they do not block unrelated navigation.
 
 **Focus, keyboard, announcements, responsive.** A standard disclosure controls the section. Exact diagnostic activation focuses the metadata field or Source range. The section remains above Cells at every width. Related IDs: DOC-01, A11Y-01, A11Y-02.
 
@@ -244,7 +244,7 @@ The traceability table covers every closed child listed by wayfinder #14. Later 
 
 ## Observed evidence
 
-Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T11-09-33-619Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
+Recorded 2026-09-28 by `npm run workspace` against the real service with the specification's fixture worker, driven through the deployment's pinned `chrome-headless-shell` 152.0.7977.75. The record is `acceptance/workspace/2026-09-28T12-01-22-547Z-pass.{json,txt}`; the captures are the files listed above. Every row below is what was observed, not what was planned, and each cites the check that owns it.
 
 | ID | Observation |
 | --- | --- |
@@ -263,14 +263,14 @@ Recorded 2026-09-28 by `npm run workspace` against the real service with the spe
 | PREVIEW-03 | A refresh over an invalid document reported `Preview blocked by Source errors` and kept the previous Artifact visible with the `View diagnostics` recovery. |
 | PREVIEW-04 | Separator keyboard sizing moved from 252 px through `Home` 180 px and `End` 540 px to 524 px, all from one clamp, with the divider focused by Tab. |
 | PREVIEW-05 | The expanded dialog shared the Artifact with the inline frame and contained focus; Escape restored `#refresh-preview`. |
-| DOC-01 | A metadata diagnostic expanded Document details, marked the Date field `aria-invalid` with described feedback, and activating its entry focused that field. |
+| DOC-01 | Meaningful metadata left Document details collapsed to a 48 px summary row that stays open while its fields are edited; a metadata diagnostic expanded it, marked the Date field `aria-invalid` with described feedback, and activating its entry focused that field. The empty-document expansion rule is the reducer suite's `hasMetadata` predicate. |
 | DOC-02 | A warning-only analysis left the dock closed while updating the summary; the trigger opened the dock with heading focus; Tab left the non-modal dock; Escape closed it and restored the trigger. In the stress fixture, 40 diagnostics rendered grouped 16 error · 16 warning · 8 information, and activating the first error focused Cell 1's Source at offset 0 with the dock open and unobscured. |
 | FORMAT-01 | Format opened a compiler-labelled `Formatted Source` review with focus inside and the Source untouched; Escape applied nothing and restored the invoking control; Apply replaced the Source and focused it. No AI labelling exists in the review. |
 | EXPORT-01 | Export offers the four capability-advertised formats; the chosen item shows progress and completion, and its compile request carried the current Source (330 characters) and the current Theme (omitted, as the protocol does for the default) in the chosen format — with a preview Artifact loaded and unrelated to the request. |
 | EXPORT-02 | With the error fixture the chosen item read `HTML — failed`, diagnostics were revealed, no bytes downloaded, and focus stayed on the Export trigger. |
 | SERVICE-01 | The rail health button carries its state in its accessible name (`Service details: healthy`), and activating it opens progressively disclosed compiler, protocol, authoring, and renderer-remedy details with focus inside and Escape restoring the trigger. |
 | A11Y-01 | axe-core reported 0 violations across the WCAG 2.0/2.1/2.2 A+AA tags (105 rules) at 1440x900, 768x1024, 320x800, and on the 30-Cell stress fixture. Measured independently: 115 visible text nodes with a lowest ratio of 4.56:1, the `--accent` focus indicator at 4.06:1 on the workspace surface and 4.56:1 on the canvas (1.4.11), interaction boxes all ≥ 32 px (desktop) / 44 px (tablet) / 24 px (reflow), `prefers-reduced-motion: reduce` collapsing the drawer transition to `0s` with `scroll-behavior: auto`, and forced colors giving the rail Canvas/CanvasText with 1 px system borders. Menus opened on their first enabled item, moved with arrows, Home, End — wrapping at both ends — and Escape restored each exact trigger with `aria-expanded="false"`. |
-| A11Y-02 | One pass of Tab reached 49 distinct controls in order with a visible, unclipped focus indication at every stop, left the document only at the end, and re-entered at the first skip link. Each essential workflow completed keyboard-only — activation by Tab-reached Enter or Space, or by focus followed by a keyboard event where the tab order does not reach the control — with focus retained by its initiating surface. |
+| A11Y-02 | One pass of Tab reached 49 distinct controls in order, every one with a visible focus indicator and a substantial visible portion (two sat below the fold and the browser scrolled them into view), left the document only at the end, and re-entered at the first skip link. Each essential workflow completed keyboard-only — activation by Tab-reached Enter or Space, or by focus followed by a keyboard event where the tab order does not reach the control — with focus retained by its initiating surface. |
 
 ### Evidence gaps
 

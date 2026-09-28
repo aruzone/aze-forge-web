@@ -75,6 +75,21 @@ export async function loadFixture(page, id) {
   await settle(page);
 }
 
+/**
+ * Bring the workspace back to its top: building a fixture focuses each editor,
+ * which scrolls, and a capture has to show the layout the specification
+ * annotates rather than wherever the last focus landed.
+ * @param {import("puppeteer-core").Page} page
+ */
+export async function resetScroll(page) {
+  await page.evaluate(() => {
+    const workspace = document.getElementById("main-workspace");
+    if (workspace !== null) workspace.scrollTop = 0;
+    window.scrollTo(0, 0);
+  });
+  await settle(page);
+}
+
 /** Wait for the frame the app's rAF-deferred updates land in. */
 /** @param {import("puppeteer-core").Page} page */
 export async function settle(page) {

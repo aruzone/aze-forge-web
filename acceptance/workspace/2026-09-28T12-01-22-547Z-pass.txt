@@ -1,11 +1,11 @@
-service     http://127.0.0.1:50593 (in-process, fixture worker, stubbed authoring provider)
+service     http://127.0.0.1:51475 (in-process, fixture worker, stubbed authoring provider)
 readiness   ok (compiler facts, pinned browser, scratch storage, trivial compile)
 
 AzeForge Web authoring-workspace acceptance audit
-  started     2026-09-28T11:09:33.619Z
-  target      http://127.0.0.1:50593 (started by this audit)
+  started     2026-09-28T12:01:22.547Z
+  target      http://127.0.0.1:51475 (started by this audit)
   browser     /Users/kumaresan/.cache/puppeteer/chrome-headless-shell/mac_arm-152.0.7977.75/chrome-headless-shell-mac-arm64/chrome-headless-shell
-  token       sha256:fb0b982d59bb… (hashed; never printed)
+  token       sha256:a85f97b0468b… (hashed; never printed)
   fixtures    minimum, typical, stress
   checks      landmarks, fixtures, captures, scans, contrast, targets, focus, motion, forced-colors, frames, announcements, workflows
 
@@ -19,8 +19,8 @@ AzeForge Web authoring-workspace acceptance audit
     · positive tabindex elements: 0
 
 [2/12] fixtures · Minimum, typical, and 30-Cell stress fixtures — pass
-    · minimum: 1 empty Cell labelled "Untitled cell", preview "Preview not generated", empty Source
-    · typical: Thermal balance · equation · callout · | Symbol | Value |; kinds Markdown | Directive | Markdown + directive | Markdown; boundary moves disabled; Pending Description preserved across the mode switch
+    · minimum: 1 empty Cell labelled "Untitled cell", preview "Preview not generated", empty Source, empty metadata
+    · typical: Thermal balance · equation · callout · | Symbol | Value |; kinds Markdown | Directive | Markdown + directive | Markdown; boundary moves disabled; Pending Description preserved across the mode switch; Document details collapsed to a 48px summary row that stays open while its fields are edited
     · stress: 30 Cells and 30 outline entries; Cell 3 long label and the 4-author title render without overflow; the second "Duplicate label" entry focused its own Cell; Cell 25 is "Untitled cell"
     · stress analysis: 40 diagnostics grouped eeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwiiiiiiii (16 error · 16 warning), heading "40 diagnostics"; the first error focused Cell 1's Source at offset 0-0 and the first warning Cell 17, each with the dock open and unobscured
 
@@ -53,7 +53,8 @@ AzeForge Web authoring-workspace acceptance audit
 
 [7/12] focus · Keyboard reachability, visible and unclipped focus — pass
     · tab walk: 49 stops (49 distinct controls), every one a real control, then focus left the document at stop 49
-    · focus indicator: 49/49 stops matched the visible-focus rule; 0 clipped
+    · focus indicator: 49/49 stops matched the visible-focus rule; 0 with no substantial visible portion
+    · 2 of them were below the fold and needed the browser to scroll them into view
     · first stops: a:Skip to editor → a:Skip to Document p → a:Skip to Current do → button:▤Author workspace → button:service-health → button:signout; re-entry after leaving: a:Skip to editor
 
 [8/12] motion · Reduced-motion behaviour — pass
