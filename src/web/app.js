@@ -224,10 +224,12 @@ function renderOutline() {
   el.searchResult.textContent = query
     ? matching.length ? `${matching.length} matching ${matching.length === 1 ? "Cell" : "Cells"}` : "No matching Cells"
     : "";
+  // One roving tab stop: the active Cell when it is listed, otherwise the first match.
+  const tabbable = matching.some((cell) => cell.id === model.activeCellId) ? model.activeCellId : matching[0]?.id ?? null;
   el.cellList.innerHTML = matching.map((cell) => {
     const index = model.cells.indexOf(cell);
     const descriptionMatch = query !== "" && cell.pendingDescription.toLocaleLowerCase().includes(query);
-    return `<button type="button" data-cell-id="${cell.id}" tabindex="${cell.id === model.activeCellId ? "0" : "-1"}" aria-current="${cell.id === model.activeCellId}"><b>${String(index + 1).padStart(2, "0")}</b><span>${esc(label(cell))}<small>${esc(kind(cell))}${descriptionMatch ? " · Pending Description match" : ""}</small></span></button>`;
+    return `<button type="button" data-cell-id="${cell.id}" tabindex="${cell.id === tabbable ? "0" : "-1"}" aria-current="${cell.id === model.activeCellId}"><b>${String(index + 1).padStart(2, "0")}</b><span>${esc(label(cell))}<small>${esc(kind(cell))}${descriptionMatch ? " · Pending Description match" : ""}</small></span></button>`;
   }).join("");
 }
 
@@ -694,6 +696,12 @@ function bind() {
   }
 
   el.search.addEventListener("input", renderOutline);
+  el.search.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || el.search.value === "") return;
+    el.search.value = "";
+    renderOutline();
+    announce("Search cleared");
+  });
   el.cellList.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-cell-id]") : null;
     if (button instanceof HTMLButtonElement && button.dataset.cellId) focusCell(button.dataset.cellId);
@@ -709,7 +717,8 @@ function bind() {
     if (event.key === "End") next = buttons.length - 1;
     if (event.key === "Enter") { buttons[current]?.click(); return; }
     event.preventDefault();
-    buttons[next]?.focus();
+    for (const button of buttons) button.tabIndex = -1;
+    if (buttons[next]) { buttons[next].tabIndex = 0; buttons[next].focus(); }
   });
 
   el.cells.addEventListener("input", (event) => {
