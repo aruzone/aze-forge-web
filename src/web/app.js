@@ -42,6 +42,10 @@ const el = {
   proposalMessage: byId("proposal-message"),
   undoBar: byId("undo-bar"), drawerScrim: /** @type {HTMLButtonElement} */ (byId("drawer-scrim")),
   serviceDialog: /** @type {HTMLDialogElement} */ (byId("service-dialog")), serviceMeta: byId("service-meta"),
+  feedback: {
+    title: byId("feedback-title"), author: byId("feedback-author"),
+    date: byId("feedback-date"), metadata: byId("feedback-metadata"),
+  },
 };
 
 /** @typedef {import("./workspace-state.js").WorkspaceState} WorkspaceState */
@@ -341,10 +345,58 @@ function renderPreview() {
   if (preview.height !== null) el.previewSection.style.setProperty("--preview-height", `${preview.height}px`);
 }
 
-function renderDiagnostics() {
-  const severityRank = /** @param {string} severity */ (severity) =>
+function renderOperations() {
+  const running = /** @param {"analyze" | "format" | "export"} kind */ (kind) => model.operations[kind]?.status === "running";
+  const exportToggle = /** @type {HTMLButtonElement} */ (el.exportToggle);
+  exportToggle.disabled = running("export");
+  exportToggle.textContent = model.operations.export?.status === "running"
+    ? "Exporting…"
+    : model.operations.export?.status === "failed" ? "Export failed" : "Export";
+  /** @type {HTMLButtonElement} */ (byId("format")).disabled = running("format");
+  /** @type {HTMLButtonElement} */ (byId("analyze")).disabled = running("analyze");
+}
+
+/** Severity, then Source order. */
+function orderedDiagnostics() {
+  const source = assembledSource();
+  const rank = /** @param {string} severity */ (severity) =>
     severity === "error" ? 0 : severity === "warning" ? 1 : severity === "info" ? 2 : 3;
-  const diagnostics = [...model.diagnostics].sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
+  const offset = /** @param {import("./workspace-state.js").Diagnostic} diagnostic */ (diagnostic) =>
+    diagnostic.location?.range?.start ? indexForPosition(source, diagnostic.location.range.start) : Number.MAX_SAFE_INTEGER;
+  return [...model.diagnostics].sort((a, b) => rank(a.severity) - rank(b.severity) || offset(a) - offset(b));
+}
+
+/** Metadata diagnostics expand Document details and surface field-local feedback. */
+function renderMetadataFeedback() {
+  const source = assembledSource();
+  const bodyStart = source.indexOf("\n---", 3);
+  const frontMatterEnd = bodyStart < 0 ? 0 : bodyStart + 4;
+  /** @type {Record<string, HTMLElement>} */
+  const fields = el.feedback;
+  for (const node of Object.values(fields)) { node.hidden = true; node.textContent = ""; }
+  /** @type {string[]} */
+  const populated = [];
+  for (const diagnostic of model.diagnostics) {
+    const start = diagnostic.location?.range?.start;
+    if (!start) continue;
+    const offset = indexForPosition(source, start);
+    if (offset >= frontMatterEnd) continue;
+    const message = diagnostic.message;
+    const field = /title/i.test(message) ? "title"
+      : /author/i.test(message) ? "author"
+        : /date/i.test(message) ? "date"
+          : "metadata";
+    const node = fields[field];
+    if (node.hidden) node.textContent = `${diagnostic.severity}: ${message}`;
+    node.hidden = false;
+    populated.push(field);
+  }
+  if (populated.length > 0) el.details.open = true;
+  return populated;
+}
+
+function renderDiagnostics() {
+  const diagnostics = orderedDiagnostics();
   const errors = diagnostics.filter((d) => d.severity === "error").length;
   const warnings = diagnostics.filter((d) => d.severity === "warning").length;
   const analyze = model.operations.analyze;
@@ -357,6 +409,8 @@ function renderDiagnostics() {
   el.diagnosticsList.innerHTML = diagnostics.length
     ? diagnostics.map((diagnostic) => `<article class="diagnostic" data-severity="${esc(diagnostic.severity)}"><strong>${esc(diagnostic.severity)} · ${esc(diagnostic.code ?? "")}</strong><p>${esc(diagnostic.message)}</p>${diagnostic.location?.range ? `<button type="button" data-diagnostic="${model.diagnostics.indexOf(diagnostic)}">Line ${diagnostic.location.range.start.line}, column ${diagnostic.location.range.start.column}</button>` : ""}</article>`).join("")
     : "<p>No diagnostics.</p>";
+  renderMetadataFeedback();
+  renderOperations();
 }
 
 // ---------------------------------------------------------------------------
@@ -557,6 +611,7 @@ async function analyze() {
 async function exportFormat(format) {
   const requestId = crypto.randomUUID();
   dispatch({ type: "export.start", requestId, format });
+  renderOperations();
   announce(`Exporting ${format.toUpperCase()}`);
   const revision = model.revision;
   const theme = model.theme;
@@ -584,10 +639,12 @@ async function exportFormat(format) {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     dispatch({ type: "export.resolve", requestId });
+    renderOperations();
     announce(`${format.toUpperCase()} export complete`);
   } catch (error) {
     if (model.operations.export?.requestId !== requestId) return;
     dispatch({ type: "export.fail", requestId, message: error instanceof Error ? error.message : "Export failed" });
+    renderOperations();
     announce(model.operations.export?.message ?? "Export failed");
   }
 }
@@ -595,6 +652,7 @@ async function exportFormat(format) {
 async function formatSource() {
   const requestId = crypto.randomUUID();
   dispatch({ type: "format.start", requestId });
+  renderOperations();
   announce("Formatting Source");
   try {
     const accepted = await submitJob({
@@ -611,6 +669,7 @@ async function formatSource() {
       return;
     }
     dispatch({ type: "format.resolve", requestId, source: job.result.proposal.source });
+    renderOperations();
     const proposal = model.formatProposal;
     if (proposal === null) return;
     el.formattedSource.value = proposal.source;
@@ -925,11 +984,20 @@ function bind() {
   el.diagnosticsList.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-diagnostic]") : null;
     if (!(button instanceof HTMLButtonElement)) return;
-    const range = model.diagnostics[Number(button.dataset.diagnostic)]?.location?.range;
+    const diagnostic = model.diagnostics[Number(button.dataset.diagnostic)];
+    const range = diagnostic?.location?.range;
     if (!range) return;
     const source = assembledSource();
     const startIndex = indexForPosition(source, range.start);
     const endIndex = indexForPosition(source, range.end);
+    const bodyStart = source.indexOf("\n---", 3);
+    if (bodyStart >= 0 && startIndex < bodyStart + 4) {
+      const message = diagnostic.message;
+      const field = /title/i.test(message) ? el.title : /author/i.test(message) ? el.author : /date/i.test(message) ? el.date : el.metadata;
+      el.details.open = true;
+      field.focus();
+      return;
+    }
     let offset = 0;
     for (const cell of model.cells) {
       const start = source.indexOf(cell.source, offset);
@@ -971,7 +1039,7 @@ function bind() {
   byId("service-health").addEventListener("click", () => el.serviceDialog.showModal());
   byId("close-service").addEventListener("click", () => el.serviceDialog.close());
   byId("close-proposal").addEventListener("click", () => el.proposalDialog.close());
-  byId("discard-format").addEventListener("click", () => { dispatch({ type: "format.discard" }); el.proposalDialog.close(); });
+  byId("discard-format").addEventListener("click", () => { dispatch({ type: "format.discard" }); renderOperations(); el.proposalDialog.close(); });
   byId("apply-format").addEventListener("click", applyFormatProposal);
 
   let startY = 0;

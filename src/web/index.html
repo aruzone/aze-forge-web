@@ -55,10 +55,10 @@
       <details id="document-details" class="document-details">
         <summary><span><small>Document details</small><strong id="details-summary">Untitled document</strong></span></summary>
         <div class="details-fields">
-          <label>Title<input id="document-title"></label>
-          <label>Authors, one per line<textarea id="document-author" rows="2"></textarea></label>
-          <label>Date<input id="document-date"></label>
-          <label class="metadata">Additional metadata<textarea id="document-metadata" rows="3" spellcheck="false"></textarea></label>
+          <label>Title<input id="document-title"><small class="field-feedback" id="feedback-title" hidden></small></label>
+          <label>Authors, one per line<textarea id="document-author" rows="2"></textarea><small class="field-feedback" id="feedback-author" hidden></small></label>
+          <label>Date<input id="document-date"><small class="field-feedback" id="feedback-date" hidden></small></label>
+          <label class="metadata">Additional metadata<textarea id="document-metadata" rows="3" spellcheck="false"></textarea><small class="field-feedback" id="feedback-metadata" hidden></small></label>
         </div>
       </details>
       <header class="canvas-heading"><div><p>AzeMark Source</p><h2 id="cells-title">Document Cells</h2></div><span id="source-meta"></span></header>
