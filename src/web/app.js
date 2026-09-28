@@ -451,11 +451,11 @@ function focusEditor(id) {
 function focusCell(id) {
   dispatch({ type: "cell.activate", cellId: id });
   renderOutline();
+  if (matchMedia("(max-width:1199px)").matches && el.workspace.dataset.navOpen === "true") closeDrawer(false);
   focusEditor(id);
-  if (matchMedia("(max-width:1199px)").matches) closeDrawer();
 }
 
-function closeDrawer() {
+function closeDrawerRestoreOnly() {
   el.workspace.dataset.navOpen = "false";
   el.drawerScrim.hidden = true;
   const nav = byId("document-navigation");
@@ -465,7 +465,11 @@ function closeDrawer() {
   main.inert = false;
   const rail = document.querySelector(".app-rail");
   if (rail instanceof HTMLElement) rail.inert = false;
-  byId("open-document-nav").focus();
+}
+/** @param {boolean} [restoreFocus] */
+function closeDrawer(restoreFocus = true) {
+  closeDrawerRestoreOnly();
+  if (restoreFocus) byId("open-document-nav").focus();
 }
 function openDrawer() {
   el.workspace.dataset.navOpen = "true";
@@ -476,9 +480,8 @@ function openDrawer() {
   byId("main-workspace").inert = true;
   const rail = document.querySelector(".app-rail");
   if (rail instanceof HTMLElement) rail.inert = true;
-  const target = el.search.value ? el.search : nav;
-  target.setAttribute("tabindex", "-1");
-  target.focus();
+  if (el.search.value) el.search.focus();
+  else byId("document-nav-title").focus();
 }
 
 function openDiagnostics() {
@@ -1071,8 +1074,8 @@ function bind() {
   });
 
   byId("open-document-nav").addEventListener("click", openDrawer);
-  byId("close-document-nav").addEventListener("click", closeDrawer);
-  el.drawerScrim.addEventListener("click", closeDrawer);
+  byId("close-document-nav").addEventListener("click", () => closeDrawer());
+  el.drawerScrim.addEventListener("click", () => closeDrawer());
   document.addEventListener("keydown", (event) => {
     if (el.workspace.dataset.navOpen !== "true") return;
     if (event.key === "Escape") { closeDrawer(); return; }

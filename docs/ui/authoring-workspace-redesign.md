@@ -52,9 +52,9 @@ Stack the utility actions, preview controls, Document details, and Cell controls
 | --- | --- |
 | `color-nav`, `color-nav-raised` | `#111827`, `#202b3c`, application rail and raised dark surfaces |
 | `color-canvas`, `color-surface`, `color-border` | `#eef1f5`, `#ffffff`, `#d7dee8`, editing background, panels, rules |
-| `color-text`, `color-muted` | `#162033`, `#68758a`, primary and secondary text |
+| `color-text`, `color-muted` | `#162033`, `#5f6b80` (hardened from `#68758a` for WCAG AA normal-text contrast; see #31), primary and secondary text |
 | `color-accent`, `color-accent-surface` | `#2563eb`, `#eaf1ff`, selected state, links, focus base |
-| `color-success`, `color-stale`, `color-error` | `#16825b`, `#c76b13`, `#b42318`, semantic states with text labels independent of color |
+| `color-success`, `color-stale`, `color-error` | `#16825b`, `#9a530f` (hardened from `#c76b13` for WCAG AA normal-text contrast; see #31), `#b42318`, semantic states with text labels independent of color |
 | `font-ui`, `font-source` | system sans-serif `14px/1.4`; system monospace `12px/1.55` desktop and `11px/1.55` tablet |
 | `space-1` through `space-6` | 4, 8, 12, 16, 24, 32 px |
 | `radius-control`, `radius-panel` | 6 px, 8 px |
