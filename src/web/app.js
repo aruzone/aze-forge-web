@@ -451,11 +451,33 @@ function menuKeys(event, menu, trigger) {
 // ---------------------------------------------------------------------------
 // Operations
 
-/** @param {HTMLIFrameElement} frame @param {string} url */
+/**
+ * A sandboxed blob navigation can complete without dispatching `load`, so the
+ * frame's document URL and readyState are the source of truth, with `error` and
+ * a deadline as the failure paths.
+ * @param {HTMLIFrameElement} frame @param {string} url
+ */
 function loadFrame(frame, url) {
   return new Promise((resolve, reject) => {
-    frame.addEventListener("load", () => resolve(undefined), { once: true });
-    frame.addEventListener("error", () => reject(new Error("Preview Artifact could not be loaded.")), { once: true });
+    let settled = false;
+    const finish = (/** @type {(value?: Error) => void} */ callback, /** @type {Error | undefined} */ value) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(timer);
+      clearTimeout(deadline);
+      frame.removeEventListener("load", onLoad);
+      frame.removeEventListener("error", onError);
+      callback(value);
+    };
+    const onLoad = () => finish(resolve, undefined);
+    const onError = () => finish(reject, new Error("Preview Artifact could not be loaded."));
+    const timer = setInterval(() => {
+      const document_ = frame.contentDocument;
+      if (document_ !== null && document_.URL === url && document_.readyState === "complete") finish(resolve, undefined);
+    }, 30);
+    const deadline = setTimeout(() => finish(reject, new Error("Preview Artifact did not load.")), 10_000);
+    frame.addEventListener("load", onLoad);
+    frame.addEventListener("error", onError);
     frame.src = url;
   });
 }
@@ -485,7 +507,9 @@ async function refreshPreview() {
     }
     const bytes = await artifact(job.jobId);
     if (model.preview.request?.requestId !== requestId) return;
-    const url = URL.createObjectURL(new Blob([bytes], { type: job.result.artifact.mimeType }));
+    // The Document preview is always the compiler's HTML rendering, so the blob
+    // is typed text/html for the iframe regardless of what the job reports.
+    const url = URL.createObjectURL(new Blob([bytes], { type: "text/html" }));
     try {
       await loadFrame(el.preview, url);
     } catch (error) {
