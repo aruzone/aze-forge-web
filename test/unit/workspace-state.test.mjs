@@ -179,6 +179,20 @@ test("replacing the Current document is atomic and refuses to change Cell bounda
   assert.deepEqual(state.cells.map(({ source }) => source), ["# One", "::chart\nformatted\n::"]);
   assert.deepEqual(state.cells.map(({ lastAppliedSource }) => lastAppliedSource), ["# One", "::chart\nformatted\n::"]);
 });
+test("resetting the Current document replaces every Cell with one fresh Cell", () => {
+  let state = createWorkspaceState([sourceCell("cell-a"), sourceCell("cell-b")]);
+  state = transition(state, { type: "source.edit", cellId: "cell-a", source: "# Edited" });
+  const document = { version: "2", title: "Fresh", authors: [], date: "", metadata: "" };
+  const fresh = { id: "cell-fresh", source: "# Untitled\n", lastAppliedSource: "# Untitled\n", pendingDescription: "" };
+  const wrong = transition(state, { type: "document.reset", document, cells: [{ ...fresh, id: "" }] });
+  assert.strictEqual(wrong, state);
+  state = transition(state, { type: "document.reset", document, cells: [fresh] });
+  assert.equal(state.document.title, "Fresh");
+  assert.deepEqual(state.cells.map(({ id }) => id), ["cell-fresh"]);
+  assert.equal(state.revision, 0);
+  assert.equal(state.preview.status, "empty");
+  assert.equal(state.activeCellId, "cell-fresh");
+});
 
 test("analysis and diagnostics results are rejected when stale and owned by request", () => {
   let state = createWorkspaceState([sourceCell()]);
@@ -270,6 +284,14 @@ test("Current document edits lock during generation and never advance the revisi
       type: "document.replace",
       document: { version: "2", title: "Formatted", authors: [], date: "", metadata: "" },
       sources: ["# Applied"],
+    }),
+    state,
+  );
+  assert.strictEqual(
+    transition(state, {
+      type: "document.reset",
+      document: { version: "2", title: "Fresh", authors: [], date: "", metadata: "" },
+      cells: [{ id: "cell-fresh", source: "# Untitled\n", lastAppliedSource: "# Untitled\n", pendingDescription: "" }],
     }),
     state,
   );

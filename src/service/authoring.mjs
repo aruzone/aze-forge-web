@@ -186,13 +186,16 @@ export function parseProviderOutcome(outputText) {
   }
 }
 
-/** @param {{ apiKey: string, model: string, catalogue: readonly string[], timeoutMs?: number }} config */
-export function createOpenAIAuthoringProvider(config) {
-  const timeoutMs = config.timeoutMs ?? 30_000;
-  const client = new OpenAI({ apiKey: config.apiKey, timeout: timeoutMs, maxRetries: 0 });
-  const instruction = [
+/**
+ * The developer instruction sent to the drafting model. Exported so tests can
+ * pin the per-family body syntax it promises: the model copies whatever shape
+ * is shown, so each family needs its exact record spelling here.
+ * @param {readonly string[]} catalogue
+ */
+export function authoringInstruction(catalogue) {
+  return [
     "Return only a typed AzeMark Block body, never a full document, prose explanation, Markdown, TeX delimiters, or code fences.",
-    `Supported families: ${config.catalogue.join(", ")}. blockType must be exactly one of equation, derivation, plot, chart, geometry, formula, reaction, or structure.`,
+    `Supported families: ${catalogue.join(", ")}. blockType must be exactly one of equation, derivation, plot, chart, geometry, formula, reaction, or structure.`,
     "The families split as mathematics (equation, derivation, plot, chart), geometry (geometry), and chemistry (formula, reaction, structure). A mathematical formula, identity, theorem, or equation is always equation, or derivation when it shows steps; formula, reaction, and structure are chemistry only and are wrong for any mathematics request.",
     "For source outcomes, title is a short document title, blockType is the exact native Block type, and text is only the content after `----`. A source outcome must set kind to source with non-empty text, title, and blockType, and null question, reason, and code; a clarification outcome must set only a non-empty question; a refusal outcome must set only a non-empty reason and code. Example source outcome: {\"kind\": \"source\", \"text\": \"F = m a\", \"title\": \"Newton's second law\", \"blockType\": \"equation\", \"question\": null, \"reason\": null, \"code\": null}.",
     "Use AzeMark's readable mathematics grammar, never LaTeX: an equation body is `x = frac(-b +- sqrt(b^2 - 4 a c), 2 a)`; a derivation body uses `- expression: x = 1` lines. Use symbolic operators `+`, `-`, `*`, `/`, `=`, `^`, and `sqrt`, never English operator words such as `minus`, `plus`, `times`, `divided by`, or `equals`.",
@@ -200,10 +203,17 @@ export function createOpenAIAuthoringProvider(config) {
     "When the Description names a standard law, theorem, or equation, emit its standard symbolic form in that grammar and nothing else: Coulomb's law is `F = k q_1 q_2 / r^2`, Newton's second law is `F = m a`, the Pythagorean theorem is `a^2 + b^2 = c^2`, kinetic energy is `E_k = frac(1, 2) m v^2`, Ohm's law is `V = I R`, the ideal gas law is `P V = n R T`, the wave equation is `partial^2 u / partial t^2 = c^2 partial^2 u / partial x^2`, radioactive decay is `N(t) = N_0 exp(-lambda t)`, the quadratic formula is `x = frac(-b +- sqrt(b^2 - 4 a c), 2 a)`, the normal density is `f(x) = frac(1, sigma sqrt(2 pi)) exp(frac(-(x - mu)^2, 2 sigma^2))`, and the time-independent Schrodinger equation is `H psi = E psi`.",
     "Before answering, check that a mathematics body contains none of `|`, `{`, `}`, or backslash, and that an equation body is a single expression.",
     "A formula body is exactly one chemical expression such as `H2O` or `Fe(CN)6·2H2O4-`, never a sentence. A reaction body is one species line such as `2 Mg(s) + O2(g) -> 2 MgO(s)`, with a space between each coefficient and its species: `2Mg(s)` without the space misparses the coefficient.",
-    "A geometry body is a YAML list of constructions, such as `- kind: point\\n  name: a\\n  x: 0\\n  y: 0`. A structure body is a YAML list of atoms and bonds.",
+    "A geometry body is a YAML list of constructions, each with a `kind:` key, such as `- kind: point\\n  name: a\\n  x: 0\\n  y: 0`. A structure body never uses a `kind:` key: its records are `- atom:`, `- bond:`, and `- label:`, such as `- atom: c1\\n  element: C\\n  at: [0, 0]\\n- bond:\\n  from: c1\\n  to: c2\\n  order: 1`. Every atom carries authored coordinates and exactly one of `element:` or `attach:`; every bond names its endpoints with `from:` and `to:`.",
     "A plot body is a YAML list whose entries have a `kind`, such as `- kind: function\\n  variable: x\\n  expression: x^2`; a chart body is a YAML list of labelled series.",
     "If the requested content cannot be expressed with one of those bodies, return clarification or refusal. Never substitute a formula Block for mathematics.",
   ].join(" ");
+}
+
+/** @param {{ apiKey: string, model: string, catalogue: readonly string[], timeoutMs?: number }} config */
+export function createOpenAIAuthoringProvider(config) {
+  const timeoutMs = config.timeoutMs ?? 30_000;
+  const client = new OpenAI({ apiKey: config.apiKey, timeout: timeoutMs, maxRetries: 0 });
+  const instruction = authoringInstruction(config.catalogue);
   return Object.freeze({
     /** @param {string} description @param {{ signal?: AbortSignal }} [options] */
     async generate(description, options = {}) {

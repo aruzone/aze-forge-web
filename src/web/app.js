@@ -1,5 +1,7 @@
 // @ts-check
 import { createWorkspaceState, hasMetadata, transition } from "./workspace-state.js";
+import { STARTER_CELLS, starterDocument } from "./starter.js";
+import { importSourceLimit, parseImportSource, splitCellSources } from "./document-import.js";
 import { indexForPosition } from "./coordinates.js";
 import { splitFrontMatter, stripFrontMatter } from "./front-matter.js";
 
@@ -38,6 +40,7 @@ const el = {
   diagnosticsSummary: byId("diagnostics-summary"), diagnosticsTitle: byId("diagnostics-title"),
   exportMenu: byId("export-menu"), exportToggle: byId("export-toggle"),
   moreMenu: byId("more-menu"), moreToggle: byId("more-toggle"),
+  importInput: /** @type {HTMLInputElement} */ (byId("import-file")),
   proposalDialog: /** @type {HTMLDialogElement} */ (byId("proposal-dialog")),
   formattedSource: /** @type {HTMLTextAreaElement} */ (byId("formatted-source")),
   proposalMessage: byId("proposal-message"),
@@ -126,9 +129,7 @@ async function artifact(id) {
  */
 function parseDocument(source) {
   const { document, body } = splitFrontMatter(source);
-  const trimmed = body.trim();
-  const sources = trimmed ? trimmed.split(/(?=^#{1,6}\s)/m).filter(Boolean) : [""];
-  return { document, sources };
+  return { document, sources: splitCellSources(body) };
 }
 
 /** Assemble the Current document Source from the model. */
@@ -213,6 +214,8 @@ function updateLockedControls() {
   }
   /** @type {HTMLButtonElement} */ (byId("add-cell")).disabled = locked;
   /** @type {HTMLButtonElement} */ (byId("add-cell-bottom")).disabled = locked;
+  /** @type {HTMLButtonElement} */ (byId("import-document")).disabled = locked;
+  /** @type {HTMLButtonElement} */ (byId("new-document")).disabled = locked;
 }
 
 function renderDocument() {
@@ -447,11 +450,17 @@ function renderExportItems() {
   for (const item of el.exportMenu.querySelectorAll("button[data-format]")) {
     if (!(item instanceof HTMLButtonElement)) continue;
     const format = item.dataset.format ?? "";
+    // The Source download needs no compiler round-trip, so it is always on.
+    if (format === EXPORT_SOURCE_FORMAT) {
+      item.disabled = running !== null;
+      item.textContent = EXPORT_LABELS[format] ?? format.toUpperCase();
+      continue;
+    }
     const formats = /** @type {any} */ (capabilities?.compiler?.formats);
     const supported = Array.isArray(formats) && formats.some((/** @type {any} */ entry) => (entry?.id ?? entry) === format);
     const active = running?.format === format || failed?.format === format;
     item.disabled = running !== null || (!supported && !active);
-    const label = format.toUpperCase();
+    const label = EXPORT_LABELS[format] ?? format.toUpperCase();
     item.textContent = running?.format === format
       ? `${label} — exporting…`
       : failed?.format === format
@@ -804,6 +813,23 @@ async function analyze({ reveal = false } = {}) {
     renderDiagnostics();
     announce(model.operations.analyze?.message ?? "Analysis failed");
   }
+}
+/** Compiler-rendered download formats, in menu order; Source is the local-only item after them. */
+const EXPORT_FORMATS = ["html", "svg", "png", "pdf"];
+const EXPORT_SOURCE_FORMAT = "source";
+/** @type {Record<string, string>} */
+const EXPORT_LABELS = { html: "HTML", svg: "SVG", png: "PNG", pdf: "PDF", source: "SOURCE (.aze.md)" };
+/** Download the assembled Current document Source as a `.aze.md` file. */
+function exportSource() {
+  const text = assembledSource();
+  const name = `${documentTitle().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "document"}.aze.md`;
+  const url = URL.createObjectURL(new Blob([text], { type: "text/markdown; charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  announce("Source exported as .aze.md");
 }
 /** @param {string} format */
 async function exportFormat(format) {
@@ -1235,12 +1261,19 @@ function bind() {
   el.moreMenu.addEventListener("keydown", (event) => menuKeys(event, el.moreMenu, el.moreToggle));
   byId("analyze").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void analyze({ reveal: true }); });
   byId("format").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); void formatSource(); });
+  byId("import-document").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); el.importInput.click(); });
+  byId("new-document").addEventListener("click", () => { closeMenu(el.moreMenu, el.moreToggle); newDocument(); });
+  el.importInput.addEventListener("change", () => {
+    const file = el.importInput.files?.[0] ?? null;
+    el.importInput.value = "";
+    if (file !== null) void importDocument(file);
+  });
   el.exportMenu.addEventListener("click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("button[data-format]") : null;
-    if (button instanceof HTMLButtonElement && !button.disabled) {
-      closeMenu(el.exportMenu, el.exportToggle);
-      void exportFormat(button.dataset.format ?? "html");
-    }
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+    closeMenu(el.exportMenu, el.exportToggle);
+    if (button.dataset.format === EXPORT_SOURCE_FORMAT) exportSource();
+    else void exportFormat(button.dataset.format ?? "html");
   });
 
   byId("diagnostics-toggle").addEventListener("click", () => el.diagnostics.hidden ? openDiagnostics() : closeDiagnostics());
@@ -1347,6 +1380,76 @@ function newCell() {
   return { id: crypto.randomUUID(), source: "", lastAppliedSource: "", pendingDescription: "", mode: /** @type {"source"} */ ("source") };
 }
 
+/** @param {string} source */
+function cellForSource(source) {
+  return { id: crypto.randomUUID(), source, lastAppliedSource: source, pendingDescription: "", mode: /** @type {"source"} */ ("source") };
+}
+
+/** One Cell per capability-tour entry, with stable per-load identities. */
+function starterCells() {
+  return STARTER_CELLS.map(cellForSource);
+}
+
+/**
+ * Clear the Current document back to a single empty Cell, so the author can
+ * start a fresh document. The Title in Document details is kept; the tour
+ * stays reachable by reloading the page.
+ */
+function newDocument() {
+  if (model.mutationLocked) return;
+  if (!window.confirm("Start a new document? This clears every Cell and keeps only the current title.")) return;
+  const fresh = newCell();
+  fresh.source = "# Untitled\n";
+  fresh.lastAppliedSource = fresh.source;
+  dispatch({ type: "document.reset", document: { ...model.document, authors: [], date: "", metadata: "" }, cells: [fresh] });
+  renderDocument();
+  renderCells();
+  renderDiagnostics();
+  announce("New document started with one empty Cell");
+  focusEditor(fresh.id);
+}
+
+/**
+ * Replace the Current document with an imported `.aze.md` file. The body is
+ * split on top-level headings, so an exported document round-trips to the
+ * same Cells; a heading-free body stays one Cell. The file is read only
+ * after the author confirms, then validated locally and compiler-analyzed,
+ * with errors revealed through the diagnostics dock.
+ * @param {File} file
+ */
+async function importDocument(file) {
+  if (model.mutationLocked) return;
+  const limit = importSourceLimit(capabilities);
+  if (file.size > limit) {
+    announce(`"${file.name}" is above the import limit (${limit} bytes).`);
+    return;
+  }
+  if (!window.confirm(`Replace the Current document with "${file.name}"?`)) return;
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    announce(`Could not read "${file.name}".`);
+    return;
+  }
+  let parsed;
+  try {
+    parsed = parseImportSource(text, { fileName: file.name, maxBytes: limit });
+  } catch (error) {
+    announce(error instanceof Error ? error.message : "Could not import the file.");
+    return;
+  }
+  const cells = parsed.sources.map(cellForSource);
+  dispatch({ type: "document.reset", document: parsed.document, cells });
+  renderDocument();
+  renderCells();
+  announce(`Imported "${file.name}" as ${cells.length === 1 ? "one Cell" : `${cells.length} Cells`}`);
+  const first = model.cells[0]?.id;
+  if (first !== undefined) focusCellHeading(first);
+  void analyze({ reveal: true });
+}
+
+
 function renderAll() {
   renderDocument();
   renderCells();
@@ -1360,17 +1463,13 @@ async function enter() {
     capabilities = await request("GET", "/v1/capabilities");
     el.theme.innerHTML = capabilities.compiler.themes
       .map((/** @type {any} */ theme) => `<option value="${esc(theme.id)}">${esc(theme.title)}</option>`).join("");
-    el.exportMenu.innerHTML = ["html", "svg", "png", "pdf"].map((format) =>
-      `<button role="menuitem" type="button" data-format="${format}">${format.toUpperCase()}</button>`).join("");
+    el.exportMenu.innerHTML = [...EXPORT_FORMATS, EXPORT_SOURCE_FORMAT].map((format) =>
+      `<button role="menuitem" type="button" data-format="${format}">${EXPORT_LABELS[format]}</button>`).join("");
     renderServiceDetails();
     updateHealth();
-    const examples = await (await fetch("/examples.json")).json();
-    const parsed = parseDocument(examples[0]?.source ?? "---\nazemark: 2\n---\n");
-    model = createWorkspaceState(
-      parsed.sources.map((source) => ({ id: crypto.randomUUID(), source, lastAppliedSource: source, pendingDescription: "", mode: /** @type {"source"} */ ("source") })),
-      el.theme.value || "default",
-      parsed.document,
-    );
+    // The default document is the capability tour: one Cell per family, with
+    // the smallest compiling snippet lifted from the reference library.
+    model = createWorkspaceState(starterCells(), el.theme.value || "default", starterDocument());
     const stored = Number(sessionStorage.getItem(PREVIEW_HEIGHT_KEY));
     if (Number.isFinite(stored) && stored > 0) dispatch({ type: "preview.resize", height: stored });
     el.gate.hidden = true;

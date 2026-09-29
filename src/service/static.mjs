@@ -23,6 +23,8 @@ const FILES = Object.freeze([
   "coordinates.js",
   "workspace-state.js",
   "front-matter.js",
+  "starter.js",
+  "document-import.js",
   "examples.json",
   "azeforge-logo-03-2.jpg",
 ]);

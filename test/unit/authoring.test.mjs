@@ -1,8 +1,15 @@
 /** Authoring draft request and outcome contract. */
-
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSourceDraft, parseProviderOutcome, shapeOfOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
+import { authoringInstruction, buildSourceDraft, parseProviderOutcome, shapeOfOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
+test("the drafting instruction pins the structure record spelling, not the geometry kind key", () => {
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  assert.match(instruction, /A structure body never uses a `kind:` key/);
+  assert.match(instruction, /- atom:/);
+  assert.match(instruction, /- bond:/);
+  assert.match(instruction, /- label:/);
+  assert.doesNotMatch(instruction, /A structure body is a YAML list of atoms and bonds\./);
+});
 
 test("accepts only the versioned Description draft request", () => {
   assert.deepEqual(

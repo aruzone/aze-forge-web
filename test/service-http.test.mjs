@@ -70,6 +70,7 @@ describe("access boundary", () => {
     const script = await call(service.base, "GET", "/app.js", { token: null });
     assert.equal(script.status, 200);
     assert.match(script.headers.get("content-type"), /text\/javascript/);
+    assert.equal((await call(service.base, "GET", "/document-import.js", { token: null })).status, 200);
 
     const logo = await call(service.base, "GET", "/azeforge-logo-03-2.jpg", { token: null, raw: true });
     assert.equal(logo.status, 200);

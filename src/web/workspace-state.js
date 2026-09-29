@@ -32,6 +32,7 @@
  *   { type: "cell.activate", cellId: string } |
  *   { type: "document.edit", patch: Partial<CurrentDocument> } |
  *   { type: "document.replace", document: CurrentDocument, sources: string[] } |
+ *   { type: "document.reset", document: CurrentDocument, cells: Cell[] } |
  *   { type: "generation.start", cellId: string, requestId: string } |
  *   { type: "generation.cancel" } |
  *   { type: "generation.resolve", requestId: string, outcome: GenerationOutcome } |
@@ -186,6 +187,16 @@ export function transition(state, event) {
         mode: /** @type {EditorMode} */ ("source"),
       }));
       return { ...withMutation(state, cells), document: { ...event.document }, formatProposal: null };
+    }
+    case "document.reset": {
+      if (state.mutationLocked || event.cells.length === 0) return state;
+      const ids = new Set(event.cells.map(({ id }) => id));
+      if ([...ids].some((id) => typeof id !== "string" || id === "") || ids.size !== event.cells.length) return state;
+      return createWorkspaceState(
+        event.cells.map((cell) => ({ ...cell, mode: /** @type {EditorMode} */ ("source") })),
+        state.theme,
+        { ...event.document, authors: [...event.document.authors] },
+      );
     }
     case "generation.start": {
       if (state.generation !== null || state.proposal !== null) return state;

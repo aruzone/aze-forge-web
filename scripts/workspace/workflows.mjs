@@ -645,13 +645,13 @@ const STEPS = [
       expect(first.action === null && first.id === "analyze", `the More menu opened on ${first.id || first.text}`);
       await page.keyboard.press("End");
       const last = await activeElement(page);
-      expect(last.id === "format", `End moved to ${last.id || last.text}`);
+      expect(last.id === "new-document", `End moved to ${last.id || last.text}`);
       await page.keyboard.press("Home");
       const home = await activeElement(page);
       expect(home.id === "analyze", `Home moved to ${home.id || home.text}`);
       await page.keyboard.press("ArrowUp");
       const wrapped = await activeElement(page);
-      expect(wrapped.id === "format", `ArrowUp from the first item moved to ${wrapped.id || wrapped.text}`);
+      expect(wrapped.id === "new-document", `ArrowUp from the first item moved to ${wrapped.id || wrapped.text}`);
       await page.keyboard.press("Escape");
       await settle(page);
       const restored = await page.evaluate(() => ({
@@ -669,7 +669,7 @@ const STEPS = [
       await page.keyboard.press("Escape");
       await settle(page);
       const exportRestored = await page.evaluate(() => document.activeElement?.id ?? "");
-      expect(lastExport === "pdf", `End moved to ${JSON.stringify(lastExport)} in the Export menu`);
+      expect(lastExport === "source", `End moved to ${JSON.stringify(lastExport)} in the Export menu`);
       expect(exportRestored === "export-toggle", `Escape left focus on ${exportRestored || "nothing"}`);
       return `menus open on the first item (${opened === "tab" ? "Tab-walked" : "focused"}), Home/End/ArrowUp move and wrap, and Escape restored each exact trigger (#more-toggle, #export-toggle) with aria-expanded false`;
     },
