@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSourceDraft, parseProviderOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
+import { buildSourceDraft, parseProviderOutcome, shapeOfOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
 
 test("accepts only the versioned Description draft request", () => {
   assert.deepEqual(
@@ -72,6 +72,17 @@ test("treats an empty string in an unused field as absent", () => {
   );
 });
 
+test("treats an omitted unused field as absent", () => {
+  assert.deepEqual(
+    validateProviderOutcome({ kind: "source", text: "F = m a", title: "Newton's second law", blockType: "equation" }),
+    { kind: "source", text: "F = m a", title: "Newton's second law", blockType: "equation" },
+  );
+  assert.deepEqual(
+    validateProviderOutcome({ kind: "clarification", question: "Which form?" }),
+    { kind: "clarification", question: "Which form?" },
+  );
+});
+
 test("rejects a clarification or refusal whose own field carries nothing", () => {
   assert.throws(
     () => validateProviderOutcome({ kind: "clarification", text: "", title: "", blockType: null, question: "", reason: "", code: "" }),
@@ -92,6 +103,25 @@ test("rejects an outcome that carries fields belonging to another tag", () => {
     () => validateProviderOutcome({ kind: "clarification", text: "# Draft", title: null, blockType: null, question: "Which?", reason: null, code: null }),
     /invalid structured outcome/,
   );
+});
+
+test("rejects an outcome carrying unknown keys", () => {
+  assert.throws(
+    () => validateProviderOutcome({ kind: "source", text: "F = m a", title: "T", blockType: "equation", extra: "value" }),
+    /invalid structured outcome/,
+  );
+});
+
+test("a contract failure carries key types, never values", () => {
+  try {
+    parseProviderOutcome(JSON.stringify({ outcome: { kind: "source", text: 42, title: "Secret title" } }));
+    assert.fail("should have thrown");
+  } catch (error) {
+    assert.equal(error.name, "AuthoringOutcomeError");
+    assert.deepEqual(error.shape, { kind: "string", text: "number", title: "string" });
+    assert.ok(!JSON.stringify(error.shape).includes("Secret title"));
+  }
+  assert.deepEqual(shapeOfOutcome(null), { type: "null" });
 });
 
 test("names a model-contract failure so a log can tell it from a transport one", () => {

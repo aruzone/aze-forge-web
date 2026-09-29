@@ -57,7 +57,7 @@ export function fakeCompilerFacts(overrides = {}) {
  * @param {{ env?: Record<string, string>, compilerFacts?: object,
  *           workerEntry?: string, lines?: string[],
  *           rendererProbe?: typeof import("../../src/service/tex-renderer.mjs").probeTexRendererAsync,
- *           authoringProvider?: { generate: (description: string) => Promise<any> } | null }} [options]
+ *           authoringProvider?: { generate: (description: string, options?: { signal?: AbortSignal }) => Promise<any> } | null }} [options]
  */
 export async function startTestService(options = {}) {
   const scratchDir = await mkdtemp(join(tmpdir(), "azeweb-test-"));

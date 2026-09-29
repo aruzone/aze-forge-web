@@ -44,7 +44,7 @@ const ARTIFACT_CONTENT_SECURITY_POLICY = [
  *   schemaRegistry: Map<string, import("./types.mjs").AzeSchemaEntry>,
  *   assets: import("./assets.mjs").AssetStore,
  *   jobs: import("./jobs.mjs").JobManager,
- *   authoringProvider: { generate: (description: string) => Promise<{ kind: string, text?: string, title?: string, blockType?: string, question?: string, reason?: string, code?: string }> } | null,
+ *   authoringProvider: { generate: (description: string, options?: { signal?: AbortSignal }) => Promise<{ kind: string, text?: string, title?: string, blockType?: string, question?: string, reason?: string, code?: string }> } | null,
  *   webAssets: Map<string, { body: Buffer, contentType: string }>,
  *   now?: () => number,
  * }} deps
@@ -361,10 +361,37 @@ export function createService(deps) {
       throw new ServiceError(ERROR_CODES.requestMalformed, "The request body must be a JSON object.", {});
     }
     const request = validateDraftRequest(parsed);
+    const controller = new AbortController();
+    let rejectOnDeadline = (/** @type {unknown} */ _reason) => {};
+    const deadlineExceeded = new Promise((_, reject) => { rejectOnDeadline = reject; });
+    // The signal cancels a well-behaved provider; the race bounds one that
+    // ignores it, so a stalled model call always surfaces as 503, never a
+    // hung request. `authoringDeadlineMs` is deployment configuration, not
+    // client input, so the timer here is wall-clock, not the testable `now`.
+    const providerTimeout = setTimeout(() => {
+      controller.abort();
+      rejectOnDeadline(Object.assign(new Error("Authoring provider exceeded its deadline."), { name: "AuthoringTimeoutError" }));
+    }, config.authoringDeadlineMs);
+    providerTimeout.unref?.();
+    // A settled-pending race arm never rejects once cleared, so there is no
+    // unhandled rejection when the provider wins.
+    void deadlineExceeded.catch(() => {});
     let outcome;
     try {
-      outcome = await authoringProvider.generate(request.description);
+      outcome = await Promise.race([
+        authoringProvider.generate(request.description, { signal: controller.signal }),
+        deadlineExceeded,
+      ]);
     } catch (error) {
+      if (error instanceof Error && error.name === "AuthoringOutcomeError") {
+        log.warn("authoring-draft-contract-rejected", {
+          reason: error.message,
+          shape: error !== null && typeof error === "object" && "shape" in error && typeof /** @type {{ shape?: unknown }} */ (error).shape === "object" ? /** @type {{ shape?: unknown }} */ (error).shape : {},
+        });
+        throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation failed: the model answered but not with a usable draft. Your Description and Source are unchanged.", {
+          data: { code: "authoring-invalid-provider-outcome" },
+        });
+      }
       const status =
         error !== null &&
         typeof error === "object" &&
@@ -375,9 +402,11 @@ export function createService(deps) {
         reason: error instanceof Error ? error.name : "unknown",
         status,
       });
-      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation failed: the model provider did not answer (network, provider, or timeout failure). Your Description and Source are unchanged.", {
         data: { code: "authoring-temporarily-unavailable" },
       });
+    } finally {
+      clearTimeout(providerTimeout);
     }
     const response = draftResponseBase(request);
     if (outcome.kind === "clarification") {
@@ -419,7 +448,7 @@ export function createService(deps) {
     });
     const analyzed = await waitForDraftAnalysis(jobs, job.jobId, tokenIdHash, config.deadlineAnalyzeMs);
     if (analyzed === null || analyzed.result === null) {
-      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation is temporarily unavailable. Your Description and Source are unchanged.", {
+      throw new ServiceError(ERROR_CODES.serviceUnavailable, "Draft generation failed: the proposed Source could not be compiler-checked (compiler-analysis infrastructure failure). Your Description and Source are unchanged.", {
         data: { code: "authoring-analysis-unavailable" },
       });
     }

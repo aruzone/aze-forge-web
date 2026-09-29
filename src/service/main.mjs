@@ -91,6 +91,7 @@ export async function createApplication({
             apiKey: config.openAiApiKey,
             model: config.openAiModel,
             catalogue: ["mathematics", "geometry", "chemistry"],
+            timeoutMs: config.authoringDeadlineMs,
           })
       : authoringProvider;
   await jobs.init();

@@ -139,7 +139,8 @@ ceiling is an owner decision, not a configuration change.
 | `AZEWEB_MAX_RUNNING_JOBS`, `AZEWEB_QUEUE_DEPTH` | `2`, `8` | admission beyond either returns 429 |
 | `AZEWEB_NODE_HEAP_MB` | `1024` | the Node heap ceiling the image pins for the service and every job worker |
 | `AZEWEB_JOB_SUBMISSIONS_PER_MINUTE`, `AZEWEB_ASSET_UPLOADS_PER_MINUTE` | `30`, `60` | per client context |
-| `AZEWEB_RATE_LIMIT_WINDOW_MS` | `60000` | |
+| `AZEWEB_AUTHORING_GENERATIONS_PER_MINUTE`, `AZEWEB_AUTHORING_DEADLINE_MS` | `10`, `30000` | per client context; the deadline bounds the model call, then the failure names network, provider, timeout, or compiler-analysis cause |
+| `AZEWEB_OPENAI_API_KEY`, `AZEWEB_OPENAI_MODEL` | unset, `gpt-4o-mini` | Description-to-Source drafts; without the key the Generate action is disabled and drafts return `service-unavailable`. The SDK also honours `OPENAI_BASE_URL` for a compatible gateway; there is no `AZEWEB_` equivalent for the base URL. |
 | `AZEWEB_DEADLINE_ANALYZE_MS`, `AZEWEB_DEADLINE_COMPILE_MS` | `60000`, `300000` | measured from admission, queue time included |
 | `AZEWEB_TERMINATION_GRACE_MS` | `5000` | SIGTERM, then SIGKILL, for the whole process group |
 | `AZEWEB_POLL_AFTER_MS` | `2000` | polling guidance returned with each job |

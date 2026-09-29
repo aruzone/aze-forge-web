@@ -74,12 +74,13 @@ export function validateDraftRequest(body) {
 
 /**
  * The structured-output schema requires every field, so a model may satisfy an
- * unused one with `""` rather than `null`. Both mean absent here; only a real
- * value belonging to another tag is a contract violation.
+ * unused one with `""` rather than `null`; a gateway that strips nulls may
+ * omit one instead. All three mean absent here; only a real value belonging
+ * to another tag is a contract violation.
  * @param {unknown} value
  */
 function absent(value) {
-  return value === null || value === "";
+  return value === null || value === undefined || value === "";
 }
 
 /**
@@ -97,6 +98,12 @@ function present(value) {
 export function validateProviderOutcome(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid structured outcome");
   const outcome = /** @type {Record<string, unknown>} */ (value);
+  // Unknown keys are rejected even when harmless: a gateway injecting extras
+  // must not silently widen the contract the Draft Gate relies on.
+  const allowed = new Set(["kind", "text", "title", "blockType", "question", "reason", "code"]);
+  for (const key of Object.keys(outcome)) {
+    if (!allowed.has(key)) throw new Error("invalid structured outcome");
+  }
   if (outcome.kind === "source" && typeof outcome.text === "string" && typeof outcome.title === "string" && typeof outcome.blockType === "string" && BLOCK_TYPES.includes(outcome.blockType) && absent(outcome.question) && absent(outcome.reason) && absent(outcome.code)) {
     return Object.freeze({ kind: "source", text: outcome.text, title: outcome.title, blockType: outcome.blockType });
   }
@@ -127,15 +134,34 @@ export function validateSourceDraft(source) {
   if (!frontMatter.test(source) || !nativeBlock.test(source)) throw new Error("complete typed AzeMark Source required");
   return source;
 }
-
 /**
  * The model answered, but not with something this boundary accepts. It is named
  * so a deployment log can tell a model-contract failure from a transport one:
- * the server records only `error.name`.
+ * the server records only `error.name` plus the safe shape below.
  * @param {string} message
+ * @param {Record<string, unknown>} [shape] key presence and value types only, never values
  */
-function authoringOutcomeError(message) {
-  return Object.assign(new Error(message), { name: "AuthoringOutcomeError" });
+function authoringOutcomeError(message, shape) {
+  return Object.assign(new Error(message), { name: "AuthoringOutcomeError", shape: shape ?? {} });
+}
+
+/**
+ * Safe one-line summary of the rejected outcome for the deployment log: which
+ * keys exist and their value types, never the values themselves (values may
+ * carry Description-derived text the metadata-only log must not record).
+ * @param {unknown} outcome
+ * @returns {Record<string, unknown>}
+ */
+export function shapeOfOutcome(outcome) {
+  if (outcome === null || typeof outcome !== "object" || Array.isArray(outcome)) {
+    return { type: Array.isArray(outcome) ? "array" : outcome === null ? "null" : typeof outcome };
+  }
+  /** @type {Record<string, unknown>} */
+  const shape = {};
+  for (const [key, value] of Object.entries(outcome)) {
+    shape[key] = value === null ? "null" : Array.isArray(value) ? "array" : typeof value;
+  }
+  return shape;
 }
 
 /**
@@ -147,41 +173,46 @@ export function parseProviderOutcome(outputText) {
   try {
     parsed = JSON.parse(outputText);
   } catch {
-    throw authoringOutcomeError("Authoring provider did not return JSON.");
+    throw authoringOutcomeError("Authoring provider did not return JSON.", { json: "unparsable" });
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw authoringOutcomeError("Authoring provider did not return a structured outcome.");
+    throw authoringOutcomeError("Authoring provider did not return a structured outcome.", shapeOfOutcome(parsed));
   }
+  const outcome = /** @type {Record<string, unknown>} */ (parsed).outcome;
   try {
-    return validateProviderOutcome(/** @type {Record<string, unknown>} */ (parsed).outcome);
+    return validateProviderOutcome(outcome);
   } catch {
-    throw authoringOutcomeError("Authoring provider returned an unusable outcome.");
+    throw authoringOutcomeError("Authoring provider returned an unusable outcome.", shapeOfOutcome(outcome));
   }
 }
 
-/** @param {{ apiKey: string, model: string, catalogue: readonly string[] }} config */
+/** @param {{ apiKey: string, model: string, catalogue: readonly string[], timeoutMs?: number }} config */
 export function createOpenAIAuthoringProvider(config) {
-  const client = new OpenAI({ apiKey: config.apiKey, timeout: 30_000, maxRetries: 0 });
+  const timeoutMs = config.timeoutMs ?? 30_000;
+  const client = new OpenAI({ apiKey: config.apiKey, timeout: timeoutMs, maxRetries: 0 });
   const instruction = [
     "Return only a typed AzeMark Block body, never a full document, prose explanation, Markdown, TeX delimiters, or code fences.",
     `Supported families: ${config.catalogue.join(", ")}. blockType must be exactly one of equation, derivation, plot, chart, geometry, formula, reaction, or structure.`,
     "The families split as mathematics (equation, derivation, plot, chart), geometry (geometry), and chemistry (formula, reaction, structure). A mathematical formula, identity, theorem, or equation is always equation, or derivation when it shows steps; formula, reaction, and structure are chemistry only and are wrong for any mathematics request.",
-    "For source outcomes, title is a short document title, blockType is the exact native Block type, and text is only the content after `----`.",
-    "Use AzeMark's readable mathematics grammar, never LaTeX: an equation body is `x = frac(-b + sqrt(b^2 - 4 a c), 2 a)`; a derivation body uses `- expression: x = 1` lines. Use symbolic operators `+`, `-`, `*`, `/`, `=`, `^`, and `sqrt`, never English operator words such as `minus`, `plus`, `times`, `divided by`, or `equals`.",
-    "A formula body is exactly one chemical expression such as `H2O` or `Fe(CN)6·2H2O4-`, never a sentence. A reaction body is one species line such as `Ag+(aq) + Cl-(aq) -> AgCl(s)`.",
+    "For source outcomes, title is a short document title, blockType is the exact native Block type, and text is only the content after `----`. A source outcome must set kind to source with non-empty text, title, and blockType, and null question, reason, and code; a clarification outcome must set only a non-empty question; a refusal outcome must set only a non-empty reason and code. Example source outcome: {\"kind\": \"source\", \"text\": \"F = m a\", \"title\": \"Newton's second law\", \"blockType\": \"equation\", \"question\": null, \"reason\": null, \"code\": null}.",
+    "Use AzeMark's readable mathematics grammar, never LaTeX: an equation body is `x = frac(-b +- sqrt(b^2 - 4 a c), 2 a)`; a derivation body uses `- expression: x = 1` lines. Use symbolic operators `+`, `-`, `*`, `/`, `=`, `^`, and `sqrt`, never English operator words such as `minus`, `plus`, `times`, `divided by`, or `equals`.",
+    "Mathematics is a closed vocabulary: juxtaposition or `*` for products, `^` and `_` for powers and subscripts (`r^2`, `q_1`), `frac(a, b)` with a comma between arguments, `sqrt(x)`, `abs(x)`, `exp`, `ln`, Greek names such as `sigma` and `psi`, and `sum`, `integral`, and `limit` binders written as `sum n=1..infinity of expr`, `integral x=0..L of expr dx`, and `limit n->infinity of expr`, plus `cases(value when condition; value otherwise)`. Never emit `|`, `{`, `}`, a backslash, TeX commands such as `\\frac`, `\\sqrt`, or `\\pm`, or TeX-style binder bounds such as `sum(n=1 to infinity)`: absolute value is `abs(x)`, never `|x|`; plus-minus is `+-`. A Fourier series in that grammar is `f(x) = frac(a_0, 2) + sum n=1..infinity of (a_n cos(n pi x / L) + b_n sin(n pi x / L))`.",
+    "When the Description names a standard law, theorem, or equation, emit its standard symbolic form in that grammar and nothing else: Coulomb's law is `F = k q_1 q_2 / r^2`, Newton's second law is `F = m a`, the Pythagorean theorem is `a^2 + b^2 = c^2`, kinetic energy is `E_k = frac(1, 2) m v^2`, Ohm's law is `V = I R`, the ideal gas law is `P V = n R T`, the wave equation is `partial^2 u / partial t^2 = c^2 partial^2 u / partial x^2`, radioactive decay is `N(t) = N_0 exp(-lambda t)`, the quadratic formula is `x = frac(-b +- sqrt(b^2 - 4 a c), 2 a)`, the normal density is `f(x) = frac(1, sigma sqrt(2 pi)) exp(frac(-(x - mu)^2, 2 sigma^2))`, and the time-independent Schrodinger equation is `H psi = E psi`.",
+    "Before answering, check that a mathematics body contains none of `|`, `{`, `}`, or backslash, and that an equation body is a single expression.",
+    "A formula body is exactly one chemical expression such as `H2O` or `Fe(CN)6·2H2O4-`, never a sentence. A reaction body is one species line such as `2 Mg(s) + O2(g) -> 2 MgO(s)`, with a space between each coefficient and its species: `2Mg(s)` without the space misparses the coefficient.",
     "A geometry body is a YAML list of constructions, such as `- kind: point\\n  name: a\\n  x: 0\\n  y: 0`. A structure body is a YAML list of atoms and bonds.",
     "A plot body is a YAML list whose entries have a `kind`, such as `- kind: function\\n  variable: x\\n  expression: x^2`; a chart body is a YAML list of labelled series.",
     "If the requested content cannot be expressed with one of those bodies, return clarification or refusal. Never substitute a formula Block for mathematics.",
   ].join(" ");
   return Object.freeze({
-    /** @param {string} description */
-    async generate(description) {
+    /** @param {string} description @param {{ signal?: AbortSignal }} [options] */
+    async generate(description, options = {}) {
       const response = await client.responses.create({
         model: config.model,
         input: [{ role: "developer", content: instruction }, { role: "user", content: description }],
         max_output_tokens: 16_384,
         text: { format: RESPONSE_FORMAT },
-      });
+      }, options.signal === undefined ? undefined : { signal: options.signal });
       if (response.status !== "completed" || typeof response.output_text !== "string") {
         throw authoringOutcomeError("Authoring provider did not return a completed structured response.");
       }

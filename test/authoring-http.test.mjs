@@ -57,7 +57,6 @@ test("does not return a bare notation fragment as a source draft", async () => {
     await service.close();
   }
 });
-
 test("logs only the safe reason when a model outcome cannot form a Source draft", async () => {
   const lines = [];
   const service = await startTestService({
@@ -71,6 +70,35 @@ test("logs only the safe reason when a model outcome cannot form a Source draft"
     });
     assert.ok(lines.some((line) => line.includes("\"event\":\"authoring-draft-contract-rejected\"")));
     assert.ok(!lines.join("").includes("x = 1"));
+  } finally {
+    await service.close();
+  }
+});
+
+test("logs only the key types when the model answer is unusable", async () => {
+  const lines = [];
+  const service = await startTestService({
+    lines,
+    authoringProvider: {
+      async generate() {
+        throw Object.assign(new Error("Authoring provider returned an unusable outcome."), {
+          name: "AuthoringOutcomeError",
+          shape: { kind: "string", text: "number", title: "string" },
+        });
+      },
+    },
+  });
+  try {
+    const response = await call(service.base, "POST", "/v1/authoring/drafts", {
+      body: { protocolVersion: 1, requestId: "draft-1", description: "A title" },
+      contentType: "application/json",
+    });
+    assert.equal(response.status, 503);
+    assert.equal(response.json.error.data.code, "authoring-invalid-provider-outcome");
+    const rejected = lines.find((line) => line.includes("\"event\":\"authoring-draft-contract-rejected\""));
+    assert.ok(rejected !== undefined);
+    assert.ok(!lines.join("").includes("A title"));
+    assert.match(rejected, /"shape":\{"kind":"string","text":"number","title":"string"\}/);
   } finally {
     await service.close();
   }
