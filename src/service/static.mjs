@@ -13,7 +13,7 @@ const CONTENT_TYPES = Object.freeze({
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".jpg": "image/jpeg",
+  ".png": "image/png",
 });
 
 const FILES = Object.freeze([
@@ -26,7 +26,7 @@ const FILES = Object.freeze([
   "starter.js",
   "document-import.js",
   "examples.json",
-  "azeforge-logo-03-2.jpg",
+  "azeforge-logo-transparent.png",
 ]);
 
 /**

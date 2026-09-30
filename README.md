@@ -45,6 +45,8 @@ until it can prove the compiler registry constructs, the pinned browser engine i
 present, scratch storage is writable, and a real compile of a trivial Source
 succeeds in an isolated child process.
 
+The frontend uses `src/web/azeforge-logo-transparent.png` for the access gate, application rail, and browser favicon.
+
 ## What the service is responsible for
 
 | Area | Behaviour |

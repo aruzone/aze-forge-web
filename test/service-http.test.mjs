@@ -72,9 +72,9 @@ describe("access boundary", () => {
     assert.match(script.headers.get("content-type"), /text\/javascript/);
     assert.equal((await call(service.base, "GET", "/document-import.js", { token: null })).status, 200);
 
-    const logo = await call(service.base, "GET", "/azeforge-logo-03-2.jpg", { token: null, raw: true });
+    const logo = await call(service.base, "GET", "/azeforge-logo-transparent.png", { token: null, raw: true });
     assert.equal(logo.status, 200);
-    assert.equal(logo.headers.get("content-type"), "image/jpeg");
+    assert.equal(logo.headers.get("content-type"), "image/png");
     assert.ok(logo.body.length > 0);
   });
 
