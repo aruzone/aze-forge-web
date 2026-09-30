@@ -1468,8 +1468,9 @@ async function enter() {
       `<button role="menuitem" type="button" data-format="${format}">${EXPORT_LABELS[format]}</button>`).join("");
     renderServiceDetails();
     updateHealth();
-    // The default document is the capability tour: one Cell per family, with
-    // the smallest compiling snippet lifted from the reference library.
+    // The default document is the capability tour: one Cell per guide 01-12,
+    // with the smallest compiling snippet plus harder showcase forms lifted
+    // from the reference library.
     model = createWorkspaceState(starterCells(), el.theme.value || "default", starterDocument());
     const stored = Number(sessionStorage.getItem(PREVIEW_HEIGHT_KEY));
     if (Number.isFinite(stored) && stored > 0) dispatch({ type: "preview.resize", height: stored });

@@ -8,8 +8,9 @@
  * reaction, structure), circuit, timing, diagrams, engineering, models,
  * structured content, and composition. Every entry starts with a heading so
  * Cell boundaries survive a format round-trip (`parseDocument` splits on
- * top-level headings), and every snippet is the smallest compiling form
- * lifted verbatim from the `examples.json` reference library. The circuit
+ * top-level headings), and every snippet is lifted verbatim from the
+ * `examples.json` reference library: the smallest compiling form first, then
+ * the harder forms that showcase what each directive registers. The circuit
  * family needs an explicit symbol convention, carried as document metadata.
  */
 
@@ -42,6 +43,9 @@ A run is complete when two readings taken 60 s apart agree to within 1%.
   `## Mathematics
 
 An equation typesets one readable expression; a derivation chains annotated steps.
+The later Blocks show the harder forms: a bracketed Hamiltonian in a relation
+chain, a matrix acting on a vector, every binder at once, and an annotated
+derivation.
 
 :::: equation
 id: ohm-relation
@@ -49,15 +53,53 @@ id: ohm-relation
 V = I * R
 ::::
 
+:::: equation
+id: schrodinger-relation-chain
+number: true
+----
+i hbar frac(partial, partial t) Psi(x, t) = [-frac(hbar^2, 2 m) nabla^2 + V(x)] Psi(x, t) = -frac(hbar^2, 2 m) frac(partial^2 Psi, partial x^2) + V(x) Psi(x, t)
+::::
+
+:::: equation
+id: rotation-matrix-vector
+number: true
+----
+y_i = R_(i, j) x_j = pmatrix [[cos theta, -sin theta], [sin theta, cos theta]] vector [x, y] = vector [x cos theta - y sin theta, x sin theta + y cos theta]
+::::
+
+:::: equation
+id: binder-catalog
+align: left
+----
+S_n = sum i=1..n of i^2 + product k=1..m of k + integral x=0..infinity of exp(-x^2) dx
+::::
+
 :::: derivation
 id: compound-interest-chain
 ----
 - expression: A_1 = P_0 (1 + r)
 - expression: A_n = P_0 (1 + r)^n
+::::
+
+:::: derivation
+id: enzyme-rate-linearized
+number: true
+align: center
+----
+- expression: v = k_2 E_0 S / (K_m + S)
+  annotation: steady-state rate before any rearrangement
+- expression: v (K_m + S) = k_2 E_0 S
+  annotation: clear the denominator
+- expression: frac(K_m + S, S) = frac(k_2 E_0, v)
+  annotation: collect the rate on one side
+- expression: 1 / v = frac(K_m, k_2 E_0) (1 / S) + frac(1, k_2 E_0)
+  annotation: invert both sides, and the reciprocal rate is affine in the reciprocal substrate
 ::::`,
   `## Visualization
 
-A plot draws function curves on shared axes; a chart draws one bar series across categories.
+A plot draws function curves and measured points on shared axes; a chart draws
+bars or bins raw values into a histogram. The later Blocks share parameters
+across series and bin a histogram with explicit edges.
 
 :::: plot
 id: logistic-growth
@@ -76,6 +118,47 @@ y-axis:
   samples: 240
 ::::
 
+:::: plot
+id: rc-step-response
+number: true
+parameters:
+  V0: 5
+  R: 1000
+  C: 1e-6
+x-axis:
+  label: time (s)
+  min: 0
+  max: 0.005
+y-axis:
+  label: voltage (V)
+  min: 0
+----
+- kind: function
+  label: analytic step response
+  variable: t
+  expression: V0 * (1 - exp(-t / (R * C)))
+  domain:
+    min: 0
+    max: 0.005
+  samples: 400
+- kind: scatter
+  label: measured points
+  points:
+    - x: 0.0005
+      y: 1.99
+      error: 0.08
+    - x: 0.001
+      y: 3.11
+      error: 0.10
+    - x: 0.002
+      y: 4.36
+      error-low: 0.14
+      error-high: 0.09
+    - x: 0.003
+      y: 4.71
+      error: 0.12
+::::
+
 :::: chart
 id: payload-mass-by-stage
 type: bar
@@ -91,10 +174,61 @@ grid: true
       value: 1150
     - category: Upper stage
       value: 480
+::::
+
+:::: chart
+id: grain-size-distribution
+number: true
+width: 720
+height: 400
+legend: true
+grid: true
+type: histogram
+x-label: grain diameter (µm)
+y-label: counts
+y-min: 0
+y-max: 12
+----
+- label: sieve sample
+  values:
+    - 41
+    - 44
+    - 47
+    - 49
+    - 51
+    - 52
+    - 54
+    - 55
+    - 56
+    - 58
+    - 59
+    - 61
+    - 62
+    - 64
+    - 67
+    - 69
+    - 71
+    - 74
+    - 78
+    - 83
+  edges:
+    - 40
+    - 45
+    - 50
+    - 55
+    - 60
+    - 65
+    - 70
+    - 75
+    - 80
+    - 85
 ::::`,
   `## Geometry
 
 A geometry Block resolves ordered declarations into an SVG projection.
+Coordinates are authored, constructions are derived, and marks measure what
+was resolved. The later Blocks construct tangents and carry the measured
+equal, angle, length, and right-angle marks of the theorem showcase.
 
 :::: geometry
 id: optics-wedge
@@ -129,10 +263,138 @@ number: true
     - vertex
     - arm-flat
     - arm-raised
+::::
+
+:::: geometry
+id: constructed-tangent
+number: true
+----
+- kind: point
+  name: center
+  label: O
+  x: 0
+  y: 0
+- kind: circle
+  name: main-circle
+  center: center
+  radius: 2
+- kind: point
+  name: touch
+  label: T
+  x: 0
+  y: 2
+- kind: tangent-line
+  name: top-tangent
+  circle: main-circle
+  at: touch
+- kind: point
+  name: outside
+  label: P
+  x: 5
+  y: 0
+- kind: tangent-line
+  name: upper-tangent
+  circle: main-circle
+  from: outside
+  pick: 2
+::::
+
+:::: geometry
+id: marked-triangle
+number: true
+----
+- kind: point
+  name: apex
+  label: A
+  x: 0
+  y: 4
+- kind: point
+  name: left
+  label: B
+  x: -3
+  y: 0
+- kind: point
+  name: right
+  label: C
+  x: 3
+  y: 0
+- kind: segment
+  name: side-ab
+  from: apex
+  to: left
+- kind: segment
+  name: side-ac
+  from: apex
+  to: right
+- kind: segment
+  name: base-bc
+  from: left
+  to: right
+- kind: equal-marks
+  group: legs
+  segments:
+    - side-ab
+    - side-ac
+- kind: angle-mark
+  first: left
+  second: apex
+  third: right
+  measure: angle
+- kind: length-mark
+  segment: base-bc
+  measure: length
+::::
+
+:::: geometry
+id: thales-circle
+number: true
+----
+- kind: point
+  name: o
+  label: O
+  x: 0
+  y: 0
+- kind: point
+  name: a
+  label: A
+  x: -2
+  y: 0
+- kind: point
+  name: b
+  label: B
+  x: 2
+  y: 0
+- kind: point
+  name: c
+  label: C
+  x: 0
+  y: 2
+- kind: circle
+  name: circumcircle
+  center: o
+  radius: 2
+- kind: segment
+  name: diameter
+  from: a
+  to: b
+- kind: segment
+  name: chord-ac
+  from: a
+  to: c
+- kind: segment
+  name: chord-bc
+  from: b
+  to: c
+- kind: right-angle-mark
+  first: a
+  second: c
+  third: b
 ::::`,
   `## Chemistry
 
 Formulas carry one expression; reactions carry one species line; structures declare atoms, bonds, and labels.
+The later Blocks show isotope and adduct composition, a balance-checked
+equilibrium with conditions, and fully specified stereochemistry.
 
 :::: formula
 id: water
@@ -141,11 +403,28 @@ number: true
 H2O
 ::::
 
+:::: formula
+id: calcium-lactate-pentahydrate
+number: true
+----
+44Ca(CH3CH(OH)COO)2·5H2O
+::::
+
 :::: reaction
 id: silver-chloride-precipitation
 number: true
 ----
 Ag+(aq) + Cl-(aq) -> AgCl(s)
+::::
+
+:::: reaction
+id: haber-equilibrium
+number: true
+above: 400 °C, 200 atm
+below: iron catalyst
+balance: check
+----
+N2(g) + 3 H2(g) <-> 2 NH3(g)
 ::::
 
 :::: structure
@@ -171,6 +450,69 @@ height: 240
   from: o
   to: h2
   order: 1
+::::
+
+:::: structure
+id: alanine-specified
+number: true
+----
+- atom: ca
+  element: C
+  isotope: 14
+  at: [1.2, -0.7]
+- atom: cb
+  element: C
+  at: [0.0, 0.0]
+- atom: cc
+  element: C
+  at: [-1.2, -0.7]
+- atom: n
+  element: N
+  at: [0.0, 1.4]
+- atom: o
+  element: O
+  at: [2.4, 0.0]
+- atom: oh
+  element: O
+  at: [1.2, -2.1]
+- atom: h
+  element: H
+  at: [2.4, -2.8]
+- atom: side-h
+  element: H
+  at: [-1.2, 1.4]
+- bond:
+  from: cb
+  to: n
+  order: 1
+  stereo: wedge
+- bond:
+  from: cb
+  to: cc
+  order: 1
+- bond:
+  from: cb
+  to: ca
+  order: 1
+- bond:
+  from: ca
+  to: o
+  order: 2
+- bond:
+  from: ca
+  to: oh
+  order: 1
+- bond:
+  from: oh
+  to: h
+  order: 1
+- bond:
+  from: cb
+  to: side-h
+  order: 1
+- label:
+  text: (S)
+  at: [-0.5, 0.7]
 ::::`,
   `## Circuit
 
