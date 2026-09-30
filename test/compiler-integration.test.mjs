@@ -231,7 +231,9 @@ describe("the edit-preview-export loop", () => {
   });
 
   test("every advertised format produces a verifiable Artifact, or tells the truth about why not", async () => {
-    const source = { text: examples[0].source, name: "formats.aze.md" };
+    const documentBasics = examples.find((example) => example.id === "document-basics");
+    assert.ok(documentBasics, "the vendored library carries the document-basics guide");
+    const source = { text: documentBasics.source, name: "formats.aze.md" };
     for (const format of ["html", "svg", "png", "pdf"]) {
       const { job } = await runJob(
         service.base,
@@ -268,7 +270,9 @@ describe("the edit-preview-export loop", () => {
   });
 
   test("rendering never changes the semantic Document identity across formats", async () => {
-    const source = { text: examples[1].source, name: "identity.aze.md" };
+    const mathematics = examples.find((example) => example.id === "mathematics");
+    assert.ok(mathematics, "the vendored library carries the mathematics guide");
+    const source = { text: mathematics.source, name: "identity.aze.md" };
     const hashes = [];
     for (const format of ["html", "svg"]) {
       const { job } = await runJob(
@@ -284,7 +288,9 @@ describe("the edit-preview-export loop", () => {
   });
 
   test("the same Theme choice changes layout metadata but not semantic identity", async () => {
-    const text = examples[0].source;
+    const documentBasics = examples.find((example) => example.id === "document-basics");
+    assert.ok(documentBasics, "the vendored library carries the document-basics guide");
+    const text = documentBasics.source;
     const first = await runJob(service.base, {
       ...compileRequest(text, "html", "rev-theme-1"),
       source: { text, name: "theme.aze.md" },
@@ -304,9 +310,13 @@ describe("the edit-preview-export loop", () => {
   test("raw LaTeX cannot be enabled through the request boundary", async () => {
     // One readable relation swapped for its TeX spelling: the boundary the
     // service owns is that the request carries no option that admits it.
+    // The mathematics example is found by id so regenerating the vendored
+    // library never silently re-points this test at another document.
+    const mathematics = examples.find((example) => example.id === "mathematics");
+    assert.ok(mathematics, "the vendored library carries the mathematics guide");
     const relation = "V = I * R";
-    assert.ok(examples[1].source.includes(relation), "the mathematics sample authors a readable relation");
-    const raw = examples[1].source.replace(relation, "\\frac{\\partial u}{\\partial t} = \\alpha \\nabla^2 u");
+    assert.ok(mathematics.source.includes(relation), "the mathematics sample authors a readable relation");
+    const raw = mathematics.source.replace(relation, "\\frac{\\partial u}{\\partial t} = \\alpha \\nabla^2 u");
     const { job } = await runJob(service.base, {
       protocolVersion: 1,
       requestId: "raw",
@@ -324,9 +334,11 @@ describe("the edit-preview-export loop", () => {
 
   test("a compile that fails preflight keeps its semantic result", async () => {
     if (engineAvailable) return;
+    const documentBasics = examples.find((example) => example.id === "document-basics");
+    assert.ok(documentBasics, "the vendored library carries the document-basics guide");
     const { job } = await runJob(
       service.base,
-      { ...compileRequest(examples[0].source, "png", "rev-pfl"), source: { text: examples[0].source } },
+      { ...compileRequest(documentBasics.source, "png", "rev-pfl"), source: { text: documentBasics.source } },
       { timeoutMs: 120_000 },
     );
     assert.equal(job.status, "completed");

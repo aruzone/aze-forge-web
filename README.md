@@ -78,9 +78,10 @@ accessibility contract is [`docs/ui/authoring-workspace-redesign.md`](docs/ui/au
 which also holds the observed verification evidence for each acceptance ID.
 
 The preloaded examples are the compiler's own reference library
-(`docs/language/*.aze.md`), reused verbatim: fourteen complete Sources spanning
+(`docs/language/*.aze.md`), reused verbatim: sixteen complete Sources spanning
 every family, graded within each section from the minimal idiomatic form to the
-deepest feature the directive registers, plus the `tex` escape hatch and the
+deepest feature the directive registers, from the authoring guide through the
+geometry showcase, plus the `tex` escape hatch and the
 deliberately invalid diagnostics sampler. The library is not on the installed
 package ships `dist`, `schemas` and its logo — so it is vendored into
 `src/web/examples.json`, and moving to a new compiler release re-runs the

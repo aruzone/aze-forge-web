@@ -1,13 +1,16 @@
 // @ts-check
 
 /**
- * The default document: a capability tour, one Cell per family.
- *
- * Every entry starts with a heading so Cell boundaries survive a format
- * round-trip (`parseDocument` splits on top-level headings), and every
- * snippet is the smallest compiling form lifted verbatim from the
- * `examples.json` reference library. The circuit family needs an explicit
- * symbol convention, carried as document metadata.
+ * The default document: a first-load showcase, one Cell per language guide.
+ * Cell order follows the upstream reading order 01 to 12, so the tour reads
+ * like the documentation: document basics, mathematics (equation plus
+ * derivation), visualization (plot plus chart), geometry, chemistry (formula,
+ * reaction, structure), circuit, timing, diagrams, engineering, models,
+ * structured content, and composition. Every entry starts with a heading so
+ * Cell boundaries survive a format round-trip (`parseDocument` splits on
+ * top-level headings), and every snippet is the smallest compiling form
+ * lifted verbatim from the `examples.json` reference library. The circuit
+ * family needs an explicit symbol convention, carried as document metadata.
  */
 
 /** @returns {import("./workspace-state.js").CurrentDocument} */
@@ -24,83 +27,70 @@ export function starterDocument() {
 export const STARTER_CELLS = [
   `# Try AzeForge
 
-Edit any Cell below, then Refresh preview. Each Cell is one capability.`,
+Edit any Cell below, then Refresh preview. Each Cell is one capability of the language guides 01 to 12.`,
+  `## Document basics
+
+A callout carries a titled note; prose, headings, lists, and tables compose around the directives.
+
+:::: callout
+id: steady-state-note
+variant: note
+title: Steady state
+----
+A run is complete when two readings taken 60 s apart agree to within 1%.
+::::`,
   `## Mathematics
 
-An equation typesets one readable expression.
+An equation typesets one readable expression; a derivation chains annotated steps.
 
 :::: equation
 id: ohm-relation
 ----
 V = I * R
-::::`,
-  `## Chemistry
+::::
 
-A formula Block carries exactly one expression line.
-
-:::: formula
-id: water
-number: true
+:::: derivation
+id: compound-interest-chain
 ----
-H2O
+- expression: A_1 = P_0 (1 + r)
+- expression: A_n = P_0 (1 + r)^n
 ::::`,
-  `## Physics
+  `## Visualization
 
-A free-body places bodies and forces in one y-up unitless frame.
+A plot draws function curves on shared axes; a chart draws one bar series across categories.
 
-:::: free-body
-id: trolley-push
-number: true
-title: Trolley push, schematic
-description: Two forces on a trolley drawn to no shared scale
+:::: plot
+id: logistic-growth
+x-axis:
+  label: time (h)
+y-axis:
+  label: population (10^6 cells)
 ----
-- kind: block
-  name: trolley
-  x: 0
-  y: 0
-  width: 2
-  height: 1
-- kind: point
-  name: hub
-  label: C
-  x: 0
-  y: 0
-- kind: point
-  name: rail
-  x: -3
-  y: -1
-  visible: false
-- kind: point
-  name: rail-end
-  x: 3
-  y: -1
-  visible: false
-- kind: line
-  name: rail-line
-  visible: true
-  style: dashed
-  from: rail
-  to: rail-end
-- kind: force
-  at: hub
-  angle: 0
-  length: 1.5
-  label: F
-- kind: force
-  at: hub
-  parallel-to: rail-line
-  length: 1
-  label: f
-- kind: force
-  at: hub
-  angle: 270
-  length: 1.2
-  label: W
-- kind: angle-mark
-  first: rail
-  vertex: hub
-  third: rail-end
-  label: φ
+- kind: function
+  label: logistic growth
+  variable: t
+  expression: 40 / (1 + 39 * exp(-0.6 * t))
+  domain:
+    min: 0
+    max: 12
+  samples: 240
+::::
+
+:::: chart
+id: payload-mass-by-stage
+type: bar
+x-label: launch stage
+y-label: payload mass (kg)
+grid: true
+----
+- label: payload mass
+  bars:
+    - category: Stage 1
+      value: 2400
+    - category: Stage 2
+      value: 1150
+    - category: Upper stage
+      value: 480
 ::::`,
   `## Geometry
 
@@ -140,73 +130,47 @@ number: true
     - arm-flat
     - arm-raised
 ::::`,
-  `## Graph
+  `## Chemistry
 
-A diagram authors nodes and edges; mode selects the rules.
+Formulas carry one expression; reactions carry one species line; structures declare atoms, bonds, and labels.
 
-:::: diagram
-id: diagram-water-treatment-line
-title: Water treatment line
-mode: flowchart
-flow: top-to-bottom
+:::: formula
+id: water
+number: true
 ----
-- kind: node
-  name: intake
-  label: Raw water intake
-  shape: circle
-- kind: node
-  name: filter
-  label: Sand filter
-- kind: node
-  name: chlorinate
-  label: Chlorination
-  shape: cylinder
-- kind: edge
-  from: intake
-  to: filter
-- kind: edge
-  from: filter
-  to: chlorinate
-::::`,
-  `## Plot
+H2O
+::::
 
-A plot draws function curves and measured points on shared axes.
-
-:::: plot
-id: logistic-growth
-x-axis:
-  label: time (h)
-y-axis:
-  label: population (10^6 cells)
+:::: reaction
+id: silver-chloride-precipitation
+number: true
 ----
-- kind: function
-  label: logistic growth
-  variable: t
-  expression: 40 / (1 + 39 * exp(-0.6 * t))
-  domain:
-    min: 0
-    max: 12
-  samples: 240
-::::`,
-  `## Chart
+Ag+(aq) + Cl-(aq) -> AgCl(s)
+::::
 
-A chart draws one bar series across categories.
-
-:::: chart
-id: payload-mass-by-stage
-type: bar
-x-label: launch stage
-y-label: payload mass (kg)
-grid: true
+:::: structure
+id: water-structure
+number: true
+width: 320
+height: 240
 ----
-- label: payload mass
-  bars:
-    - category: Stage 1
-      value: 2400
-    - category: Stage 2
-      value: 1150
-    - category: Upper stage
-      value: 480
+- atom: o
+  element: O
+  at: [0, 0]
+- atom: h1
+  element: H
+  at: [-1.2, 0.8]
+- atom: h2
+  element: H
+  at: [1.2, 0.8]
+- bond:
+  from: o
+  to: h1
+  order: 1
+- bond:
+  from: o
+  to: h2
+  order: 1
 ::::`,
   `## Circuit
 
@@ -272,9 +236,121 @@ scale: cycles
   ref: enable
   wave: 0011
 ::::`,
-  `## Sequence
+  `## Diagrams
 
-A sequence orders messages between participants.
+A diagram authors nodes and edges; mode selects the rules.
+
+:::: diagram
+id: diagram-water-treatment-line
+title: Water treatment line
+mode: flowchart
+flow: top-to-bottom
+----
+- kind: node
+  name: intake
+  label: Raw water intake
+  shape: circle
+- kind: node
+  name: filter
+  label: Sand filter
+- kind: node
+  name: chlorinate
+  label: Chlorination
+  shape: cylinder
+- kind: edge
+  from: intake
+  to: filter
+- kind: edge
+  from: filter
+  to: chlorinate
+::::`,
+  `## Engineering
+
+Control wires signal-flow graphs; free-body places bodies and forces in one y-up frame.
+
+:::: control
+id: open-loop-heater
+number: true
+title: Open-loop heater
+description: A single lag between the command and the measured outlet
+flow: left-to-right
+----
+- kind: input
+  name: cmd
+  label: u(s)
+- kind: block
+  name: coil
+  tf: 1/(1 + 3s)
+- kind: output
+  name: temp
+  label: T(s)
+- kind: edge
+  from: cmd
+  to: coil
+  label: u(s)
+- kind: edge
+  from: coil
+  to: temp
+  label: T(s)
+::::
+
+:::: free-body
+id: trolley-push
+number: true
+title: Trolley push, schematic
+description: Two forces on a trolley drawn to no shared scale
+----
+- kind: block
+  name: trolley
+  x: 0
+  y: 0
+  width: 2
+  height: 1
+- kind: point
+  name: hub
+  label: C
+  x: 0
+  y: 0
+- kind: point
+  name: rail
+  x: -3
+  y: -1
+  visible: false
+- kind: point
+  name: rail-end
+  x: 3
+  y: -1
+  visible: false
+- kind: line
+  name: rail-line
+  visible: true
+  style: dashed
+  from: rail
+  to: rail-end
+- kind: force
+  at: hub
+  angle: 0
+  length: 1.5
+  label: F
+- kind: force
+  at: hub
+  parallel-to: rail-line
+  length: 1
+  label: f
+- kind: force
+  at: hub
+  angle: 270
+  length: 1.2
+  label: W
+- kind: angle-mark
+  first: rail
+  vertex: hub
+  third: rail-end
+  label: φ
+::::`,
+  `## Models
+
+Sequence orders messages; state declares a lifecycle; entity describes a schema; class declares classifiers.
 
 :::: sequence
 id: cache-lookup
@@ -298,10 +374,45 @@ timeline:
     to: client
     form: return
     text: Cached value
-::::`,
-  `## Table
+::::
 
-A typed table validates every cell against its column type.
+:::: state
+id: parcel-lifecycle
+number: true
+title: Parcel lifecycle
+description: Four states on a single path from intake to a final state.
+----
+- kind: initial
+  name: intake
+- kind: state
+  name: Labeled
+- kind: state
+  name: InTransit
+- kind: state
+  name: Delivered
+- kind: state
+  name: Archived
+- kind: final
+  name: closed
+- kind: transition
+  from: intake
+  to: Labeled
+- kind: transition
+  from: Labeled
+  to: InTransit
+- kind: transition
+  from: InTransit
+  to: Delivered
+- kind: transition
+  from: Delivered
+  to: Archived
+- kind: transition
+  from: Archived
+  to: closed
+::::`,
+  `## Structured content
+
+Typed tables validate every cell; algorithms, statements, and worked examples compose records.
 
 :::: table
 id: pilot-line-yields
@@ -328,5 +439,39 @@ rows:
   - batch: B-103
     units: 466
     accepted: true
+::::
+
+:::: algorithm
+id: dot-product
+number: true
+caption: Dot product of two equal-length vectors
+----
+procedure: DotProduct
+parameters:
+  - A
+  - B
+steps:
+  - assign: total = 0
+  - for: i = 0 to length(A) - 1
+    do:
+      - assign: total = total + A[i] * B[i]
+  - return: total
 ::::`,
+  `## Composition
+
+A figure numbers ordinary Markdown so a pipe table becomes a numbered object.
+
+:::: figure
+id: trend-figure
+number: true
+caption: Measured trend
+----
+The figure body holds ordinary Markdown, so an image or a pipe table becomes
+numberable by wrapping it here.
+
+| Step | Value |
+| --- | ---: |
+| 1 | 12 |
+| 2 | 15 |
+::::`
 ];

@@ -3,17 +3,41 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { authoringInstruction, buildSourceDraft, parseProviderOutcome, shapeOfOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
 
-test("the drafting instruction teaches single-argument functions, never comma application", () => {
+test("the drafting instruction teaches comma-argument groups and bracketed operators", () => {
   const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
-  assert.match(instruction, /single parenthesized argument with no comma/);
-  assert.match(instruction, /V\(r t\)/);
-  assert.match(instruction, /never `V\(r, t\)`/);
+  assert.match(instruction, /Psi\(r, t\)/);
+  assert.match(instruction, /square delimiters/);
+  assert.match(instruction, /lists its arguments in evaluation order/);
+  assert.doesNotMatch(instruction, /never `V\(r, t\)`/);
+  assert.doesNotMatch(instruction, /unbalanced grouping/);
+  assert.doesNotMatch(instruction, /juxtaposed `V\(r t\)`/);
 });
 
-test("the drafting instruction teaches grouped tensor subscripts, never chained ones", () => {
+test("the drafting instruction teaches the full binder, vector, and prime catalog", () => {
   const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
-  assert.match(instruction, /R_\(mu, nu\)/);
-  assert.match(instruction, /never chained `R_mu_nu`/);
+  assert.match(instruction, /product k=1\.\.m of k/);
+  assert.match(instruction, /forall e in R of/);
+  assert.match(instruction, /pmatrix/);
+  assert.match(instruction, /\(x'\)\^2/);
+});
+
+test("the drafting instruction pins the bracketed Hamiltonian in valid grammar", async () => {
+  const { createCompiler } = await import("@aruzone/aze-forge");
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  const bodies = [...instruction.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  const expected = "i hbar frac(partial, partial t) Psi(r, t) = [-frac(hbar^2, 2 m) nabla^2 + V(r, t)] Psi(r, t)";
+  assert.ok(bodies.includes(expected), "instruction must pin the bracketed Hamiltonian");
+  const compiler = createCompiler();
+  const source = buildSourceDraft({ kind: "source", title: "Physics", blockType: "equation", text: expected });
+  assert.deepEqual(compiler.validate(compiler.parse(source, {})).diagnostics, []);
+});
+
+test("the drafting instruction teaches reaction arrows, unspecified coefficients, and geometry constructions", () => {
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  assert.match(instruction, /<->/);
+  assert.match(instruction, /explicitly unspecified/);
+  assert.match(instruction, /perpendicular-line/);
+  assert.match(instruction, /equal-marks/);
 });
 
 test("the drafting instruction pins the two failing physics equations in valid grammar", async () => {
@@ -22,7 +46,7 @@ test("the drafting instruction pins the two failing physics equations in valid g
   const bodies = [...instruction.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
   const compiler = createCompiler();
   for (const expected of [
-    "i hbar partial psi / partial t = -frac(hbar^2, 2 m) nabla^2 psi + V(r t) psi",
+    "i hbar partial psi / partial t = -frac(hbar^2, 2 m) nabla^2 psi + V(r, t) psi",
     "R_(mu, nu) - frac(1, 2) R g_(mu, nu) + Lambda g_(mu, nu) = frac(8 pi G, c^4) T_(mu, nu)",
   ]) {
     assert.ok(bodies.includes(expected), `instruction must pin ${expected}`);
