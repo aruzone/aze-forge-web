@@ -31,6 +31,16 @@ test("the drafting instruction pins the two failing physics equations in valid g
     assert.deepEqual(compiler.validate(parsed).diagnostics, []);
   }
 });
+test("a five-colon fence is never a valid draft, even with a four-colon body", () => {
+  const draft = buildSourceDraft({ kind: "source", title: "Physics", blockType: "equation", text: "x = 1" });
+  assert.equal(validateSourceDraft(draft), draft);
+  assert.throws(() => validateSourceDraft(draft.replaceAll("::::", ":::::")), /complete typed AzeMark Source/);
+  assert.throws(
+    () => validateSourceDraft("---\nazemark: 2\ntitle: T\nauthor:\n  - AzeForge Web\n---\n\n::::: equation\nid: generated-draft\n----\nx = 1\n:::::\n"),
+    /complete typed AzeMark Source/,
+  );
+});
+
 test("the drafting instruction pins the structure record spelling, not the geometry kind key", () => {
   const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
   assert.match(instruction, /A structure body never uses a `kind:` key/);

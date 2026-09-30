@@ -40,6 +40,9 @@ _Avoid_: Prompt history
 The state in which proposed AzeMark Source has compiler analysis but awaits explicit user application to the editor.
 _Avoid_: Auto-apply
 
+**Directive fence**:
+Exactly four colons (`::::`). Five (`:::::`) is never the standard and must be rejected, never normalized.
+
 **Optional TeX profile**:
 A TeX technical-object profile that is available only when the current deployment advertises its renderer capability.
 _Avoid_: Universal TeX support

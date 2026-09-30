@@ -129,9 +129,13 @@ export function buildSourceDraft(outcome) {
 
 /** @param {string} source */
 export function validateSourceDraft(source) {
+  // Exactly four colons: five is never the standard, so a fifth colon anywhere
+  // on a fence line rejects the draft instead of silently accepting it.
   const frontMatter = /^---\nazemark: 2\ntitle: .+\nauthor:\n(?:  - .+\n)+---\n\n/;
   const nativeBlock = /^:::: (?:equation|derivation|plot|chart|geometry|formula|reaction|structure)\n(?:[^\n]+\n)*----\n[\s\S]+?\n::::\s*$/m;
-  if (!frontMatter.test(source) || !nativeBlock.test(source)) throw new Error("complete typed AzeMark Source required");
+  if (!frontMatter.test(source) || !nativeBlock.test(source) || /(^|\n) {0,3}:::::/m.test(source)) {
+    throw new Error("complete typed AzeMark Source required");
+  }
   return source;
 }
 /**

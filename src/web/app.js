@@ -148,11 +148,12 @@ function assembledSource() {
   return `${lines.join("\n")}\n${body ? `\n${body}\n` : ""}`;
 }
 
-// AzeMark opens a directive envelope with four colons; the name is the rest of
-// that line. Mirrored from the compiler's own fence grammar.
-const DIRECTIVE_OPEN = /^ {0,3}::::[ \t]*([^ \t:]*)[ \t]*$/;
-const DIRECTIVE_FENCE = /^ {0,3}::::/;
-const DIRECTIVE_CLOSE = /^ {0,3}::::[ \t]*$/;
+// AzeMark opens a directive envelope with exactly four colons; five is never
+// the standard. Each pattern pins the width with a negated fifth colon so a
+// wider fence never labels, classifies, or closes as a directive.
+const DIRECTIVE_OPEN = /^ {0,3}::::(?!:)[ \t]*([^ \t:]*)[ \t]*$/;
+const DIRECTIVE_FENCE = /^ {0,3}::::(?!:)/;
+const DIRECTIVE_CLOSE = /^ {0,3}::::(?!:)[ \t]*$/;
 
 /** @param {{ source: string }} cell */
 function label(cell) {
