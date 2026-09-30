@@ -2,6 +2,35 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { authoringInstruction, buildSourceDraft, parseProviderOutcome, shapeOfOutcome, validateDraftRequest, validateProviderOutcome, validateSourceDraft } from "../../src/service/authoring.mjs";
+
+test("the drafting instruction teaches single-argument functions, never comma application", () => {
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  assert.match(instruction, /single parenthesized argument with no comma/);
+  assert.match(instruction, /V\(r t\)/);
+  assert.match(instruction, /never `V\(r, t\)`/);
+});
+
+test("the drafting instruction teaches grouped tensor subscripts, never chained ones", () => {
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  assert.match(instruction, /R_\(mu, nu\)/);
+  assert.match(instruction, /never chained `R_mu_nu`/);
+});
+
+test("the drafting instruction pins the two failing physics equations in valid grammar", async () => {
+  const { createCompiler } = await import("@aruzone/aze-forge");
+  const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
+  const bodies = [...instruction.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  const compiler = createCompiler();
+  for (const expected of [
+    "i hbar partial psi / partial t = -frac(hbar^2, 2 m) nabla^2 psi + V(r t) psi",
+    "R_(mu, nu) - frac(1, 2) R g_(mu, nu) + Lambda g_(mu, nu) = frac(8 pi G, c^4) T_(mu, nu)",
+  ]) {
+    assert.ok(bodies.includes(expected), `instruction must pin ${expected}`);
+    const source = buildSourceDraft({ kind: "source", title: "Physics", blockType: "equation", text: expected });
+    const parsed = compiler.parse(source, {});
+    assert.deepEqual(compiler.validate(parsed).diagnostics, []);
+  }
+});
 test("the drafting instruction pins the structure record spelling, not the geometry kind key", () => {
   const instruction = authoringInstruction(["mathematics", "geometry", "chemistry"]);
   assert.match(instruction, /A structure body never uses a `kind:` key/);
