@@ -114,10 +114,11 @@ describe("access boundary", () => {
       assert.ok(next > position, `expected ${section} in proof order`);
       position = next;
     }
-
-    assert.match(home.text, /ohms-law\.aze\.md/);
+    assert.match(home.text, /variance\.aze\.md/);
     assert.match(home.text, /azemark: 2/);
     assert.match(home.text, /:::: equation/);
+    assert.match(home.text, /rendered Document preview/);
+    assert.ok(home.text.includes('role="img"'));
   });
 
   test("serves versioned AzeMark documentation with generated grammar data", async () => {

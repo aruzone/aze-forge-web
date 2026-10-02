@@ -66,17 +66,18 @@
 </tbody></table></div>
 <h2 id="example">Complete envelope</h2><pre class="code-block"><code class="language-azemark">---
 azemark: 2
-title: Ohm's law
+title: Sample variance
 ---
 
-# Ohm's law
+# Sample variance
 
-Voltage, current, and resistance have a direct relation.
+Spread of a sample around its mean.
 
 :::: equation
-id: ohm-relation
+id: sample-variance
+number: true
 ----
-V = I * R
+sigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2
 ::::</code></pre>
 <h2 id="boundaries">Boundaries</h2><p>Do not document custom metadata as a general language feature. The canonical circuit Source uses <code>x-circuit-symbol-convention: iec</code>, but 0.6.2 does not publish that key in the front-matter grammar.</p>
 </article>

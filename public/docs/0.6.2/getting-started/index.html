@@ -62,17 +62,18 @@
 <p>Save this file as <code>hello.aze.md</code>. The <code>azemark: 2</code> field pins the source language.</p>
 <pre class="code-block"><code class="language-azemark">---
 azemark: 2
-title: Ohm's law
+title: Sample variance
 ---
 
-# Ohm's law
+# Sample variance
 
-Voltage, current, and resistance have a direct relation.
+Spread of a sample around its mean.
 
 :::: equation
-id: ohm-relation
+id: sample-variance
+number: true
 ----
-V = I * R
+sigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2
 ::::</code></pre>
 <h2 id="validate">Validate and render</h2>
 <div class="command"><code id="docs-validate-command">azeforge validate hello.aze.md &amp;&amp; azeforge render hello.aze.md --output hello.html</code><button type="button" data-copy="#docs-validate-command">Copy</button></div>

@@ -428,6 +428,58 @@ h3 {
   font: 12px/1.4 var(--mono);
 }
 
+.rendered-sample {
+  margin: 18px 0 26px;
+  padding: 28px 24px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #111;
+}
+
+.rendered-sample-title {
+  margin: 0 0 8px;
+  color: #111;
+  font: 500 28px/1.15 var(--display);
+  letter-spacing: -0.02em;
+}
+
+.rendered-sample-prose {
+  margin: 0 0 18px;
+  color: #444;
+  font-size: 16px;
+}
+
+.rendered-sample-equation {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  margin: 0;
+  padding: 16px 8px 6px;
+  border-top: 1px solid #e3e3e3;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 21px;
+}
+
+.rendered-sample-math .frac {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: 0.72em;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rendered-sample-math .frac span:first-child {
+  border-bottom: 1px solid currentcolor;
+  padding-bottom: 1px;
+}
+
+.rendered-sample-number {
+  color: #666;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
 .code-block {
   max-width: 100%;
   margin: 18px 0 26px;

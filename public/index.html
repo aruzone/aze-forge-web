@@ -63,20 +63,22 @@
 <section class="proof-section" id="examples">
   <p class="proof-index">03 / AzeMark Source</p>
   <div><h2>A complete document stays readable before it renders.</h2><p class="proof-copy">Front matter pins AzeMark language version 2. Directive fences use exactly four colons and a <code>----</code> header separator.</p>
-  <figure class="source-figure"><figcaption><span>ohms-law.aze.md</span><span>Complete Source</span></figcaption><pre class="code-block"><code class="language-azemark">---
+  <figure class="source-figure"><figcaption><span>variance.aze.md</span><span>Complete Source</span></figcaption><pre class="code-block"><code class="language-azemark">---
 azemark: 2
-title: Ohm's law
+title: Sample variance
 ---
 
-# Ohm's law
+# Sample variance
 
-Voltage, current, and resistance have a direct relation.
+Spread of a sample around its mean.
 
 :::: equation
-id: ohm-relation
+id: sample-variance
+number: true
 ----
-V = I * R
+sigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2
 ::::</code></pre></figure>
+  <figure class="source-figure"><figcaption><span>variance.aze.md · rendered Document preview</span><span>Document preview</span></figcaption><div class="rendered-sample" role="img" aria-label="Rendered sample variance equation: sigma squared equals one over n times the sum from i equals 1 to n of x sub i minus mu, squared"><p class="rendered-sample-title">Sample variance</p><p class="rendered-sample-prose">Spread of a sample around its mean.</p><p class="rendered-sample-equation"><span class="rendered-sample-math" aria-hidden="true">σ<sup>2</sup> = <span class="frac"><span>1</span><span>n</span></span> ∑<sub>i = 1</sub><sup>n</sup> (x<sub>i</sub> − μ)<sup>2</sup></span><span class="rendered-sample-number">(1)</span></p></div></figure>
   <a class="button" href="/docs/0.6.2/examples/">Browse the verified examples</a></div>
 </section>
 <section class="home-continue">
