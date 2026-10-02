@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Install AzeForge to validate and render technical documents written in AzeMark.">
+<title>AzeForge · Compile and render AzeMark</title>
+<link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site-shell">
+<header class="site-header">
+  <a class="brand" href="/" aria-label="AzeForge home"><img src="/assets/azeforge-mark.png" alt=""><span>Aze<span class="brand-accent">Forge</span></span></a>
+  <button class="site-navigation-toggle" type="button" aria-expanded="false" aria-controls="public-navigation" data-site-navigation-toggle>Menu</button>
+  <nav class="site-nav" id="public-navigation" aria-label="Public" data-site-navigation>
+    <a href="/docs/0.6.2/">Docs</a>
+    <a href="/#examples">Examples</a>
+    <a href="/playground">Playground</a>
+    <a class="install-link" href="/#install-command">Install AzeForge</a>
+  </nav>
+</header>
+<main id="main-content">
+<section class="home-hero">
+  <div>
+    <p class="eyebrow">AzeMark compiler and renderer</p>
+    <h1>Technical documents, built from plain text.</h1>
+    <p class="lede">AzeForge is the compiler and renderer for AzeMark. Validate structured technical Source, then render HTML, SVG, PNG, or PDF.</p>
+    <div class="action-row"><a class="button primary" href="#install-command">Install AzeForge</a><a class="button" href="/docs/0.6.2/">Read the docs</a></div>
+    <div class="command"><code id="install-command">npm install -g @aruzone/aze-forge</code><button type="button" data-copy="#install-command">Copy</button></div>
+  </div>
+  <aside class="hero-side" aria-label="AzeForge summary">
+    <div class="brand-geometry" aria-hidden="true"><img src="/assets/azeforge-mark.png" alt=""></div>
+    <p class="eyebrow">Built for structured work</p>
+    <p>AzeMark adds typed directives for equations, data, diagrams, engineering notation, and document composition while keeping prose in Markdown.</p>
+  </aside>
+</section>
+<section class="proof-section" id="capabilities">
+  <p class="proof-index">01 / Capabilities</p>
+  <div><h2>Compiler contracts instead of plugin guesswork.</h2><p class="proof-copy">The 26-directive grammar comes from the same registered definitions the compiler validates.</p>
+  <ul class="capability-list">
+    <li><strong>Readable Source</strong>Markdown prose and typed AzeMark directives stay in one <code>.aze.md</code> file.</li>
+    <li><strong>Corrective diagnostics</strong>Errors carry codes, severity, locations, suggestions, and optional edits.</li>
+    <li><strong>Deterministic output</strong>The same valid Source and render options produce byte-identical Artifacts.</li>
+    <li><strong>Fail-closed rendering</strong>Invalid Source publishes no partial Artifact and does not replace a previous output.</li>
+  </ul></div>
+</section>
+<section class="proof-section" id="use-cases">
+  <p class="proof-index">02 / Use cases</p>
+  <div><h2>Native structures for technical work.</h2><p class="proof-copy">Use one Source format across quantitative notes, engineering records, software models, and publication-ready documents.</p>
+  <ul class="use-case-list">
+    <li><strong>Mathematics</strong><code>equation</code> <code>derivation</code></li>
+<li><strong>Science</strong><code>formula</code> <code>reaction</code> <code>structure</code></li>
+<li><strong>Engineering</strong><code>circuit</code> <code>timing</code> <code>control</code> <code>free-body</code></li>
+<li><strong>Data</strong><code>plot</code> <code>chart</code></li>
+<li><strong>Geometry</strong><code>geometry</code></li>
+<li><strong>Software</strong><code>sequence</code> <code>state</code> <code>entity</code> <code>class</code></li>
+<li><strong>Documents</strong><code>table</code> <code>algorithm</code> <code>statement</code> <code>example</code> <code>bibliography</code> <code>figure</code> <code>callout</code></li>
+<li><strong>Diagrams and escape hatches</strong><code>diagram</code> <code>mermaid</code> <code>tex</code></li>
+  </ul></div>
+</section>
+<section class="proof-section" id="examples">
+  <p class="proof-index">03 / AzeMark Source</p>
+  <div><h2>A complete document stays readable before it renders.</h2><p class="proof-copy">Front matter pins AzeMark language version 2. Directive fences use exactly four colons and a <code>----</code> header separator.</p>
+  <figure class="source-figure"><figcaption><span>ohms-law.aze.md</span><span>Complete Source</span></figcaption><pre class="code-block"><code class="language-azemark">---
+azemark: 2
+title: Ohm's law
+---
+
+# Ohm's law
+
+Voltage, current, and resistance have a direct relation.
+
+:::: equation
+id: ohm-relation
+----
+V = I * R
+::::</code></pre></figure>
+  <a class="button" href="/docs/0.6.2/examples/">Browse the verified examples</a></div>
+</section>
+<section class="home-continue">
+  <p class="eyebrow">Docs and Playground</p>
+  <h2>Read the contract or try the hosted authoring flow.</h2>
+  <div class="cta-row"><a href="/docs/0.6.2/"><strong>Documentation</strong><span>Pinned 0.6.2 guides, generated reference data, and AI-authoring rules.</span></a><a href="/playground"><strong>Playground</strong><span>Use an access token to author and render the Current document in the browser.</span></a></div>
+</section>
+</main>
+<footer class="site-footer">
+  <p>AzeForge 0.6.2 documentation. AzeMark language version 2.</p>
+  <nav aria-label="Footer"><a href="/docs/0.6.2/ai-authoring/">AI authoring</a><a href="/docs/0.6.2/reference/versioning/">Version contract</a></nav>
+</footer>
+</div>
+</body>
+</html>

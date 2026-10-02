@@ -18,7 +18,8 @@
     "walkthrough": "node scripts/walkthrough.mjs",
     "workspace": "node scripts/workspace.mjs",
     "cutover": "node scripts/cutover.mjs",
-    "prototype:public-site": "python3 -m http.server --directory src/web 4173",
+    "build:public": "node scripts/public-site.mjs",
+    "preview:public": "npm run build:public && python3 -m http.server --directory public 4173",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

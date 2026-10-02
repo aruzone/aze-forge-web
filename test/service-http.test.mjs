@@ -62,20 +62,36 @@ describe("access boundary", () => {
     assert.equal((await call(service.base, "GET", "/v1/nope")).status, 404);
   });
 
-  test("serves the inert frontend with a restrictive policy", async () => {
-    const page = await call(service.base, "GET", "/", { token: null });
-    assert.equal(page.status, 200);
-    assert.match(page.headers.get("content-security-policy"), /default-src 'none'/);
-    assert.match(page.headers.get("x-content-type-options"), /nosniff/);
-    const script = await call(service.base, "GET", "/app.js", { token: null });
-    assert.equal(script.status, 200);
-    assert.match(script.headers.get("content-type"), /text\/javascript/);
-    assert.equal((await call(service.base, "GET", "/document-import.js", { token: null })).status, 200);
+  test("serves direct public, documentation, and Playground routes without a fallback", async () => {
+    const home = await call(service.base, "GET", "/", { token: null });
+    assert.equal(home.status, 200);
+    assert.match(home.text, /AzeForge is the compiler and renderer for AzeMark/);
+    assert.match(home.headers.get("content-security-policy"), /default-src 'none'/);
+    assert.match(home.headers.get("x-content-type-options"), /nosniff/);
 
-    const logo = await call(service.base, "GET", "/azeforge-logo-transparent.png", { token: null, raw: true });
-    assert.equal(logo.status, 200);
-    assert.equal(logo.headers.get("content-type"), "image/png");
-    assert.ok(logo.body.length > 0);
+    const docs = await call(service.base, "GET", "/docs/0.6.2/", { token: null });
+    assert.equal(docs.status, 200);
+    assert.match(docs.text, /AzeForge 0\.6\.2/);
+    assert.equal(
+      (await call(service.base, "GET", "/docs/0.6.2/reference/directives/", { token: null })).status,
+      200,
+    );
+    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    assert.equal(grammar.status, 200);
+    assert.equal(grammar.json.schema, "azeforge.grammar/v1");
+    assert.equal(grammar.json.directives.length, 26);
+    const example = await call(service.base, "GET", "/docs/0.6.2/examples/mathematics.aze.md", {
+      token: null,
+    });
+    assert.equal(example.status, 200);
+    assert.match(example.text, /^---\nazemark: 2/m);
+    assert.equal((await call(service.base, "GET", "/docs/0.6.2/not-a-page", { token: null })).status, 404);
+
+    const playground = await call(service.base, "GET", "/playground", { token: null });
+    assert.equal(playground.status, 200);
+    assert.match(playground.text, /Open AzeForge Web/);
+    assert.equal((await call(service.base, "GET", "/playground/app.js", { token: null })).status, 200);
+    assert.equal((await call(service.base, "GET", "/app.js", { token: null })).status, 404);
   });
 
   test("a not-ready service refuses work instead of answering", async () => {

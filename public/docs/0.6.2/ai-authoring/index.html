@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Rules and machine-readable contracts for generating AzeMark 2 for AzeForge 0.6.2.">
+<title>AI authoring · AzeForge docs</title>
+<link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site-shell">
+<header class="site-header">
+  <a class="brand" href="/" aria-label="AzeForge home"><img src="/assets/azeforge-mark.png" alt=""><span>Aze<span class="brand-accent">Forge</span></span></a>
+  <button class="site-navigation-toggle" type="button" aria-expanded="false" aria-controls="public-navigation" data-site-navigation-toggle>Menu</button>
+  <nav class="site-nav" id="public-navigation" aria-label="Public" data-site-navigation>
+    <a href="/docs/0.6.2/" aria-current="page">Docs</a>
+    <a href="/#examples">Examples</a>
+    <a href="/playground">Playground</a>
+    <a class="install-link" href="/#install-command">Install AzeForge</a>
+  </nav>
+</header>
+<nav class="docs-header-row" aria-label="Documentation menu"><p>AzeForge 0.6.2</p><button class="navigation-toggle" type="button" aria-expanded="false" data-navigation-toggle>Documentation menu</button></nav>
+<main class="docs-layout" id="main-content">
+<nav class="docs-nav" aria-label="Documentation" data-navigation>
+<p>Start here</p>
+<a href="/docs/0.6.2/">Documentation home</a>
+<a href="/docs/0.6.2/getting-started/">Install and first document</a>
+<p>Language</p>
+<a href="/docs/0.6.2/language/">Foundations</a>
+<a href="/docs/0.6.2/examples/">Example corpus</a>
+<p>Family guides</p>
+<a href="/docs/0.6.2/guides/mathematics/">Mathematics</a>
+<a href="/docs/0.6.2/guides/science/">Science</a>
+<a href="/docs/0.6.2/guides/engineering/">Engineering</a>
+<a href="/docs/0.6.2/guides/data/">Data</a>
+<a href="/docs/0.6.2/guides/geometry/">Geometry</a>
+<a href="/docs/0.6.2/guides/software/">Software</a>
+<a href="/docs/0.6.2/guides/documents/">Documents</a>
+<a href="/docs/0.6.2/guides/diagrams/">Diagrams and escape hatches</a>
+<p>Reference</p>
+<a href="/docs/0.6.2/reference/directives/">26 directives</a>
+<a href="/docs/0.6.2/reference/front-matter/">Front matter</a>
+<a href="/docs/0.6.2/reference/operations/">Operations</a>
+<a href="/docs/0.6.2/reference/formats-themes/">Formats and themes</a>
+<a href="/docs/0.6.2/reference/diagnostics/">Diagnostics</a>
+<a href="/docs/0.6.2/reference/limits/">Limits</a>
+<a href="/docs/0.6.2/reference/versioning/">Versioning</a>
+<p>AI authoring</p>
+<a href="/docs/0.6.2/ai-authoring/" aria-current="page">Agent contract</a>
+</nav>
+<article class="docs-content">
+<p class="version-label">AzeMark 2 · AzeForge 0.6.2</p>
+<h1>AI-authoring contract.</h1>
+<p class="lede">Generate AzeMark language version 2 for AzeForge 0.6.2. Treat the generated grammar as normative and the canonical Sources as executable examples.</p>
+<h2 id="rules">Hard rules</h2>
+<ol><li>Emit complete <code>.aze.md</code> Source with <code>azemark: 2</code> front matter.</li><li>Use exactly four colons for outer directive fences, <code>::</code> only for nested figure children, and <code>----</code> between headers and bodies.</li><li>Choose directive fields, enum values, body records, and limits from <a href="/docs/0.6.2/ai/grammar.json">grammar.json</a>. Do not infer near-miss keys.</li><li>Use document-scoped kebab-case IDs and declare a target before referring to it when the family resolves declarations in order.</li><li>Run analyze or validate before render. Correct Source from diagnostic locations and suggestions. Never suppress or rewrite a diagnostic as success.</li><li>Do not promise TeX rendering unless capabilities advertise the configured adapter. Mermaid and visual formats need the browser capability.</li><li>Do not use the diagnostic sampler as valid Source. Treat the TeX Source as deployment-dependent.</li></ol>
+<h2 id="artifacts">Machine-readable artifacts</h2>
+<ul class="link-list"><li><a href="/docs/0.6.2/ai/grammar.json"><strong>grammar.json</strong><span>All 26 directives, body schemas, enums, and limits.</span></a></li><li><a href="/docs/0.6.2/ai/capabilities.json"><strong>capabilities.json</strong><span>Formats, themes, engines, policies, profiles, and security properties.</span></a></li><li><a href="/docs/0.6.2/ai/version.json"><strong>version.json</strong><span>Compiler, source-language, document-schema, and plugin-schema versions.</span></a></li><li><a href="/docs/0.6.2/llms.txt"><strong>llms.txt</strong><span>Compact routes and authoring rules for retrieval.</span></a></li></ul>
+<h2 id="unknowns">Do not invent these facts</h2><p>The 0.6.2 evidence does not define the complete readable-equation vocabulary, <code>defaults</code> and <code>outputs</code> semantics, full citation or endnote syntax, theme visuals, a complete diagnostic-code catalog, circuit metadata semantics, or future version-transition rules.</p>
+</article>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#rules">Hard rules</a><a href="#artifacts">Artifacts</a><a href="#unknowns">Unknowns</a></aside>
+</main>
+<footer class="site-footer">
+  <p>AzeForge 0.6.2 documentation. AzeMark language version 2.</p>
+  <nav aria-label="Footer"><a href="/docs/0.6.2/ai-authoring/">AI authoring</a><a href="/docs/0.6.2/reference/versioning/">Version contract</a></nav>
+</footer>
+</div>
+</body>
+</html>

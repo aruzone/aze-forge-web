@@ -1,38 +1,42 @@
 /**
- * The single-user frontend is served as bytes from the service's own
- * directory. Files are read once at startup: the frontend is part of the
- * image, not a mutable resource.
+ * Static public-site and Playground assets.
+ *
+ * Both trees are read once at startup. The public tree is generated as a
+ * standalone bundle; the authoring tree is mounted only below `/playground`.
  */
 
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile, readdir } from "node:fs/promises";
+import { extname, join, posix, relative, sep } from "node:path";
 
-/** @type {Record<string, string>} */
+/** @type {Readonly<Record<string, string>>} */
 const CONTENT_TYPES = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".ttf": "font/ttf",
+  ".md": "text/markdown; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
 });
 
-const FILES = Object.freeze([
-  "index.html",
-  "app.js",
-  "app.css",
-  "coordinates.js",
-  "workspace-state.js",
-  "front-matter.js",
-  "starter.js",
-  "document-import.js",
-  "examples.json",
-  "azeforge-logo-transparent.png",
-]);
+export const PUBLIC_CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self'",
+  "font-src 'self'",
+  "connect-src 'none'",
+  "frame-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "object-src 'none'",
+].join("; ");
 
 /**
- * The frontend is inert by construction: no remote origins, no inline scripts
- * beyond the module it ships, and it may frame only the blob preview it
- * builds from an Artifact it fetched itself.
+ * The Playground is inert by construction: no remote origins, no inline
+ * scripts beyond the module it ships, and it may frame only the blob preview
+ * it builds from an Artifact it fetched itself.
  */
 export const FRONTEND_CONTENT_SECURITY_POLICY = [
   "default-src 'none'",
@@ -48,18 +52,63 @@ export const FRONTEND_CONTENT_SECURITY_POLICY = [
 ].join("; ");
 
 /**
- * @param {string} directory
- * @returns {Promise<Map<string, { body: Buffer, contentType: string }>>}
+ * @typedef {{ body: Buffer, contentType: string, contentSecurityPolicy: string }} StaticAsset
  */
-export async function loadWebAssets(directory) {
-  /** @type {Map<string, { body: Buffer, contentType: string }>} */
+
+/**
+ * @param {{ publicRoot: string, playgroundRoot: string }} input
+ * @returns {Promise<Map<string, StaticAsset>>}
+ */
+export async function loadWebAssets({ publicRoot, playgroundRoot }) {
+  const publicAssets = await loadDirectory(publicRoot, "", PUBLIC_CONTENT_SECURITY_POLICY);
+  const playgroundAssets = await loadDirectory(
+    playgroundRoot,
+    "/playground",
+    FRONTEND_CONTENT_SECURITY_POLICY,
+  );
+  return new Map([...publicAssets, ...playgroundAssets]);
+}
+
+/**
+ * @param {string} directory
+ * @param {string} prefix
+ * @param {string} contentSecurityPolicy
+ * @returns {Promise<Map<string, StaticAsset>>}
+ */
+async function loadDirectory(directory, prefix, contentSecurityPolicy) {
+  /** @type {Map<string, StaticAsset>} */
   const assets = new Map();
-  for (const file of FILES) {
-    const body = await readFile(join(directory, file));
-    const extension = /** @type {keyof typeof CONTENT_TYPES} */ (file.slice(file.lastIndexOf(".")));
-    assets.set(`/${file}`, { body, contentType: CONTENT_TYPES[extension] });
-  }
-  const index = /** @type {{ body: Buffer, contentType: string }} */ (assets.get("/index.html"));
-  assets.set("/", { body: index.body, contentType: index.contentType });
+  await visit(directory);
   return assets;
+
+  /** @param {string} current */
+  async function visit(current) {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        await visit(path);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+
+      const extension = extname(entry.name);
+      const contentType = CONTENT_TYPES[extension];
+      if (contentType === undefined) throw new Error(`unsupported static asset type: ${entry.name}`);
+
+      const name = relative(directory, path).split(sep).join(posix.sep);
+      const route = `${prefix}/${name}`;
+      const asset = {
+        body: await readFile(path),
+        contentType,
+        contentSecurityPolicy,
+      };
+      assets.set(route, asset);
+
+      if (entry.name === "index.html") {
+        const directoryRoute = route.slice(0, -"index.html".length);
+        assets.set(directoryRoute, asset);
+        assets.set(directoryRoute === "/" ? "/" : directoryRoute.slice(0, -1), asset);
+      }
+    }
+  }
 }

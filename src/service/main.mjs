@@ -25,7 +25,8 @@ import { probeTexRendererAsync, texRendererEnvironment } from "./tex-renderer.mj
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const WORKER_ENTRY = join(HERE, "worker-entry.mjs");
-export const WEB_ROOT = join(HERE, "..", "web");
+export const PLAYGROUND_ROOT = join(HERE, "..", "web");
+export const PUBLIC_ROOT = join(HERE, "..", "..", "public");
 const READINESS_RETRY_MS = 30_000;
 
 /**
@@ -34,7 +35,8 @@ const READINESS_RETRY_MS = 30_000;
  * @param {{ config: import("./config.mjs").Config, log?: import("./types.mjs").AzeLogger,
  *           now?: () => number, workerEntry?: string, nodePath?: string,
  *           checkTimeoutMs?: number, compilerFacts?: import("./types.mjs").AzeCompilerFacts,
- *           webRoot?: string, rendererProbe?: typeof probeTexRendererAsync,
+ *           publicRoot?: string, playgroundRoot?: string,
+ *           rendererProbe?: typeof probeTexRendererAsync,
  *           authoringProvider?: { generate: (description: string) => Promise<any> } | null }} input
  * @returns {Promise<any>}
  */
@@ -46,7 +48,8 @@ export async function createApplication({
   nodePath = process.execPath,
   checkTimeoutMs = 60_000,
   compilerFacts: providedFacts,
-  webRoot = WEB_ROOT,
+  publicRoot = PUBLIC_ROOT,
+  playgroundRoot = PLAYGROUND_ROOT,
   rendererProbe = probeTexRendererAsync,
   authoringProvider,
 }) {
@@ -106,7 +109,7 @@ export async function createApplication({
     assets,
     jobs,
     authoringProvider: provider,
-    webAssets: await loadWebAssets(webRoot),
+    webAssets: await loadWebAssets({ publicRoot, playgroundRoot }),
     now,
   });
 

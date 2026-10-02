@@ -1,22 +1,21 @@
 # AzeForge Web
 
-AzeForge Web is the single-user web product for AzeMark: an ephemeral Node
-service that compiles Source through the published `@aruzone/aze-forge`
-compiler, and a frontend for editing Source, reading live diagnostics,
-previewing with a selected Theme and exporting HTML, SVG, PNG and PDF.
+AzeForge Web hosts the public AzeForge site, versioned AzeMark documentation,
+and the single-user Playground. AzeForge is the installable compiler and
+renderer. AzeMark is its source language. Playground is the authenticated
+browser authoring flow backed by the ephemeral Node service.
 
 It is a separate repository that consumes a published compiler dependency. No
 compiler source is copied, and there is no monorepo coupling.
 
 ## Scope
 
-This repository implements the service, the edit-preview-export frontend, and —
-per [Package the AzeForge Web image, env schema, and smoke suite](https://github.com/aruzone/aze-forge-web/issues/2)
-and the [operating envelope](https://github.com/aruzone/aze-forge/issues/54) it
-packages — the deployable image, the documented environment schema and the
-deployment acceptance smoke suite. [Build the AzeForge Web service and
-edit-preview-export frontend](https://github.com/aruzone/aze-forge-web/issues/1)
-is the service and frontend work itself.
+This repository implements the standalone public bundle at `/` and
+`/docs/0.6.2/...`, the edit-preview-export Playground at `/playground`, and its
+`/v1` compiler service. It also packages the deployable image, environment
+schema, and deployment acceptance smoke suite specified by
+[Package the AzeForge Web image, env schema, and smoke suite](https://github.com/aruzone/aze-forge-web/issues/2)
+and the [operating envelope](https://github.com/aruzone/aze-forge/issues/54).
 
 The authoring workspace is specified in
 [`docs/ui/authoring-workspace-redesign.md`](docs/ui/authoring-workspace-redesign.md):
@@ -41,8 +40,10 @@ cp .env.example .env
 set -a
 source .env
 set +a
+npm run build:public
 npm run start
-# then open http://127.0.0.1:8080 and paste the token
+# Public site: http://127.0.0.1:8080
+# Authenticated Playground: http://127.0.0.1:8080/playground
 ```
 
 The service refuses to start with an invalid configuration, and reports not-ready
@@ -62,7 +63,9 @@ model must support `/responses` and the strict JSON-schema request used by the
 Draft Gate. Command Code's live `/provider/v1/models` response is authoritative
 for model and endpoint availability.
 
-The frontend uses `src/web/azeforge-logo-transparent.png` for the access gate, application rail, and browser favicon.
+The public bundle and Playground use the supplied AzeForge mark. The public
+bundle includes local Playfair Display, Geist, and Geist Mono files, so no
+page needs a font CDN.
 
 ## What the service is responsible for
 
@@ -79,10 +82,10 @@ The frontend uses `src/web/azeforge-logo-transparent.png` for the access gate, a
 | TeX | Optional and worker-only. A compile containing `tex` Blocks starts one short-lived, digest-pinned renderer instance through the compiler's batch adapter, and publishes its Artifact or the compiler's own diagnostic — never a placeholder. The request boundary cannot name the renderer, and a job without `tex` starts no instance. |
 | Logs | Metadata only. Source text, asset bytes, Artifact bytes and diagnostic messages never appear. |
 
-The frontend owns editing, examples, request scheduling and polling,
+The Playground owns editing, examples, request scheduling and polling,
 stale-result rejection, Theme and format controls, explicit replacement
-application and downloads. It does not reproduce compiler policy: what a
-diagnostic means, what may be fixed and what renders all come from the compiler.
+application and downloads. It does not reproduce compiler policy. Diagnostic
+meaning, available fixes, and rendering behavior come from the compiler.
 
 The authoring workspace edits one ephemeral Current document as stable-identity
 Cells. Its dark application rail, Current document navigation, manually
@@ -118,6 +121,9 @@ in a browser.
 
 | Method and path | Contract |
 | --- | --- |
+| `GET /` | Standalone public AzeForge site. |
+| `GET /docs/0.6.2/...` | Direct static pages for the pinned human and AI documentation, generated grammar and capabilities, and canonical example Sources. Unknown documentation paths return `404`; there is no client-side route fallback. |
+| `GET /playground`, `GET /playground/...` | Authenticated authoring application shell and its static assets. The shell is open; `/v1` remains token-gated. |
 | `GET /healthz`, `GET /readyz` | Unauthenticated and detail-free: liveness and readiness only. Everything informative lives behind the token. |
 | `GET /v1/capabilities` | The installed compiler's capability document, embedded verbatim, plus this deployment's effective policy, limits, deadlines and retention. |
 | `GET /v1/schemas/{schemaId}` | The schemas of the installed compiler, plus the service's own envelopes. Schema ids contain `/`; percent-encode it or not, both work. |
@@ -560,7 +566,9 @@ src/service/
   capabilities.mjs    the compiler's capabilities plus this deployment's policy
   schemas.mjs         the published schema registry
   tex-renderer.mjs    the trusted TeX renderer: fixed argv, worker env, readiness probe
-src/web/              the frontend: no build step, no runtime dependencies
+src/public/           public CSS, JavaScript, and locally hosted fonts
+src/web/              Playground application, mounted only below /playground
+public/               generated standalone site and versioned documentation
 Dockerfile            the deployable image (Node LTS + pinned browser + fonts)
 docker/               the image entrypoint and the build-time browser provisioning
 scripts/cli.mjs       the flags, recorder and failure vocabulary the suites share
@@ -575,6 +583,7 @@ scripts/cutover.mjs   the cutover: runs both suites, decides the alpha pass/fail
 scripts/cutover/      the catalog accessor and the rule itself
 scripts/image-manifest.mjs  the image's exact pins, generated at build time
 scripts/examples.mjs        regenerates src/web/examples.json from the compiler's library
+scripts/public-site.mjs     builds public/ from compiler facts and the verified examples
 acceptance/           the walkthrough Source, the golden report and its identity,
                       the upload fixture, and the recorded suite output
 ```

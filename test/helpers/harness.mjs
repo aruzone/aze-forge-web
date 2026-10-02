@@ -15,7 +15,8 @@ import { createLogger } from "../../src/service/log.mjs";
 
 export const TEST_TOKEN = "t".repeat(40);
 export const STUB_WORKER = fileURLToPath(new URL("../fixtures/stub-worker.mjs", import.meta.url));
-export const WEB_ROOT = fileURLToPath(new URL("../../src/web", import.meta.url));
+export const PLAYGROUND_ROOT = fileURLToPath(new URL("../../src/web", import.meta.url));
+export const PUBLIC_ROOT = fileURLToPath(new URL("../../public", import.meta.url));
 
 /** Facts shaped like `collectCompilerFacts()`, without loading the compiler. */
 export function fakeCompilerFacts(overrides = {}) {
@@ -80,7 +81,8 @@ export async function startTestService(options = {}) {
     config,
     log,
     workerEntry: realWorker ? undefined : options.workerEntry ?? STUB_WORKER,
-    webRoot: WEB_ROOT,
+    playgroundRoot: PLAYGROUND_ROOT,
+    publicRoot: PUBLIC_ROOT,
     compilerFacts:
       options.compilerFacts ?? (realWorker ? undefined : fakeCompilerFacts()),
     rendererProbe: options.rendererProbe,
