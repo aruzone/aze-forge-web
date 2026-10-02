@@ -190,7 +190,7 @@ function page({ title, description, current, main }) {
 <title>${escapeHtml(title)}</title>
 <link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
 <link rel="stylesheet" href="/assets/site.css">
-<script src="/assets/site.js" defer></script>
+<link rel="stylesheet" href="/assets/inter-diagram.css">
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -443,7 +443,7 @@ const familyShowcases = {
   },
   software: {
     file: "10-models.aze.md",
-    source: ":::: sequence\nid: cache-lookup\nnumber: true\ntitle: Cache lookup\ndescription: One request and its reply.\n----\nparticipants:\n  - name: client\n    kind: actor\n    label: Client\n  - name: cache\n    label: Cache\ntimeline:\n  - kind: message\n    from: client\n    to: cache\n    text: Read key\n  - kind: message\n    from: cache\n    to: client\n    form: return\n    text: Cached value\n::::",
+    source: ":::: sequence\nid: cache-lookup\ntitle: Cache lookup\ndescription: One request and its reply across two participants.\n----\nparticipants:\n  - name: client\n    kind: actor\n    label: Client\n  - name: cache\n    label: Cache\ntimeline:\n  - kind: message\n    from: client\n    to: cache\n    text: Read key\n  - kind: message\n    from: cache\n    to: client\n    form: return\n    text: Cached value\n::::",
     caption: "Cache lookup",
     label: "Rendered cache lookup sequence",
   },
@@ -455,9 +455,9 @@ const familyShowcases = {
   },
   diagrams: {
     file: "08-diagrams.aze.md",
-    source: ":::: diagram\nid: water-treatment-line\ntitle: Water treatment line\nmode: flowchart\nflow: top-to-bottom\n----\n- kind: node\n  name: intake\n  label: Raw water intake\n  shape: circle\n- kind: node\n  name: filter\n  label: Sand filter\n- kind: node\n  name: chlorinate\n  label: Chlorination\n  shape: cylinder\n- kind: edge\n  from: intake\n  to: filter\n- kind: edge\n  from: filter\n  to: chlorinate\n::::",
-    caption: "Water treatment line",
-    label: "Rendered water treatment flowchart",
+    source: ":::: diagram\nid: request-flow\ntitle: Request flow\nmode: flowchart\nflow: left-to-right\n----\n- kind: node\n  name: request\n  label: Request\n  shape: rounded\n- kind: node\n  name: response\n  label: Response\n  shape: rounded\n- kind: edge\n  from: request\n  to: response\n::::",
+    caption: "Request flow",
+    label: "Rendered request flowchart",
   },
 };
 

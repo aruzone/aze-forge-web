@@ -158,6 +158,16 @@ describe("access boundary", () => {
     const data = await call(service.base, "GET", "/docs/0.6.3/guides/data/", { token: null });
     assert.match(data.text, /logistic-growth/);
     assert.match(data.text, /<svg/);
+    const software = await call(service.base, "GET", "/docs/0.6.3/guides/software/", {
+      token: null,
+    });
+    assert.match(software.text, /backup-rotation/);
+    assert.match(software.text, /Backup rotation/);
+    const diagrams = await call(service.base, "GET", "/docs/0.6.3/guides/diagrams/", {
+      token: null,
+    });
+    assert.match(diagrams.text, /request-branching/);
+    assert.match(diagrams.text, /Classify request/);
   });
 
   test("serves versioned AzeMark documentation with generated grammar data", async () => {

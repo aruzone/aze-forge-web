@@ -499,7 +499,75 @@ h3 {
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 0 auto;
+  margin: 0;
+  color: #111;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.artifact-shot svg text {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  text-anchor: middle;
+}
+
+.artifact-shot svg .aze-diagram-node-label,
+.artifact-shot svg .aze-diagram-edge-label,
+.artifact-shot svg .aze-models-label {
+  text-anchor: middle;
+}
+.artifact-shot svg .aze-diagram-node-shape,
+.artifact-shot svg .aze-diagram-port,
+.artifact-shot svg .aze-models-box,
+.artifact-shot svg .aze-state-shape,
+.artifact-shot svg .aze-entity-box,
+.artifact-shot svg .aze-class-box,
+.artifact-shot svg .aze-class-arrow-hollow,
+.artifact-shot svg .aze-sequence-activation,
+.artifact-shot svg .aze-diagram-edge-label-background {
+  fill: #fff;
+  stroke: #3f4652;
+  stroke-width: 1.2px;
+}
+
+.artifact-shot svg .aze-diagram-group,
+.artifact-shot svg .aze-models-header,
+.artifact-shot svg .aze-entity-header,
+.artifact-shot svg .aze-class-header {
+  fill: #eef1f5;
+  stroke: #3f4652;
+  stroke-width: 1.2px;
+}
+
+.artifact-shot svg .aze-diagram-edge,
+.artifact-shot svg .aze-sequence-message {
+  fill: none;
+  stroke: #3f4652;
+  stroke-width: 1.4px;
+}
+
+.artifact-shot svg .aze-diagram-arrow,
+.artifact-shot svg .aze-sequence-arrow,
+.artifact-shot svg .aze-state-arrow,
+.artifact-shot svg .aze-class-arrow,
+.artifact-shot svg .aze-multiplicity-label {
+  fill: #3f4652;
+}
+
+.artifact-shot svg .aze-sequence-lifeline,
+.artifact-shot svg .aze-models-divider,
+.artifact-shot svg .aze-state-divider,
+.artifact-shot svg .aze-entity-divider,
+.artifact-shot svg .aze-class-divider {
+  stroke: #8a93a3;
+}
+
+.artifact-shot svg .aze-sequence-actor,
+.artifact-shot svg .aze-sequence-participant {
+  fill: none;
+  stroke: #3f4652;
+}
+
+.artifact-shot svg .aze-sequence-actor-head {
+  fill: #fff;
 }
 
 .artifact-shot math {

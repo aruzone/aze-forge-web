@@ -13,7 +13,7 @@
 <a class="skip-link" href="#document-navigation">Skip to Current document navigation</a>
 <div id="workspace" class="workspace" hidden>
   <nav class="app-rail" aria-label="Application">
-    <img src="/playground/azeforge-logo-transparent.png" alt="AzeForge" width="36" height="36">
+    <a href="/" aria-label="Return to AzeForge home"><img src="/playground/azeforge-logo-transparent.png" alt="AzeForge" width="36" height="36"></a>
     <button class="rail-destination" type="button" aria-current="page"><span aria-hidden="true">▤</span><span class="visually-hidden">Author workspace</span></button>
     <span class="rail-spacer"></span>
     <button id="service-health" class="rail-destination" type="button" aria-haspopup="dialog"><span aria-hidden="true">●</span><span class="visually-hidden">Service details</span></button>
@@ -94,7 +94,7 @@
 
 <dialog id="service-dialog" aria-labelledby="service-title"><h2 id="service-title">Service details</h2><p id="service-meta">Connecting…</p><button id="close-service" type="button">Close</button></dialog>
 
-<div class="gate" id="gate"><form class="gate-card" id="gate-form" aria-labelledby="gate-title"><img src="/playground/azeforge-logo-transparent.png" alt="" width="48" height="48"><h1 id="gate-title">Open AzeForge Web</h1><p>Enter the deployment access token.</p><label>Access token<input id="gate-token" type="password" autocomplete="current-password"></label><p id="gate-error" class="error" role="alert"></p><button type="submit">Enter workspace</button></form></div>
+<div class="gate" id="gate"><form class="gate-card" id="gate-form" aria-labelledby="gate-title"><a href="/" aria-label="Return to AzeForge home"><img src="/playground/azeforge-logo-transparent.png" alt="" width="48" height="48"></a><h1 id="gate-title">Open AzeForge Web</h1><p>Enter the deployment access token.</p><label>Access token<input id="gate-token" type="password" autocomplete="current-password"></label><p id="gate-error" class="error" role="alert"></p><button type="submit">Enter workspace</button></form></div>
 <script type="module" src="/playground/app.js"></script>
 </body>
 </html>
