@@ -333,6 +333,20 @@ const home = page({
   <figure class="source-figure"><figcaption><span>variance.aze.md · rendered Document preview</span><span>Document preview</span></figcaption><div class="rendered-sample" role="img" aria-label="Rendered sample variance equation: sigma squared equals one over n times the sum from i equals 1 to n of x sub i minus mu, squared"><p class="rendered-sample-title">Sample variance</p><p class="rendered-sample-prose">Spread of a sample around its mean.</p><p class="rendered-sample-equation"><span class="rendered-sample-math" aria-hidden="true">σ<sup>2</sup> = <span class="frac"><span>1</span><span>n</span></span> ∑<sub>i = 1</sub><sup>n</sup> (x<sub>i</sub> − μ)<sup>2</sup></span><span class="rendered-sample-number">(1)</span></p></div></figure>
   <a class="button" href="${DOCS_ROOT}/examples/">Browse the verified examples</a></div>
 </section>
+<section class="proof-section" id="compare">
+  <p class="proof-index">04 / Compare</p>
+  <div><h2>Capability comparison, not a benchmark.</h2><p class="proof-copy">AzeForge check marks mean built-in, typed AzeMark support. Other columns name their usual authoring or extension path.</p>
+  <div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Capability</th><th>AzeForge</th><th>Typst</th><th>Quarto</th><th>LaTeX</th></tr></thead><tbody>
+<tr><td>Markdown-like authoring</td><td>✓</td><td>—</td><td>✓</td><td>—</td></tr>
+<tr><td>Mathematics</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>Mermaid diagrams</td><td>✓</td><td>extensions</td><td>✓</td><td>tooling</td></tr>
+<tr><td>Technical-domain diagrams</td><td>native typed Blocks</td><td>packages</td><td>external extensions</td><td>packages</td></tr>
+<tr><td>Published JSON directive grammar</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>Compiler npm API</td><td>✓</td><td>different ecosystem</td><td>—</td><td>—</td></tr>
+<tr><td>Local live preview</td><td>✓</td><td>web app</td><td>editor integrations</td><td>tooling or Overleaf</td></tr>
+<tr><td>Self-contained HTML, SVG, PNG, and PDF</td><td>✓</td><td>varies by output</td><td>varies by output</td><td>usually PDF</td></tr>
+  </tbody></table></div></div>
+</section>
 <section class="home-continue">
   <p class="eyebrow">Docs and Playground</p>
   <h2>Read the contract or try the hosted authoring flow.</h2>

@@ -111,13 +111,15 @@ describe("access boundary", () => {
     assert.match(home.text, /We.*open source/);
     assert.match(home.text, /MIT licensed/);
 
-    const sections = ["id=\"capabilities\"", "id=\"use-cases\"", "id=\"examples\"", "home-continue"];
+    const sections = ["id=\"capabilities\"", "id=\"use-cases\"", "id=\"examples\"", "id=\"compare\"", "home-continue"];
     let position = -1;
     for (const section of sections) {
       const next = home.text.indexOf(section);
       assert.ok(next > position, `expected ${section} in proof order`);
       position = next;
     }
+    assert.match(home.text, /Capability comparison, not a benchmark/);
+    assert.match(home.text, /Published JSON directive grammar/);
     assert.match(home.text, /variance\.aze\.md/);
     assert.match(home.text, /azemark: 2/);
     assert.match(home.text, /:::: equation/);
