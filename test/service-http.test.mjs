@@ -96,6 +96,95 @@ describe("access boundary", () => {
     assert.equal((await call(service.base, "GET", "/app.js", { token: null })).status, 404);
   });
 
+  test("serves versioned AzeMark documentation with generated grammar data", async () => {
+    const docs = await call(service.base, "GET", "/docs/0.6.2/", { token: null });
+    assert.equal(docs.status, 200);
+    assert.match(docs.text, /pinned to AzeForge 0\.6\.2, AzeMark language version 2/);
+    assert.match(docs.text, /azeforge\.grammar\/v1/);
+
+    for (const route of [
+      "/docs/0.6.2/getting-started/",
+      "/docs/0.6.2/language/",
+      "/docs/0.6.2/guides/mathematics/",
+      "/docs/0.6.2/ai-authoring/",
+    ]) {
+      assert.equal((await call(service.base, "GET", route, { token: null })).status, 200);
+    }
+  });
+
+  test("renders every generated directive in the AzeMark reference", async () => {
+    const directives = await call(service.base, "GET", "/docs/0.6.2/reference/directives/", {
+      token: null,
+    });
+    assert.equal(directives.status, 200);
+    assert.match(directives.text, /All 26 registered directives below come from/);
+
+    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    assert.equal(grammar.json.schema, "azeforge.grammar/v1");
+    assert.equal(grammar.json.directives.length, 26);
+    for (const directive of grammar.json.directives) {
+      assert.match(directives.text, new RegExp(`id="${directive.type}"`));
+    }
+  });
+
+  test("publishes generated agent artifacts for the pinned compiler", async () => {
+    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    assert.equal(grammar.json.schema, "azeforge.grammar/v1");
+    assert.equal(grammar.json.directives.length, 26);
+
+    const capabilities = await call(service.base, "GET", "/docs/0.6.2/ai/capabilities.json", {
+      token: null,
+    });
+    assert.equal(capabilities.json.tool.version, "0.6.2");
+
+    const version = await call(service.base, "GET", "/docs/0.6.2/ai/version.json", { token: null });
+    assert.equal(version.json.tool.version, "0.6.2");
+    assert.deepEqual(version.json.source.azemarkVersions, [2]);
+  });
+
+  test("keeps the valid example corpus separate from the invalid sampler", async () => {
+    const corpus = await call(service.base, "GET", "/docs/0.6.2/examples/", { token: null });
+    assert.match(corpus.text, /Fifteen Sources are valid/);
+    assert.match(corpus.text, /deliberately invalid/);
+
+    const exampleNames = [
+      "authoring-azemark",
+      "chemistry",
+      "circuit",
+      "composition",
+      "diagrams",
+      "document-basics",
+      "engineering",
+      "geometry",
+      "mathematics",
+      "models",
+      "showcase",
+      "structured-content",
+      "tex",
+      "timing",
+      "visualization",
+    ];
+    for (const name of exampleNames) {
+      const example = await call(service.base, "GET", `/docs/0.6.2/examples/${name}.aze.md`, {
+        token: null,
+      });
+      assert.equal(example.status, 200);
+      assert.match(example.text, /^---\nazemark: 2/m);
+    }
+
+    const sampler = await call(service.base, "GET", "/docs/0.6.2/examples/diagnostics.aze.md", {
+      token: null,
+    });
+    assert.match(sampler.text, /^---\nazemark: 2/m);
+    assert.match(sampler.text, /Expected:/);
+
+    const diagnostics = await call(service.base, "GET", "/docs/0.6.2/reference/diagnostics/", {
+      token: null,
+    });
+    assert.match(diagnostics.text, /verified sample, not a complete catalog/);
+    assert.match(diagnostics.text, /deployment-configured renderer|deployment/);
+  });
+
   test("a not-ready service refuses work instead of answering", async () => {
     const fresh = await startTestService();
     try {
