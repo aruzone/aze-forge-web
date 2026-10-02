@@ -335,17 +335,16 @@ const home = page({
 </section>
 <section class="proof-section" id="compare">
   <p class="proof-index">04 / Compare</p>
-  <div><h2>Capability comparison, not a benchmark.</h2><p class="proof-copy">AzeForge check marks mean built-in, typed AzeMark support. Other columns name their usual authoring or extension path.</p>
+  <div><h2>What Changes When the Document Is a Contract.</h2><p class="proof-copy">Other tools render pages. AzeForge validates meaning first: every Block is typed, every field is checked, and the grammar is published as JSON so humans and agents author against the same contract.</p>
   <div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Capability</th><th>AzeForge</th><th>Typst</th><th>Quarto</th><th>LaTeX</th></tr></thead><tbody>
-<tr><td>Markdown-like authoring</td><td>✓</td><td>—</td><td>✓</td><td>—</td></tr>
-<tr><td>Mathematics</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-<tr><td>Mermaid diagrams</td><td>✓</td><td>extensions</td><td>✓</td><td>tooling</td></tr>
-<tr><td>Technical-domain diagrams</td><td>native typed Blocks</td><td>packages</td><td>external extensions</td><td>packages</td></tr>
-<tr><td>Published JSON directive grammar</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
-<tr><td>Compiler npm API</td><td>✓</td><td>different ecosystem</td><td>—</td><td>—</td></tr>
-<tr><td>Local live preview</td><td>✓</td><td>web app</td><td>editor integrations</td><td>tooling or Overleaf</td></tr>
-<tr><td>Self-contained HTML, SVG, PNG, and PDF</td><td>✓</td><td>varies by output</td><td>varies by output</td><td>usually PDF</td></tr>
-  </tbody></table></div></div>
+<tr><td><strong>Authoring Model</strong><span>What you write to get a document</span></td><td><strong>Typed AzeMark Source</strong><span>Markdown plus validated directive Blocks</span></td><td><strong>Scripted Markup</strong><span>Code-like syntax with packages</span></td><td><strong>Markdown Plus Extensions</strong><span>Prose with bolted-on filters</span></td><td><strong>Typesetting Program</strong><span>Explicit layout commands</span></td></tr>
+<tr><td><strong>Technical Diagrams</strong><span>Circuits, timing, geometry, control</span></td><td><strong>Native Typed Blocks</strong><span>Declared topology, rendered wires</span></td><td>Community Packages</td><td>External Extensions</td><td>Specialist Packages</td></tr>
+<tr><td><strong>Correctness Feedback</strong><span>What happens when Source is wrong</span></td><td><strong>Compiler Diagnostics</strong><span>Coded errors with locations and fixes</span></td><td>Compiler Errors</td><td>Build Logs</td><td>Log Diving</td></tr>
+<tr><td><strong>Machine-Readable Contract</strong><span>Can an agent verify before rendering</span></td><td><strong>Published JSON Grammar</strong><span>26 directives, fields, enums, limits</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td><strong>Programmatic Access</strong><span>Use from code and agents</span></td><td><strong>Compiler npm API</strong><span>Analyze, compile, format</span></td><td>Different Ecosystem</td><td>—</td><td>—</td></tr>
+<tr><td><strong>Output Guarantee</strong><span>What a successful render promises</span></td><td><strong>Self-Contained Artifacts</strong><span>HTML, SVG, PNG, PDF with content hash</span></td><td>Varies by Output</td><td>Varies by Output</td><td>Usually PDF</td></tr>
+  </tbody></table></div>
+  <p class="proof-copy">Mathematics and Mermaid rendering are table stakes — every column handles them. The rows above are where the authoring experience actually diverges.</p></div>
 </section>
 <section class="home-continue">
   <p class="eyebrow">Docs and Playground</p>

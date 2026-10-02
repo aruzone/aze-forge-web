@@ -72,7 +72,7 @@
   --line-strong: #4a4742;
   --text: #f2eee8;
   --muted: #aaa49b;
-  --code: #e8e1d7;
+  --code: #d6d2cb;
   --display: "Playfair Display", Georgia, "Times New Roman", serif;
   --sans: "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -737,6 +737,21 @@ h3 {
 
 .reference-table td {
   color: var(--muted);
+}
+
+.reference-table td strong,
+.reference-table td span {
+  display: block;
+}
+
+.reference-table td strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.reference-table td span {
+  margin-top: 4px;
+  font-size: 13px;
 }
 
 .reference-table td code {

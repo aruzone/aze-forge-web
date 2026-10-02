@@ -119,8 +119,8 @@ describe("access boundary", () => {
       assert.ok(next > position, `expected ${section} in proof order`);
       position = next;
     }
-    assert.match(home.text, /Capability comparison, not a benchmark/);
-    assert.match(home.text, /Published JSON directive grammar/);
+    assert.match(home.text, /What Changes When the Document Is a Contract/);
+    assert.match(home.text, /Machine-Readable Contract/);
     assert.match(home.text, /variance\.aze\.md/);
     assert.match(home.text, /azemark: 2/);
     assert.match(home.text, /:::: equation/);
