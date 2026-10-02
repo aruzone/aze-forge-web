@@ -59,6 +59,27 @@
 <p class="lede">Combine typed tables and algorithms with theorem-family statements, worked examples, figures, callouts, and references.</p>
 <h2 id="directives">Directives</h2>
 <div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Directive</th><th>Generated reference</th></tr></thead><tbody><tr><td><code>table</code></td><td><a href="/docs/0.6.3/reference/directives/#table">Fields, body schema, and limits</a></td></tr><tr><td><code>algorithm</code></td><td><a href="/docs/0.6.3/reference/directives/#algorithm">Fields, body schema, and limits</a></td></tr><tr><td><code>statement</code></td><td><a href="/docs/0.6.3/reference/directives/#statement">Fields, body schema, and limits</a></td></tr><tr><td><code>example</code></td><td><a href="/docs/0.6.3/reference/directives/#example">Fields, body schema, and limits</a></td></tr><tr><td><code>bibliography</code></td><td><a href="/docs/0.6.3/reference/directives/#bibliography">Fields, body schema, and limits</a></td></tr><tr><td><code>figure</code></td><td><a href="/docs/0.6.3/reference/directives/#figure">Fields, body schema, and limits</a></td></tr><tr><td><code>callout</code></td><td><a href="/docs/0.6.3/reference/directives/#callout">Fields, body schema, and limits</a></td></tr></tbody></table></div>
+<h2 id="showcase">Source and rendered output</h2>
+<p>Excerpt from <code>11-structured-content.aze.md</code> in the upstream <code>docs/language</code> library, compiled with the pinned 0.6.3 compiler. The full file ships as a canonical Source below.</p>
+<figure class="source-figure"><figcaption><span>11-structured-content.aze.md · Pilot line yields</span><span>AzeMark Source</span></figcaption><pre class="code-block"><code class="language-azemark">:::: table
+id: pilot-line-yields
+number: true
+caption: Pilot line yields
+----
+columns:
+  - key: batch
+    name: Batch
+    type: text
+  - key: units
+    name: Units
+    type: integer
+rows:
+  - batch: B-101
+    units: 480
+  - batch: B-102
+    units: 512
+::::</code></pre></figure>
+<figure class="source-figure"><figcaption><span>11-structured-content.aze.md · rendered output</span><span>Document preview</span></figcaption><div class="artifact-shot" role="img" aria-label="Rendered pilot line yields table"><figure class="aze-table-figure"><table class="aze-table" data-table-id="pilot-line-yields" data-table-number="true" aria-describedby="fam-documents-0-caption"><caption id="fam-documents-0-caption"><span class="aze-number">Table 1</span> Pilot line yields</caption><thead><tr><th scope="col" id="fam-documents-0-h-batch">Batch</th><th scope="col" id="fam-documents-0-h-units">Units</th></tr></thead><tbody><tr><td headers="fam-documents-0-h-batch" style="text-align:left">B-101</td><td headers="fam-documents-0-h-units" style="text-align:right">480</td></tr><tr><td headers="fam-documents-0-h-batch" style="text-align:left">B-102</td><td headers="fam-documents-0-h-units" style="text-align:right">512</td></tr></tbody></table></figure></div></figure>
 <h2 id="sources">Canonical Sources</h2>
 <p>These files come from the compiler's verified example library. Keep the document envelope and directive spellings intact when adapting them.</p>
 <ul class="link-list"><li><a href="/docs/0.6.3/examples/document-basics.aze.md"><strong>Document basics</strong><span>Download the complete canonical Source.</span></a></li><li><a href="/docs/0.6.3/examples/structured-content.aze.md"><strong>Structured technical content</strong><span>Download the complete canonical Source.</span></a></li><li><a href="/docs/0.6.3/examples/composition.aze.md"><strong>Composition and citation</strong><span>Download the complete canonical Source.</span></a></li></ul>

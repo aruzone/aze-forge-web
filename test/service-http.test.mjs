@@ -142,6 +142,24 @@ describe("access boundary", () => {
     assert.match(codex.text, /kind: point/);
   });
 
+  test("shows Source and compiled output in every family guide", async () => {
+    for (const slug of ["mathematics", "science", "engineering", "data", "geometry", "software", "documents", "diagrams"]) {
+      const guide = await call(service.base, "GET", `/docs/0.6.3/guides/${slug}/`, { token: null });
+      assert.equal(guide.status, 200);
+      assert.match(guide.text, /Source and rendered output/);
+      assert.match(guide.text, /docs\/language/);
+      assert.match(guide.text, /artifact-shot/);
+    }
+    const mathematics = await call(service.base, "GET", "/docs/0.6.3/guides/mathematics/", {
+      token: null,
+    });
+    assert.match(mathematics.text, /sample-variance/);
+    assert.match(mathematics.text, /aze-mathml/);
+    const data = await call(service.base, "GET", "/docs/0.6.3/guides/data/", { token: null });
+    assert.match(data.text, /logistic-growth/);
+    assert.match(data.text, /<svg/);
+  });
+
   test("serves versioned AzeMark documentation with generated grammar data", async () => {
     const docs = await call(service.base, "GET", "/docs/0.6.3/", { token: null });
     assert.equal(docs.status, 200);

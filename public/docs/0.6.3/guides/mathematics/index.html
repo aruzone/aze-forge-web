@@ -59,6 +59,16 @@
 <p class="lede">Write readable equations and annotated derivations. AzeForge validates the notation before KaTeX renders it.</p>
 <h2 id="directives">Directives</h2>
 <div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Directive</th><th>Generated reference</th></tr></thead><tbody><tr><td><code>equation</code></td><td><a href="/docs/0.6.3/reference/directives/#equation">Fields, body schema, and limits</a></td></tr><tr><td><code>derivation</code></td><td><a href="/docs/0.6.3/reference/directives/#derivation">Fields, body schema, and limits</a></td></tr></tbody></table></div>
+<h2 id="showcase">Source and rendered output</h2>
+<p>Excerpt from <code>02-mathematics.aze.md</code> in the upstream <code>docs/language</code> library, compiled with the pinned 0.6.3 compiler. The full file ships as a canonical Source below.</p>
+<figure class="source-figure"><figcaption><span>02-mathematics.aze.md · Sample variance</span><span>AzeMark Source</span></figcaption><pre class="code-block"><code class="language-azemark">:::: equation
+id: sample-variance
+number: true
+syntax: readable
+----
+sigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2
+::::</code></pre></figure>
+<figure class="source-figure"><figcaption><span>02-mathematics.aze.md · rendered output</span><span>Document preview</span></figcaption><div class="artifact-shot" role="img" aria-label="Rendered sample variance equation"><figure class="aze-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msup><mi>σ</mi><mn>2</mn></msup><mo>=</mo><mfrac><mn>1</mn><mi>n</mi></mfrac><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msup><mrow><mo fence="true">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>−</mo><mi>μ</mi><mo fence="true">)</mo></mrow><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">\sigma^{2} = \frac{1}{n} \sum_{i=1}^{n} {\left(x_{i} - \mu\right)^{2}}</annotation></semantics></math></figure></div></figure>
 <h2 id="sources">Canonical Sources</h2>
 <p>These files come from the compiler's verified example library. Keep the document envelope and directive spellings intact when adapting them.</p>
 <ul class="link-list"><li><a href="/docs/0.6.3/examples/mathematics.aze.md"><strong>Mathematics notation examples</strong><span>Download the complete canonical Source.</span></a></li></ul>

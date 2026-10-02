@@ -22,10 +22,20 @@ const VERSION = "0.6.3";
 const DOCS_ROOT = `/docs/${VERSION}`;
 
 /** @typedef {{ id: string, name: string, source: string }} Example */
-/** @typedef {{ slug: string, title: string, directives: string[], examples: string[], summary: string, note?: string }} Family */
+/** @typedef {{ slug: string, title: string, directives: string[], examples: string[], summary: string, note?: string, showcase?: string }} Family */
+/** @typedef {{ file: string, source: string, caption: string, label: string }} FamilyShowcase */
 
 /** @type {Example[]} */
 const examples = JSON.parse(await readFile(join(PLAYGROUND_SOURCE, "examples.json"), "utf8"));
+const SHOWCASE_SOURCE = join(REPO, "src", "showcase");
+/** @type {Record<string, string>} */
+const showcaseOutputs = Object.fromEntries(
+  await Promise.all(
+    ["mathematics", "science", "engineering", "data", "geometry", "software", "documents", "diagrams"].map(
+      async (slug) => [slug, (await readFile(join(SHOWCASE_SOURCE, `${slug}.html`), "utf8")).trim()],
+    ),
+  ),
+);
 const grammar = buildGrammarDocument();
 const capabilities = await buildCapabilities({ probe: false });
 const versionReport = createVersionReport();
@@ -60,6 +70,7 @@ const families = [
     examples: ["circuit", "timing", "engineering"],
     summary: "Author schematics, timing traces, control systems, and force diagrams with bounded records and explicit references.",
     note: "The canonical circuit Source declares x-circuit-symbol-convention: iec. This metadata is required by the example but is not part of the generated directive grammar.",
+    showcase: "circuit",
   },
   {
     slug: "data",
@@ -398,6 +409,58 @@ ${codeBlock(":::: callout\nvariant: note\ntitle: Check the Source\n----\nValidat
 <h2 id="rendering">Rendering</h2>
 <p>AzeForge parses and validates the complete Source before rendering. HTML does not need a browser engine. SVG, PNG, PDF, Mermaid, and native visual directives need the pinned browser capability. TeX also needs the configured external adapter.</p>`;
 
+/** @type {Record<string, FamilyShowcase>} */
+const familyShowcases = {
+  mathematics: {
+    file: "02-mathematics.aze.md",
+    source: ":::: equation\nid: sample-variance\nnumber: true\nsyntax: readable\n----\nsigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2\n::::",
+    caption: "Sample variance",
+    label: "Rendered sample variance equation",
+  },
+  science: {
+    file: "05-chemistry.aze.md",
+    source: ":::: formula\nid: water\nnumber: true\n----\nH2O\n::::",
+    caption: "Water",
+    label: "Rendered water formula",
+  },
+  engineering: {
+    file: "06-circuit.aze.md",
+    source: ":::: circuit\nid: divider-bias-network\ntitle: Resistive divider bias network\n----\n- kind: node\n  ref: rail\n- kind: node\n  ref: tap\n- kind: node\n  ref: return\n  role: reference\n- kind: voltage-source\n  ref: V1\n  value: 12 V\n  mode: dc\n- kind: resistor\n  ref: R1\n  value: 1 kohm\n- kind: resistor\n  ref: R2\n  value: 2 kohm\n- kind: connect\n  terminal: V1.positive\n  node: rail\n- kind: connect\n  terminal: V1.negative\n  node: return\n- kind: connect\n  terminal: R1.a\n  node: rail\n- kind: connect\n  terminal: R1.b\n  node: tap\n- kind: connect\n  terminal: R2.a\n  node: tap\n- kind: connect\n  terminal: R2.b\n  node: return\n::::",
+    caption: "Resistive divider bias network",
+    label: "Rendered divider circuit",
+  },
+  data: {
+    file: "03-visualization.aze.md",
+    source: ":::: plot\nid: logistic-growth\nx-axis:\n  label: time (h)\ny-axis:\n  label: population\n----\n- kind: function\n  label: logistic growth\n  variable: t\n  expression: 40 / (1 + 39 * exp(-0.6 * t))\n  domain:\n    min: 0\n    max: 12\n  samples: 240\n::::",
+    caption: "Logistic growth",
+    label: "Rendered logistic growth plot",
+  },
+  geometry: {
+    file: "04-geometry.aze.md",
+    source: ":::: geometry\nid: optics-wedge\nnumber: true\n----\n- kind: point\n  name: vertex\n  label: O\n  x: 0\n  y: 0\n- kind: point\n  name: arm-flat\n  label: A\n  x: 4\n  y: 0\n- kind: point\n  name: arm-raised\n  label: B\n  x: 1.5\n  y: 3.5\n- kind: segment\n  name: flat-arm\n  from: vertex\n  to: arm-flat\n- kind: segment\n  name: raised-arm\n  from: vertex\n  to: arm-raised\n- kind: polygon\n  name: wedge\n  vertices:\n    - vertex\n    - arm-flat\n    - arm-raised\n::::",
+    caption: "Optics wedge",
+    label: "Rendered optics wedge",
+  },
+  software: {
+    file: "10-models.aze.md",
+    source: ":::: sequence\nid: cache-lookup\nnumber: true\ntitle: Cache lookup\ndescription: One request and its reply.\n----\nparticipants:\n  - name: client\n    kind: actor\n    label: Client\n  - name: cache\n    label: Cache\ntimeline:\n  - kind: message\n    from: client\n    to: cache\n    text: Read key\n  - kind: message\n    from: cache\n    to: client\n    form: return\n    text: Cached value\n::::",
+    caption: "Cache lookup",
+    label: "Rendered cache lookup sequence",
+  },
+  documents: {
+    file: "11-structured-content.aze.md",
+    source: ":::: table\nid: pilot-line-yields\nnumber: true\ncaption: Pilot line yields\n----\ncolumns:\n  - key: batch\n    name: Batch\n    type: text\n  - key: units\n    name: Units\n    type: integer\nrows:\n  - batch: B-101\n    units: 480\n  - batch: B-102\n    units: 512\n::::",
+    caption: "Pilot line yields",
+    label: "Rendered pilot line yields table",
+  },
+  diagrams: {
+    file: "08-diagrams.aze.md",
+    source: ":::: diagram\nid: water-treatment-line\ntitle: Water treatment line\nmode: flowchart\nflow: top-to-bottom\n----\n- kind: node\n  name: intake\n  label: Raw water intake\n  shape: circle\n- kind: node\n  name: filter\n  label: Sand filter\n- kind: node\n  name: chlorinate\n  label: Chlorination\n  shape: cylinder\n- kind: edge\n  from: intake\n  to: filter\n- kind: edge\n  from: filter\n  to: chlorinate\n::::",
+    caption: "Water treatment line",
+    label: "Rendered water treatment flowchart",
+  },
+};
+
 /** @param {Family} family */
 function familyContent(family) {
   const sources = family.examples.map((id) => {
@@ -405,10 +468,20 @@ function familyContent(family) {
     if (example === undefined) throw new Error(`family ${family.slug} names missing example ${id}`);
     return `<li><a href="${DOCS_ROOT}/examples/${example.id}.aze.md"><strong>${escapeHtml(example.name)}</strong><span>Download the complete canonical Source.</span></a></li>`;
   });
+  const showcase = familyShowcases[family.slug];
+  if (showcase === undefined) throw new Error(`family ${family.slug} has no rendered showcase`);
+  const output = showcaseOutputs[family.slug];
+  if (output === undefined) throw new Error(`family ${family.slug} has no compiled showcase output`);
+  const inner = output.replace(/^<article>/, "").replace(/<\/article>\s*$/, "");
+  const showcaseMarkup = `<h2 id="showcase">Source and rendered output</h2>
+<p>Excerpt from <code>${showcase.file}</code> in the upstream <code>docs/language</code> library, compiled with the pinned ${VERSION} compiler. The full file ships as a canonical Source below.</p>
+<figure class="source-figure"><figcaption><span>${showcase.file} · ${showcase.caption}</span><span>AzeMark Source</span></figcaption>${codeBlock(showcase.source, "azemark")}</figure>
+<figure class="source-figure"><figcaption><span>${showcase.file} · rendered output</span><span>Document preview</span></figcaption><div class="artifact-shot" role="img" aria-label="${showcase.label}">${inner}</div></figure>`;
   return `<h1>${family.title}.</h1>
 <p class="lede">${family.summary}</p>
 <h2 id="directives">Directives</h2>
 <div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Directive</th><th>Generated reference</th></tr></thead><tbody>${family.directives.map((directive) => `<tr><td><code>${directive}</code></td><td><a href="${DOCS_ROOT}/reference/directives/#${directive}">Fields, body schema, and limits</a></td></tr>`).join("")}</tbody></table></div>
+${showcaseMarkup}
 <h2 id="sources">Canonical Sources</h2>
 <p>These files come from the compiler's verified example library. Keep the document envelope and directive spellings intact when adapting them.</p>
 <ul class="link-list">${sources.join("")}</ul>
