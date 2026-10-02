@@ -11,6 +11,11 @@
   </defs>
 
   <rect width="1600" height="900" fill="url(#grid)"/>
+  <g aria-label="AzeForge nested-angle motif" fill="none" stroke="#ff2419" stroke-linejoin="round">
+    <path d="M1030 238L1210 82l180 156" stroke-opacity="0.12" stroke-width="18"/>
+    <path d="M1082 238l128-111 128 111" stroke-opacity="0.18" stroke-width="12"/>
+    <path d="M1137 238l73-63 73 63" stroke-opacity="0.28" stroke-width="7"/>
+  </g>
 
   <g fill="none" stroke="#f2eee8" stroke-opacity="0.28" stroke-width="2">
     <path d="M760 92H1035"/>
@@ -44,7 +49,7 @@
     <path d="M1366 336v37h-54v31M1366 373h116v31" marker-end="url(#arrow)"/>
   </g>
 
-  <g fill="#f2eee8" fill-opacity="0.34" font-family="JetBrains Mono, ui-monospace, monospace">
+  <g fill="#f2eee8" fill-opacity="0.34" font-family="Geist Mono, ui-monospace, monospace">
     <text x="735" y="195" font-size="38">∫₀∞ e⁻ˣ² dx = √π / 2</text>
     <text x="742" y="252" font-size="28">Σ n⁻² = π² / 6</text>
     <text x="1118" y="119" font-size="18">SOURCE</text>

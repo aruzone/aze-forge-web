@@ -23,19 +23,19 @@
 }
 
 @font-face {
-  font-family: "JetBrains Mono";
+  font-family: "Geist Mono";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/assets/fonts/jetbrains-mono-400.ttf") format("truetype");
+  src: url("/assets/fonts/geist-mono-400.ttf") format("truetype");
 }
 
 @font-face {
-  font-family: "JetBrains Mono";
+  font-family: "Geist Mono";
   font-style: normal;
   font-weight: 500 700;
   font-display: swap;
-  src: url("/assets/fonts/jetbrains-mono-500.ttf") format("truetype");
+  src: url("/assets/fonts/geist-mono-500.ttf") format("truetype");
 }
 
 @font-face {
@@ -75,7 +75,7 @@
   --code: #e8e1d7;
   --display: "Playfair Display", Georgia, "Times New Roman", serif;
   --sans: "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 * {

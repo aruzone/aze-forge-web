@@ -73,6 +73,8 @@ export async function loadWebAssets({ publicRoot, playgroundRoot }) {
     "/playground",
     FRONTEND_CONTENT_SECURITY_POLICY,
   );
+  playgroundAssets.delete("/playground/");
+  playgroundAssets.delete("/playground/index.html");
   for (const [route, asset] of playgroundAssets) assets.set(route, asset);
   return assets;
 }

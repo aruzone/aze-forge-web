@@ -91,6 +91,8 @@ describe("access boundary", () => {
     assert.equal(playground.status, 200);
     assert.match(playground.text, /Open AzeForge Web/);
     assert.equal((await call(service.base, "GET", "/playground/app.js", { token: null })).status, 200);
+    assert.equal((await call(service.base, "GET", "/playground/", { token: null })).status, 404);
+    assert.equal((await call(service.base, "GET", "/playground/index.html", { token: null })).status, 404);
     assert.equal((await call(service.base, "GET", "/app.js", { token: null })).status, 404);
   });
 
