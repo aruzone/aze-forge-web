@@ -152,7 +152,7 @@ function header(current) {
     <a href="${DOCS_ROOT}/"${current === "docs" ? ' aria-current="page"' : ""}>Docs</a>
     <a href="/#examples">Examples</a>
     <a href="/playground">Playground</a>
-    <a href="https://github.com/aruzone/aze-forge">GitHub</a>
+    <a class="github-link" href="https://github.com/aruzone/aze-forge"><svg class="github-mark" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span>GitHub</span></a>
     <a class="install-link" href="/#install-command">Install AzeForge</a>
   </nav>
 </header>`;
@@ -196,7 +196,7 @@ ${footer()}
 /** @type {[string, [string, string][]][]} */
 const docsSections = [
   ["Start here", [[`${DOCS_ROOT}/`, "Documentation home"], [`${DOCS_ROOT}/getting-started/`, "Install and first document"]]],
-  ["Language", [[`${DOCS_ROOT}/language/`, "Foundations"], [`${DOCS_ROOT}/examples/`, "Example corpus"]]],
+  ["Language", [[`${DOCS_ROOT}/language/`, "Foundations"], [`${DOCS_ROOT}/notation/`, "Notation codex"], [`${DOCS_ROOT}/examples/`, "Example corpus"]]],
   ["Family guides", families.map((family) => /** @type {[string, string]} */ ([`${DOCS_ROOT}/guides/${family.slug}/`, family.title]))],
   [
     "Reference",
@@ -345,7 +345,7 @@ const docsOverviewContent = `<h1>Write valid AzeMark Source.</h1>
 <p class="lede">This documentation is pinned to AzeForge ${VERSION}, AzeMark language version 2, document schema version 3, and grammar schema <code>azeforge.grammar/v1</code>.</p>
 <div class="callout"><strong>Versioned by design.</strong> Future compiler releases receive separate documentation. This reference does not silently track the latest package.</div>
 <h2 id="start">Start here</h2>
-<ul class="link-list"><li><a href="${DOCS_ROOT}/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="${DOCS_ROOT}/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li></ul>
+<ul class="link-list"><li><a href="${DOCS_ROOT}/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="${DOCS_ROOT}/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li><li><a href="${DOCS_ROOT}/notation/"><strong>Notation codex</strong><span>Symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.</span></a></li></ul>
 <h2 id="guides">Family guides</h2>
 <ul class="link-list">${families.map((family) => `<li><a href="${DOCS_ROOT}/guides/${family.slug}/"><strong>${family.title}</strong><span>${family.directives.join(", ")}</span></a></li>`).join("")}</ul>
 <h2 id="reference">Reference and agent data</h2>
@@ -505,6 +505,122 @@ const examplesContent = `<h1>Verified example corpus.</h1>
   return `<li><a href="${DOCS_ROOT}/examples/${example.id}.aze.md"><strong>${escapeHtml(example.name)}</strong><span>${detail}</span></a></li>`;
 }).join("")}</ul>`;
 
+const symbolRows = [
+  ["σ", "<code>sigma</code>", "Lower Greek", "<code>sigma^2</code>", "Sample variance"],
+  ["μ", "<code>mu</code>", "Lower Greek", "<code>(x_i - mu)^2</code>", "Deviation from the mean"],
+  ["θ", "<code>theta</code>", "Lower Greek", "<code>cos theta</code>", "Rotation angle"],
+  ["Σ", "<code>Sigma</code>", "Upper Greek", "<code>sum i=1..n of i^2</code>", "Summation operator"],
+  ["Ψ", "<code>Psi</code>", "Upper Greek", "<code>Psi(x, t)</code>", "Wave function"],
+  ["α", "<code>alpha</code>", "Lower Greek", "<code>alpha</code>", "Significance level"],
+  ["β", "<code>beta</code>", "Lower Greek", "<code>beta</code>", "Regression coefficient"],
+  ["π", "<code>pi</code>", "Lower Greek", "<code>pi</code>", "Circle constant"],
+  ["∞", "<code>infinity</code>", "Physics name", "<code>integral x=0..infinity of exp(-x^2) dx</code>", "Unbounded limit"],
+  ["ℏ", "<code>hbar</code>", "Physics name", "<code>i hbar frac(partial, partial t) Psi(x, t)</code>", "Reduced Planck constant"],
+  ["∂", "<code>partial</code>", "Physics name", "<code>frac(partial, partial t)</code>", "Partial derivative"],
+  ["∇", "<code>nabla</code>", "Physics name", "<code>nabla^2</code>", "Laplacian operator"],
+  ["∅", "<code>emptyset</code>", "Physics name", "<code>emptyset</code>", "Empty set"],
+];
+
+const transformRows = [
+  ["Subscript", "<code>x_i</code>", "One base, one index", "Indexed variable"],
+  ["Superscript", "<code>x^2</code>", "One base, one power", "Square and exponent"],
+  ["Combined power", "<code>(x')^2</code>", "Parenthesize before combining", "Primed base raised to a power"],
+  ["Prime marks", "<code>x'</code> or <code>x''</code>", "Up to two primes per base", "Derived forms"],
+  ["Multi-index", "<code>G_(mu, nu)</code>", "One subscript group", "Tensor indices"],
+  ["Fraction", "<code>frac(1, n)</code>", "Numerator, denominator", "Rational expression"],
+  ["Root", "<code>sqrt(x)</code>", "Radicand", "Square root"],
+  ["Bounded sum", "<code>sum i=1..n of i^2</code>", "Bound, then <code>of</code>, then body", "Finite series"],
+  ["Bounded product", "<code>product k=1..m of k</code>", "Bound, then <code>of</code>, then body", "Finite product"],
+  ["Integral", "<code>integral x=0..L of f(x) dx</code>", "Differential matches the bound name", "Definite integral"],
+  ["Quantifier", "<code>forall e in R of body</code>", "Name, set, then <code>of</code>", "Universal claim"],
+  ["Set relation", "<code>x in R</code>", "Membership operators", "Set membership"],
+  ["Matrix", "<code>pmatrix [[a, b], [c, d]]</code>", "Rows are bracket groups", "Parenthesized matrix"],
+  ["Cases", "<code>cases(a when b; c otherwise)</code>", "Branches separated by <code>;</code>", "Piecewise definition"],
+];
+
+const artifactRows = [
+  ["equation", "Scalar <code>expression</code> line", "<code>V = I * R</code>", "One readable expression"],
+  ["derivation", "Ordered <code>- expression:</code> steps", "<code>- expression: A_n = P_0 (1 + r)^n</code>", "Aligned chain with prose notes"],
+  ["formula", "One expression line", "<code>H2O</code>", "Digits resolve to subscripts and charge"],
+  ["reaction", "One reaction equation", "<code>Ag+(aq) + Cl-(aq) -&gt; AgCl(s)</code>", "Arrow with conditions and balance check"],
+  ["structure", "Record list of atoms and bonds", "<code>- kind: atom</code>", "Molecular declaration"],
+  ["plot", "Record list of series", "<code>- kind: function</code>", "Function, line, and point series"],
+  ["chart", "Record list of bars or histogram", "<code>- kind: bars</code>", "Categorical bars or binned values"],
+  ["geometry", "Ordered <code>- kind:</code> declarations", "<code>- kind: point</code>", "Coordinates, constructions, marks"],
+  ["circuit", "Ordered component declarations", "<code>- kind: resistor</code>", "Named nodes with bound terminals"],
+  ["timing", "Ordered signal declarations", "<code>- kind: signal</code>", "Wave run strings on a shared scale"],
+  ["control", "Ordered block declarations", "<code>- kind: block</code>", "Signal-flow blocks, sums, and edges"],
+  ["free-body", "Ordered body declarations", "<code>- kind: force</code>", "Bodies with anchored vectors"],
+  ["sequence", "Participants plus timeline", "<code>participants:</code>", "Message timelines"],
+  ["state", "Record list of states", "<code>- kind: transition</code>", "State machines"],
+  ["entity", "Record list of entities", "<code>- kind: entity</code>", "Entities and relationships"],
+  ["class", "Record list of classifiers", "<code>- kind: class</code>", "Classes and interfaces"],
+  ["diagram", "Record list of nodes and edges", "<code>- kind: node</code>", "Flowchart, graph, tree, architecture"],
+  ["table", "Keyed columns and rows", "<code>columns:</code>", "Typed tables with groups"],
+  ["algorithm", "Procedure with steps", "<code>procedure:</code>", "Nested statements"],
+  ["statement", "Kind plus text and proof", "<code>kind: theorem</code>", "Theorem-family blocks"],
+  ["example", "Problem plus steps", "<code>problem:</code>", "Worked examples"],
+  ["figure", "Required nested children", "<code>:: equation</code>", "Numbered wrapper"],
+  ["bibliography", "Record list of entries", "<code>- kind: entry</code>", "Keyed references"],
+  ["callout", "Keyed Markdown sections", "<code>variant: note</code>", "Admonition block"],
+  ["mermaid", "Scalar source lines", "<code>source</code>", "Diagram escape hatch"],
+  ["tex", "Scalar figure body", "<code>profile: tikz</code>", "Deployment-dependent profile"],
+];
+
+const geometryRows = [
+  ["<code>point</code>", "Authored <code>x</code>/<code>y</code>", "Vertices and labels"],
+  ["<code>segment</code>", "<code>from</code> and <code>to</code>", "Arms and edges"],
+  ["<code>line</code>", "Two references", "Construction line"],
+  ["<code>ray</code>", "Origin plus direction", "Beams and half-lines"],
+  ["<code>circle</code>", "Center plus radius or beacon", "Sweep circles"],
+  ["<code>arc</code>", "Center, radius, sweep", "Directed arcs"],
+  ["<code>polygon</code>", "Ordered <code>vertices</code>", "Closed figures"],
+  ["<code>midpoint</code>", "Two references", "Bisection point"],
+  ["<code>intersection</code>", "Two references", "Crossing point"],
+  ["<code>tangent-line</code>", "Point plus circle", "Derived tangent"],
+  ["<code>perpendicular-line</code>", "Point plus line", "Derived perpendicular"],
+  ["<code>perpendicular-foot</code>", "Point plus line", "Foot of perpendicular"],
+  ["<code>angle-mark</code>", "Three references", "Annotated angle"],
+  ["<code>right-angle-mark</code>", "Two references", "Right-angle mark"],
+  ["<code>length-mark</code>", "One reference", "Measured segment"],
+  ["<code>equal-marks</code>", "Segment list", "Congruence marks"],
+];
+
+const circuitRows = [
+  ["<code>node</code>", "<code>ref</code>, optional <code>role: reference</code>", "Named net; reference marks ground"],
+  ["<code>resistor</code>", "<code>ref</code>, <code>value</code>", "Two-terminal passive element"],
+  ["<code>capacitor</code>", "<code>ref</code>, <code>value</code>", "Filtering element"],
+  ["<code>voltage-source</code>", "<code>ref</code>, <code>value</code>, <code>mode: dc</code>", "Supply rail"],
+  ["<code>current-label</code>", "Edge reference", "Branch current"],
+  ["<code>voltage-label</code>", "Node pair", "Node voltage"],
+  ["<code>op-amp</code>", "<code>ref</code>", "Amplifier with bound pins"],
+  ["<code>dependent-source</code>", "<code>ref</code>", "Controlled source"],
+  ["<code>digital-input</code>", "<code>ref</code>", "Logic stimulus"],
+  ["<code>and</code> / <code>or</code>", "<code>ref</code>", "Logic gates"],
+  ["<code>d-flip-flop</code>", "<code>ref</code>", "Sequential element"],
+  ["<code>mux</code>", "<code>ref</code>", "Multiplexer"],
+  ["<code>digital-output</code>", "<code>ref</code>", "Observation point"],
+  ["<code>led</code>", "<code>ref</code>", "Indicator"],
+  ["<code>connect</code>", "<code>terminal</code> plus <code>node</code>", "Binds every pin; unbound pins error"],
+];
+
+/** @param {string} id @param {string} title @param {string[]} head @param {string[][]} rows */
+function codexTable(id, title, head, rows) {
+  return `<h2 id="${id}">${title}</h2>
+<div class="reference-table-wrap"><table class="reference-table"><thead><tr>${head.map((cell) => `<th>${cell}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+const codexContent = `<h1>Notation codex.</h1>
+<p class="lede">Every spelling below is verified against the pinned ${VERSION} compiler Sources and generated grammar. Copy the AzeMark column verbatim; do not invent near-miss keys.</p>
+<div class="warning"><strong>Closed grammar.</strong> Unknown words of three or more letters are diagnostics, not new functions. Use only the registered names on this page.</div>
+${codexTable("symbols", "Symbols and Greek names", ["Rendered", "AzeMark", "Kind", "Example", "Reads as"], symbolRows)}
+${codexTable("transforms", "Subscripts, superscripts, and expression forms", ["Form", "AzeMark", "Rule", "Reads as"], transformRows)}
+${codexTable("artifacts", "Directive bodies and their AzeMark shape", ["Directive", "Body shape", "Minimal AzeMark", "Reads as"], artifactRows)}
+${codexTable("geometry", "Geometry declarations", ["Declaration", "AzeMark shape", "Reads as"], geometryRows)}
+${codexTable("circuit", "Circuit declarations", ["Declaration", "AzeMark shape", "Reads as"], circuitRows)}
+<h2 id="workflow">Authoring workflow</h2>
+<ol><li>Find the rendered form on this page.</li><li>Copy the AzeMark spelling into a four-colon outer fence or a record-list Block.</li><li>Run <code>azeforge validate</code> before rendering.</li><li>Read the <a href="${DOCS_ROOT}/reference/directives/">generated directive reference</a> for the complete field contract.</li></ol>`;
+
 const aiContent = `<h1>AI-authoring contract.</h1>
 <p class="lede">Generate AzeMark language version 2 for AzeForge ${VERSION}. Treat the generated grammar as normative and the canonical Sources as executable examples.</p>
 <h2 id="rules">Hard rules</h2>
@@ -548,6 +664,7 @@ await writeRoute("docs", docsPage({ title: "Documentation", description: `Curren
 await writeRoute(`docs/${VERSION}`, docsPage({ title: "Documentation", description: `AzeForge ${VERSION} and AzeMark 2 documentation.`, path: `${DOCS_ROOT}/`, content: docsOverviewContent, toc: [["start", "Start here"], ["guides", "Family guides"], ["reference", "Reference"]] }));
 await writeRoute(`docs/${VERSION}/getting-started`, docsPage({ title: "Install and first document", description: `Install AzeForge ${VERSION}, validate AzeMark Source, render HTML, and format the file.`, path: `${DOCS_ROOT}/getting-started/`, content: gettingStartedContent, toc: [["install", "Install"], ["source", "Create Source"], ["validate", "Validate and render"], ["format", "Format"]] }));
 await writeRoute(`docs/${VERSION}/language`, docsPage({ title: "Language foundations", description: "AzeMark 2 front matter, directive fences, identifiers, composition, and rendering.", path: `${DOCS_ROOT}/language/`, content: languageContent, toc: [["front-matter", "Front matter"], ["fences", "Fences"], ["identifiers", "Identifiers"], ["composition", "Composition"], ["rendering", "Rendering"]] }));
+await writeRoute(`docs/${VERSION}/notation`, docsPage({ title: "Notation codex", description: "Verified AzeMark symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.", path: `${DOCS_ROOT}/notation/`, content: codexContent, toc: [["symbols", "Symbols"], ["transforms", "Transforms"], ["artifacts", "Artifacts"], ["geometry", "Geometry"], ["circuit", "Circuit"], ["workflow", "Workflow"]] }));
 
 for (const family of families) {
   await writeRoute(`docs/${VERSION}/guides/${family.slug}`, docsPage({ title: family.title, description: family.summary, path: `${DOCS_ROOT}/guides/${family.slug}/`, content: familyContent(family), toc: [["directives", "Directives"], ["sources", "Canonical Sources"], ["workflow", "Workflow"]] }));

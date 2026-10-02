@@ -106,7 +106,8 @@ describe("access boundary", () => {
     assert.match(home.text, /href="\/docs\/[^"]+\/"/);
     assert.match(home.text, /href="\/playground"/);
     assert.match(home.text, /href="\/#examples"/);
-    assert.match(home.text, /href="https:\/\/github\.com\/aruzone\/aze-forge">GitHub<\/a>/);
+    assert.match(home.text, /href="https:\/\/github\.com\/aruzone\/aze-forge">/);
+    assert.match(home.text, /github-mark/);
     assert.match(home.text, /We.*open source/);
     assert.match(home.text, /MIT licensed/);
 
@@ -122,6 +123,17 @@ describe("access boundary", () => {
     assert.match(home.text, /:::: equation/);
     assert.match(home.text, /rendered Document preview/);
     assert.ok(home.text.includes('role="img"'));
+  });
+
+  test("serves the notation codex with verified AzeMark spellings", async () => {
+    const codex = await call(service.base, "GET", "/docs/0.6.2/notation/", { token: null });
+    assert.equal(codex.status, 200);
+    assert.match(codex.text, /Notation codex/);
+    assert.match(codex.text, /sigma/);
+    assert.match(codex.text, /x_i/);
+    assert.match(codex.text, /frac\(1, n\)/);
+    assert.match(codex.text, /kind: resistor/);
+    assert.match(codex.text, /kind: point/);
   });
 
   test("serves versioned AzeMark documentation with generated grammar data", async () => {

@@ -196,6 +196,18 @@ img {
   text-decoration: none;
 }
 
+.site-nav .github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.site-nav .github-mark {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
 .site-nav a[aria-current="page"] {
   color: var(--red);
 }
