@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Current AzeForge documentation, pinned to 0.6.3.">
-<title>Documentation · AzeForge docs</title>
+<meta name="description" content="Author schematics, timing traces, control systems, and force diagrams with bounded records and explicit references.">
+<title>Engineering · AzeForge docs</title>
 <link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
@@ -36,7 +36,7 @@
 <p>Family guides</p>
 <a href="/docs/0.6.3/guides/mathematics/">Mathematics</a>
 <a href="/docs/0.6.3/guides/science/">Science</a>
-<a href="/docs/0.6.3/guides/engineering/">Engineering</a>
+<a href="/docs/0.6.3/guides/engineering/" aria-current="page">Engineering</a>
 <a href="/docs/0.6.3/guides/data/">Data</a>
 <a href="/docs/0.6.3/guides/geometry/">Geometry</a>
 <a href="/docs/0.6.3/guides/software/">Software</a>
@@ -55,18 +55,18 @@
 </nav>
 <article class="docs-content">
 <p class="version-label">AzeMark 2 · AzeForge 0.6.3</p>
-<h1>Write valid AzeMark Source.</h1>
-<p class="lede">This documentation is pinned to AzeForge 0.6.3, AzeMark language version 2, document schema version 3, and grammar schema <code>azeforge.grammar/v1</code>.</p>
-<div class="callout"><strong>Versioned by design.</strong> Future compiler releases receive separate documentation. This reference does not silently track the latest package.</div>
-<h2 id="start">Start here</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="/docs/0.6.3/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li><li><a href="/docs/0.6.3/notation/"><strong>Notation codex</strong><span>Symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.</span></a></li></ul>
-<h2 id="guides">Family guides</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/guides/mathematics/"><strong>Mathematics</strong><span>equation, derivation</span></a></li><li><a href="/docs/0.6.3/guides/science/"><strong>Science</strong><span>formula, reaction, structure</span></a></li><li><a href="/docs/0.6.3/guides/engineering/"><strong>Engineering</strong><span>circuit, timing, control, free-body</span></a></li><li><a href="/docs/0.6.3/guides/data/"><strong>Data</strong><span>plot, chart</span></a></li><li><a href="/docs/0.6.3/guides/geometry/"><strong>Geometry</strong><span>geometry</span></a></li><li><a href="/docs/0.6.3/guides/software/"><strong>Software</strong><span>sequence, state, entity, class</span></a></li><li><a href="/docs/0.6.3/guides/documents/"><strong>Documents</strong><span>table, algorithm, statement, example, bibliography, figure, callout</span></a></li><li><a href="/docs/0.6.3/guides/diagrams/"><strong>Diagrams and escape hatches</strong><span>diagram, mermaid, tex</span></a></li></ul>
-<h2 id="reference">Reference and agent data</h2>
-<p>The directive reference and JSON artifacts are generated from the installed compiler. The prose pages state only behavior verified for 0.6.3.</p>
-<ul class="link-list"><li><a href="/docs/0.6.3/reference/directives/"><strong>All 26 directives</strong><span>Header fields, body schema, enum values, and limits.</span></a></li><li><a href="/docs/0.6.3/ai-authoring/"><strong>AI-authoring contract</strong><span>Hard rules plus grammar, capabilities, and version documents.</span></a></li></ul>
+<h1>Engineering.</h1>
+<p class="lede">Author schematics, timing traces, control systems, and force diagrams with bounded records and explicit references.</p>
+<h2 id="directives">Directives</h2>
+<div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Directive</th><th>Generated reference</th></tr></thead><tbody><tr><td><code>circuit</code></td><td><a href="/docs/0.6.3/reference/directives/#circuit">Fields, body schema, and limits</a></td></tr><tr><td><code>timing</code></td><td><a href="/docs/0.6.3/reference/directives/#timing">Fields, body schema, and limits</a></td></tr><tr><td><code>control</code></td><td><a href="/docs/0.6.3/reference/directives/#control">Fields, body schema, and limits</a></td></tr><tr><td><code>free-body</code></td><td><a href="/docs/0.6.3/reference/directives/#free-body">Fields, body schema, and limits</a></td></tr></tbody></table></div>
+<h2 id="sources">Canonical Sources</h2>
+<p>These files come from the compiler's verified example library. Keep the document envelope and directive spellings intact when adapting them.</p>
+<ul class="link-list"><li><a href="/docs/0.6.3/examples/circuit.aze.md"><strong>AzeMark circuit schematics</strong><span>Download the complete canonical Source.</span></a></li><li><a href="/docs/0.6.3/examples/timing.aze.md"><strong>Timing</strong><span>Download the complete canonical Source.</span></a></li><li><a href="/docs/0.6.3/examples/engineering.aze.md"><strong>Engineering diagrams</strong><span>Download the complete canonical Source.</span></a></li></ul>
+<div class="warning"><strong>Known boundary.</strong> The canonical circuit Source declares x-circuit-symbol-convention: iec. This metadata is required by the example but is not part of the generated directive grammar.</div>
+<h2 id="workflow">Authoring workflow</h2>
+<ol><li>Start from the smallest relevant block in the canonical Source.</li><li>Give referenced declarations stable kebab-case identifiers.</li><li>Run <code>azeforge validate</code> before rendering.</li><li>Apply diagnostic suggestions to the reported location rather than guessing at a replacement field.</li></ol>
 </article>
-<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#start">Start here</a><a href="#guides">Family guides</a><a href="#reference">Reference</a></aside>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#directives">Directives</a><a href="#sources">Canonical Sources</a><a href="#workflow">Workflow</a></aside>
 </main>
 <footer class="site-footer">
   <p>AzeForge 0.6.3 documentation. AzeMark language version 2.</p>

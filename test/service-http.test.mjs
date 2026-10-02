@@ -69,23 +69,23 @@ describe("access boundary", () => {
     assert.match(home.headers.get("content-security-policy"), /default-src 'none'/);
     assert.match(home.headers.get("x-content-type-options"), /nosniff/);
 
-    const docs = await call(service.base, "GET", "/docs/0.6.2/", { token: null });
+    const docs = await call(service.base, "GET", "/docs/0.6.3/", { token: null });
     assert.equal(docs.status, 200);
-    assert.match(docs.text, /AzeForge 0\.6\.2/);
+    assert.match(docs.text, /AzeForge 0.6.3/);
     assert.equal(
-      (await call(service.base, "GET", "/docs/0.6.2/reference/directives/", { token: null })).status,
+      (await call(service.base, "GET", "/docs/0.6.3/reference/directives/", { token: null })).status,
       200,
     );
-    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    const grammar = await call(service.base, "GET", "/docs/0.6.3/ai/grammar.json", { token: null });
     assert.equal(grammar.status, 200);
     assert.equal(grammar.json.schema, "azeforge.grammar/v1");
     assert.equal(grammar.json.directives.length, 26);
-    const example = await call(service.base, "GET", "/docs/0.6.2/examples/mathematics.aze.md", {
+    const example = await call(service.base, "GET", "/docs/0.6.3/examples/mathematics.aze.md", {
       token: null,
     });
     assert.equal(example.status, 200);
     assert.match(example.text, /^---\nazemark: 2/m);
-    assert.equal((await call(service.base, "GET", "/docs/0.6.2/not-a-page", { token: null })).status, 404);
+    assert.equal((await call(service.base, "GET", "/docs/0.6.3/not-a-page", { token: null })).status, 404);
 
     const playground = await call(service.base, "GET", "/playground", { token: null });
     assert.equal(playground.status, 200);
@@ -100,6 +100,7 @@ describe("access boundary", () => {
     const home = await call(service.base, "GET", "/", { token: null });
     assert.equal(home.status, 200);
     assert.match(home.text, /AzeForge is the compiler and renderer for AzeMark/);
+    assert.match(home.text, /library for both humans and AI agents/);
     assert.match(home.text, />Install AzeForge<\/a>/);
     assert.match(home.text, /<code id="install-command">npm install @aruzone\/aze-forge<\/code>/);
     assert.match(home.text, /data-copy="#install-command"/);
@@ -128,40 +129,43 @@ describe("access boundary", () => {
   });
 
   test("serves the notation codex with verified AzeMark spellings", async () => {
-    const codex = await call(service.base, "GET", "/docs/0.6.2/notation/", { token: null });
+    const codex = await call(service.base, "GET", "/docs/0.6.3/notation/", { token: null });
     assert.equal(codex.status, 200);
     assert.match(codex.text, /Notation codex/);
+    assert.match(codex.text, /library for both humans and AI agents/);
     assert.match(codex.text, /sigma/);
-    assert.match(codex.text, /x_i/);
-    assert.match(codex.text, /frac\(1, n\)/);
+    assert.match(codex.text, /integral x=0\.\.infinity/);
+    assert.match(codex.text, /forall e in R of/);
+    assert.match(codex.text, /x in R/);
+    assert.match(codex.text, /pmatrix/);
     assert.match(codex.text, /kind: resistor/);
     assert.match(codex.text, /kind: point/);
   });
 
   test("serves versioned AzeMark documentation with generated grammar data", async () => {
-    const docs = await call(service.base, "GET", "/docs/0.6.2/", { token: null });
+    const docs = await call(service.base, "GET", "/docs/0.6.3/", { token: null });
     assert.equal(docs.status, 200);
-    assert.match(docs.text, /pinned to AzeForge 0\.6\.2, AzeMark language version 2/);
+    assert.match(docs.text, /pinned to AzeForge 0.6.3, AzeMark language version 2/);
     assert.match(docs.text, /azeforge\.grammar\/v1/);
 
     for (const route of [
-      "/docs/0.6.2/getting-started/",
-      "/docs/0.6.2/language/",
-      "/docs/0.6.2/guides/mathematics/",
-      "/docs/0.6.2/ai-authoring/",
+      "/docs/0.6.3/getting-started/",
+      "/docs/0.6.3/language/",
+      "/docs/0.6.3/guides/mathematics/",
+      "/docs/0.6.3/ai-authoring/",
     ]) {
       assert.equal((await call(service.base, "GET", route, { token: null })).status, 200);
     }
   });
 
   test("renders every generated directive in the AzeMark reference", async () => {
-    const directives = await call(service.base, "GET", "/docs/0.6.2/reference/directives/", {
+    const directives = await call(service.base, "GET", "/docs/0.6.3/reference/directives/", {
       token: null,
     });
     assert.equal(directives.status, 200);
     assert.match(directives.text, /All 26 registered directives below come from/);
 
-    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    const grammar = await call(service.base, "GET", "/docs/0.6.3/ai/grammar.json", { token: null });
     assert.equal(grammar.json.schema, "azeforge.grammar/v1");
     assert.equal(grammar.json.directives.length, 26);
     for (const directive of grammar.json.directives) {
@@ -170,22 +174,22 @@ describe("access boundary", () => {
   });
 
   test("publishes generated agent artifacts for the pinned compiler", async () => {
-    const grammar = await call(service.base, "GET", "/docs/0.6.2/ai/grammar.json", { token: null });
+    const grammar = await call(service.base, "GET", "/docs/0.6.3/ai/grammar.json", { token: null });
     assert.equal(grammar.json.schema, "azeforge.grammar/v1");
     assert.equal(grammar.json.directives.length, 26);
 
-    const capabilities = await call(service.base, "GET", "/docs/0.6.2/ai/capabilities.json", {
+    const capabilities = await call(service.base, "GET", "/docs/0.6.3/ai/capabilities.json", {
       token: null,
     });
-    assert.equal(capabilities.json.tool.version, "0.6.2");
+    assert.equal(capabilities.json.tool.version, "0.6.3");
 
-    const version = await call(service.base, "GET", "/docs/0.6.2/ai/version.json", { token: null });
-    assert.equal(version.json.tool.version, "0.6.2");
+    const version = await call(service.base, "GET", "/docs/0.6.3/ai/version.json", { token: null });
+    assert.equal(version.json.tool.version, "0.6.3");
     assert.deepEqual(version.json.source.azemarkVersions, [2]);
   });
 
   test("keeps the valid example corpus separate from the invalid sampler", async () => {
-    const corpus = await call(service.base, "GET", "/docs/0.6.2/examples/", { token: null });
+    const corpus = await call(service.base, "GET", "/docs/0.6.3/examples/", { token: null });
     assert.match(corpus.text, /Fifteen Sources are valid/);
     assert.match(corpus.text, /deliberately invalid/);
 
@@ -207,20 +211,20 @@ describe("access boundary", () => {
       "visualization",
     ];
     for (const name of exampleNames) {
-      const example = await call(service.base, "GET", `/docs/0.6.2/examples/${name}.aze.md`, {
+      const example = await call(service.base, "GET", `/docs/0.6.3/examples/${name}.aze.md`, {
         token: null,
       });
       assert.equal(example.status, 200);
       assert.match(example.text, /^---\nazemark: 2/m);
     }
 
-    const sampler = await call(service.base, "GET", "/docs/0.6.2/examples/diagnostics.aze.md", {
+    const sampler = await call(service.base, "GET", "/docs/0.6.3/examples/diagnostics.aze.md", {
       token: null,
     });
     assert.match(sampler.text, /^---\nazemark: 2/m);
     assert.match(sampler.text, /Expected:/);
 
-    const diagnostics = await call(service.base, "GET", "/docs/0.6.2/reference/diagnostics/", {
+    const diagnostics = await call(service.base, "GET", "/docs/0.6.3/reference/diagnostics/", {
       token: null,
     });
     assert.match(diagnostics.text, /verified sample, not a complete catalog/);

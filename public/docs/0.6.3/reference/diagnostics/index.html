@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Current AzeForge documentation, pinned to 0.6.3.">
-<title>Documentation · AzeForge docs</title>
+<meta name="description" content="AzeForge diagnostic shape, severity, limits, and representative codes.">
+<title>Diagnostics · AzeForge docs</title>
 <link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
@@ -47,7 +47,7 @@
 <a href="/docs/0.6.3/reference/front-matter/">Front matter</a>
 <a href="/docs/0.6.3/reference/operations/">Operations</a>
 <a href="/docs/0.6.3/reference/formats-themes/">Formats and themes</a>
-<a href="/docs/0.6.3/reference/diagnostics/">Diagnostics</a>
+<a href="/docs/0.6.3/reference/diagnostics/" aria-current="page">Diagnostics</a>
 <a href="/docs/0.6.3/reference/limits/">Limits</a>
 <a href="/docs/0.6.3/reference/versioning/">Versioning</a>
 <p>AI authoring</p>
@@ -55,18 +55,22 @@
 </nav>
 <article class="docs-content">
 <p class="version-label">AzeMark 2 · AzeForge 0.6.3</p>
-<h1>Write valid AzeMark Source.</h1>
-<p class="lede">This documentation is pinned to AzeForge 0.6.3, AzeMark language version 2, document schema version 3, and grammar schema <code>azeforge.grammar/v1</code>.</p>
-<div class="callout"><strong>Versioned by design.</strong> Future compiler releases receive separate documentation. This reference does not silently track the latest package.</div>
-<h2 id="start">Start here</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="/docs/0.6.3/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li><li><a href="/docs/0.6.3/notation/"><strong>Notation codex</strong><span>Symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.</span></a></li></ul>
-<h2 id="guides">Family guides</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/guides/mathematics/"><strong>Mathematics</strong><span>equation, derivation</span></a></li><li><a href="/docs/0.6.3/guides/science/"><strong>Science</strong><span>formula, reaction, structure</span></a></li><li><a href="/docs/0.6.3/guides/engineering/"><strong>Engineering</strong><span>circuit, timing, control, free-body</span></a></li><li><a href="/docs/0.6.3/guides/data/"><strong>Data</strong><span>plot, chart</span></a></li><li><a href="/docs/0.6.3/guides/geometry/"><strong>Geometry</strong><span>geometry</span></a></li><li><a href="/docs/0.6.3/guides/software/"><strong>Software</strong><span>sequence, state, entity, class</span></a></li><li><a href="/docs/0.6.3/guides/documents/"><strong>Documents</strong><span>table, algorithm, statement, example, bibliography, figure, callout</span></a></li><li><a href="/docs/0.6.3/guides/diagrams/"><strong>Diagrams and escape hatches</strong><span>diagram, mermaid, tex</span></a></li></ul>
-<h2 id="reference">Reference and agent data</h2>
-<p>The directive reference and JSON artifacts are generated from the installed compiler. The prose pages state only behavior verified for 0.6.3.</p>
-<ul class="link-list"><li><a href="/docs/0.6.3/reference/directives/"><strong>All 26 directives</strong><span>Header fields, body schema, enum values, and limits.</span></a></li><li><a href="/docs/0.6.3/ai-authoring/"><strong>AI-authoring contract</strong><span>Hard rules plus grammar, capabilities, and version documents.</span></a></li></ul>
+<h1>Diagnostics.</h1>
+<p class="lede">Diagnostics are the compiler's authoritative correction path. Preserve their code, severity, location, suggestion, fix, and related locations.</p>
+<h2 id="shape">Envelope</h2>
+<p>Each diagnostic has a machine code, <code>error</code>, <code>warning</code>, or <code>info</code> severity, a message, and data. It may add source ranges, a suggestion, edit operations, and related ranges.</p>
+<pre class="code-block"><code class="language-json">{
+  &quot;code&quot;: &quot;azeforge.plot#missing-domain&quot;,
+  &quot;severity&quot;: &quot;error&quot;,
+  &quot;message&quot;: &quot;...&quot;,
+  &quot;location&quot;: { &quot;start&quot;: { &quot;line&quot;: 8, &quot;column&quot;: 1 } },
+  &quot;suggestion&quot;: &quot;...&quot;
+}</code></pre>
+<h2 id="limits">Caps and failure behavior</h2><p>The compiler caps diagnostics at 20 per block and 200 per document; deployments may only lower those limits. Invalid Source produces no partial Artifact.</p>
+<h2 id="codes">Representative codes</h2><p>This is a verified sample, not a complete catalog.</p><p><code>azeforge.equation#unsupported-notation</code> <code>azeforge.equation#chained-power</code> <code>azeforge.plot#missing-domain</code> <code>azeforge.plot#non-evaluable-construct</code> <code>azeforge.timing#invalid-wave</code> <code>azeforge.table#unknown-column-key</code> <code>azeforge.state#multiple-initials</code> <code>azeforge.sequence#unresolved-reference</code> <code>azeforge.geometry#ambiguous-construction</code> <code>azeforge.free-body#scale-conflict</code> <code>azeforge.diagram#group-endpoint</code> <code>azeforge.control#sign-count-mismatch</code> <code>azeforge.circuit#unknown-terminal</code> <code>azeforge.algorithm#assignment-in-condition</code> <code>azeforge.renderer#adapter-missing</code></p>
+<h2 id="sampler">Invalid sampler</h2><p>The diagnostic sampler is intentionally non-compiling. Its comments pair defects with expected code-to-remedy examples.</p><a class="button" href="/docs/0.6.3/examples/diagnostics.aze.md">Download the invalid sampler</a>
 </article>
-<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#start">Start here</a><a href="#guides">Family guides</a><a href="#reference">Reference</a></aside>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#shape">Envelope</a><a href="#limits">Limits</a><a href="#codes">Codes</a><a href="#sampler">Invalid sampler</a></aside>
 </main>
 <footer class="site-footer">
   <p>AzeForge 0.6.3 documentation. AzeMark language version 2.</p>

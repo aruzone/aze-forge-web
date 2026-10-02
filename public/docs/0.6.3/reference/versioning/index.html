@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Current AzeForge documentation, pinned to 0.6.3.">
-<title>Documentation · AzeForge docs</title>
+<meta name="description" content="Compiler, source-language, document-schema, grammar, and plugin version boundaries.">
+<title>Version contract · AzeForge docs</title>
 <link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
 <link rel="stylesheet" href="/assets/site.css">
 <script src="/assets/site.js" defer></script>
@@ -49,24 +49,20 @@
 <a href="/docs/0.6.3/reference/formats-themes/">Formats and themes</a>
 <a href="/docs/0.6.3/reference/diagnostics/">Diagnostics</a>
 <a href="/docs/0.6.3/reference/limits/">Limits</a>
-<a href="/docs/0.6.3/reference/versioning/">Versioning</a>
+<a href="/docs/0.6.3/reference/versioning/" aria-current="page">Versioning</a>
 <p>AI authoring</p>
 <a href="/docs/0.6.3/ai-authoring/">Agent contract</a>
 </nav>
 <article class="docs-content">
 <p class="version-label">AzeMark 2 · AzeForge 0.6.3</p>
-<h1>Write valid AzeMark Source.</h1>
-<p class="lede">This documentation is pinned to AzeForge 0.6.3, AzeMark language version 2, document schema version 3, and grammar schema <code>azeforge.grammar/v1</code>.</p>
-<div class="callout"><strong>Versioned by design.</strong> Future compiler releases receive separate documentation. This reference does not silently track the latest package.</div>
-<h2 id="start">Start here</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="/docs/0.6.3/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li><li><a href="/docs/0.6.3/notation/"><strong>Notation codex</strong><span>Symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.</span></a></li></ul>
-<h2 id="guides">Family guides</h2>
-<ul class="link-list"><li><a href="/docs/0.6.3/guides/mathematics/"><strong>Mathematics</strong><span>equation, derivation</span></a></li><li><a href="/docs/0.6.3/guides/science/"><strong>Science</strong><span>formula, reaction, structure</span></a></li><li><a href="/docs/0.6.3/guides/engineering/"><strong>Engineering</strong><span>circuit, timing, control, free-body</span></a></li><li><a href="/docs/0.6.3/guides/data/"><strong>Data</strong><span>plot, chart</span></a></li><li><a href="/docs/0.6.3/guides/geometry/"><strong>Geometry</strong><span>geometry</span></a></li><li><a href="/docs/0.6.3/guides/software/"><strong>Software</strong><span>sequence, state, entity, class</span></a></li><li><a href="/docs/0.6.3/guides/documents/"><strong>Documents</strong><span>table, algorithm, statement, example, bibliography, figure, callout</span></a></li><li><a href="/docs/0.6.3/guides/diagrams/"><strong>Diagrams and escape hatches</strong><span>diagram, mermaid, tex</span></a></li></ul>
-<h2 id="reference">Reference and agent data</h2>
-<p>The directive reference and JSON artifacts are generated from the installed compiler. The prose pages state only behavior verified for 0.6.3.</p>
-<ul class="link-list"><li><a href="/docs/0.6.3/reference/directives/"><strong>All 26 directives</strong><span>Header fields, body schema, enum values, and limits.</span></a></li><li><a href="/docs/0.6.3/ai-authoring/"><strong>AI-authoring contract</strong><span>Hard rules plus grammar, capabilities, and version documents.</span></a></li></ul>
+<h1>Version contract.</h1>
+<p class="lede">These docs never use “latest” as a compatibility promise. Every artifact names the compiler, source language, document schema, and grammar schema.</p>
+<div class="version-grid"><div><strong>AzeForge</strong><span>0.6.3</span></div><div><strong>AzeMark</strong><span>language version 2</span></div><div><strong>Document data</strong><span>schema version 3</span></div><div><strong>Grammar</strong><span>azeforge.grammar/v1</span></div></div>
+<h2 id="plugins">Plugin versions</h2><p>Equation and table use plugin source/data version 2. Every other 0.6.3 directive publishes plugin version 1. Plugin version numbers are not AzeMark language versions.</p>
+<h2 id="future">Future releases</h2><p>A future compiler release receives a separate documentation tree. 0.6.3 does not publish migration rules for a future AzeMark version, and its <code>migrate</code> operation is unavailable.</p>
+<h2 id="machine">Machine report</h2><p>Read the exact generated <a href="/docs/0.6.3/ai/version.json">version report</a>.</p>
 </article>
-<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#start">Start here</a><a href="#guides">Family guides</a><a href="#reference">Reference</a></aside>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#plugins">Plugins</a><a href="#future">Future releases</a><a href="#machine">Machine report</a></aside>
 </main>
 <footer class="site-footer">
   <p>AzeForge 0.6.3 documentation. AzeMark language version 2.</p>

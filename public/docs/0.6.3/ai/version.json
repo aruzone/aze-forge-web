@@ -1,0 +1,241 @@
+{
+  "schema": "azeforge.version/v1",
+  "schemaVersion": 1,
+  "tool": {
+    "name": "azeforge",
+    "version": "0.6.3"
+  },
+  "runtime": {
+    "node": {
+      "supported": [
+        22,
+        24
+      ],
+      "canonical": 24
+    },
+    "os": {
+      "supported": [
+        "ubuntu",
+        "macos"
+      ],
+      "canonical": "ubuntu"
+    },
+    "canonical": {
+      "os": "ubuntu",
+      "arch": "x64",
+      "node": 24
+    }
+  },
+  "source": {
+    "azemarkVersions": [
+      2
+    ]
+  },
+  "document": {
+    "schemaVersions": [
+      3
+    ]
+  },
+  "schemas": [
+    {
+      "id": "azeforge.diagnostics/v1",
+      "version": 1
+    },
+    {
+      "id": "azeforge.capabilities/v2",
+      "version": 1
+    },
+    {
+      "id": "azeforge.version/v1",
+      "version": 1
+    },
+    {
+      "id": "azeforge.acceptance/v1",
+      "version": 1
+    },
+    {
+      "id": "azeforge.event/v1",
+      "version": 1
+    },
+    {
+      "id": "azeforge.grammar/v1",
+      "version": 1
+    },
+    {
+      "id": "azeforge.equation/source/v2",
+      "version": "2.0.0"
+    },
+    {
+      "id": "azeforge.equation/data/v2",
+      "version": "2.0.0"
+    },
+    {
+      "id": "azeforge.derivation/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.derivation/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.mermaid/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.mermaid/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.table/source/v2",
+      "version": "2.0.0"
+    },
+    {
+      "id": "azeforge.table/data/v2",
+      "version": "2.0.0"
+    },
+    {
+      "id": "azeforge.callout/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.callout/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.formula/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.formula/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.reaction/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.reaction/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.structure/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.structure/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.circuit/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.circuit/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.timing/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.timing/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.diagram/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.diagram/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.sequence/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.sequence/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.state/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.state/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.entity/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.entity/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.class/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.class/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.control/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.control/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.free-body/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.free-body/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.algorithm/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.algorithm/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.statement/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.statement/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.example/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.example/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.figure/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.figure/data/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.bibliography/source/v1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "azeforge.bibliography/data/v1",
+      "version": "1.0.0"
+    }
+  ]
+}

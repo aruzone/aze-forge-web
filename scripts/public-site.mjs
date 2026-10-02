@@ -18,7 +18,7 @@ const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUTPUT = join(REPO, "public");
 const PUBLIC_SOURCE = join(REPO, "src", "public");
 const PLAYGROUND_SOURCE = join(REPO, "src", "web");
-const VERSION = "0.6.2";
+const VERSION = "0.6.3";
 const DOCS_ROOT = `/docs/${VERSION}`;
 
 /** @typedef {{ id: string, name: string, source: string }} Example */
@@ -300,7 +300,7 @@ const home = page({
   <div>
     <p class="eyebrow">AzeForge compiler and renderer</p>
     <h1>Technical documents, built from plain text.</h1>
-    <p class="lede">AzeForge is the compiler and renderer for AzeMark. Validate structured technical Source, then render HTML, SVG, PNG, or PDF.</p>
+    <p class="lede">AzeForge is the compiler and renderer for AzeMark — a library for both humans and AI agents. Validate structured technical Source, then render HTML, SVG, PNG, or PDF.</p>
     <div class="action-row"><a class="button primary" href="#install-command">Install AzeForge</a><a class="button" href="${DOCS_ROOT}/">Read the docs</a></div>
     ${copyCommand("install-command", "npm install @aruzone/aze-forge")}
   </div>
@@ -515,23 +515,62 @@ const examplesContent = `<h1>Verified example corpus.</h1>
     ? "Intentionally invalid. Use it only to study diagnostic codes and remedies."
     : example.id === "tex"
       ? "Valid Source. Rendering depends on the deployment's TeX adapter."
-      : "Canonical executable Source for AzeForge 0.6.2.";
+      : "Canonical executable Source for AzeForge ${VERSION}.";
   return `<li><a href="${DOCS_ROOT}/examples/${example.id}.aze.md"><strong>${escapeHtml(example.name)}</strong><span>${detail}</span></a></li>`;
 }).join("")}</ul>`;
 
 const symbolRows = [
-  ["σ", "<code>sigma</code>", "Lower Greek", "<code>sigma^2</code>", "Sample variance"],
-  ["μ", "<code>mu</code>", "Lower Greek", "<code>(x_i - mu)^2</code>", "Deviation from the mean"],
-  ["θ", "<code>theta</code>", "Lower Greek", "<code>cos theta</code>", "Rotation angle"],
-  ["Σ", "<code>Sigma</code>", "Upper Greek", "<code>sum i=1..n of i^2</code>", "Summation operator"],
-  ["Ψ", "<code>Psi</code>", "Upper Greek", "<code>Psi(x, t)</code>", "Wave function"],
   ["α", "<code>alpha</code>", "Lower Greek", "<code>alpha</code>", "Significance level"],
   ["β", "<code>beta</code>", "Lower Greek", "<code>beta</code>", "Regression coefficient"],
+  ["γ", "<code>gamma</code>", "Lower Greek", "<code>gamma</code>", "Decay constant"],
+  ["δ", "<code>delta</code>", "Lower Greek", "<code>delta</code>", "Small change"],
+  ["ε", "<code>epsilon</code>", "Lower Greek", "<code>forall e in R of body</code>", "Arbitrary tolerance"],
+  ["ζ", "<code>zeta</code>", "Lower Greek", "<code>zeta</code>", "Damping ratio"],
+  ["η", "<code>eta</code>", "Lower Greek", "<code>eta</code>", "Efficiency"],
+  ["θ", "<code>theta</code>", "Lower Greek", "<code>cos theta</code>", "Rotation angle"],
+  ["κ", "<code>kappa</code>", "Lower Greek", "<code>kappa</code>", "Curvature"],
+  ["λ", "<code>lambda</code>", "Lower Greek", "<code>lambda</code>", "Wavelength"],
+  ["μ", "<code>mu</code>", "Lower Greek", "<code>(x_i - mu)^2</code>", "Population mean"],
+  ["ν", "<code>nu</code>", "Lower Greek", "<code>G_(mu, nu)</code>", "Tensor index"],
+  ["ξ", "<code>xi</code>", "Lower Greek", "<code>xi</code>", "Random variable"],
+  ["ο", "<code>omicron</code>", "Lower Greek", "<code>omicron</code>", "Small omicron"],
   ["π", "<code>pi</code>", "Lower Greek", "<code>pi</code>", "Circle constant"],
-  ["∞", "<code>infinity</code>", "Physics name", "<code>integral x=0..infinity of exp(-x^2) dx</code>", "Unbounded limit"],
+  ["ρ", "<code>rho</code>", "Lower Greek", "<code>rho</code>", "Density"],
+  ["σ", "<code>sigma</code>", "Lower Greek", "<code>sigma^2</code>", "Standard deviation"],
+  ["τ", "<code>tau</code>", "Lower Greek", "<code>tau</code>", "Time constant"],
+  ["υ", "<code>upsilon</code>", "Lower Greek", "<code>upsilon</code>", "Frequency ratio"],
+  ["φ", "<code>phi</code>", "Lower Greek", "<code>phi</code>", "Phase angle"],
+  ["χ", "<code>chi</code>", "Lower Greek", "<code>chi</code>", "Susceptibility"],
+  ["ψ", "<code>psi</code>", "Lower Greek", "<code>psi</code>", "Stream function"],
+  ["ω", "<code>omega</code>", "Lower Greek", "<code>omega</code>", "Angular frequency"],
+  ["Α", "<code>Alpha</code>", "Upper Greek", "<code>Alpha</code>", "Uppercase alpha"],
+  ["Β", "<code>Beta</code>", "Upper Greek", "<code>Beta</code>", "Uppercase beta"],
+  ["Γ", "<code>Gamma</code>", "Upper Greek", "<code>Gamma</code>", "Uppercase gamma"],
+  ["Δ", "<code>Delta</code>", "Upper Greek", "<code>Delta</code>", "Finite difference"],
+  ["Ε", "<code>Epsilon</code>", "Upper Greek", "<code>Epsilon</code>", "Uppercase epsilon"],
+  ["Ζ", "<code>Zeta</code>", "Upper Greek", "<code>Zeta</code>", "Uppercase zeta"],
+  ["Η", "<code>Eta</code>", "Upper Greek", "<code>Eta</code>", "Uppercase eta"],
+  ["Θ", "<code>Theta</code>", "Upper Greek", "<code>Theta</code>", "Uppercase theta"],
+  ["Ι", "<code>Iota</code>", "Upper Greek", "<code>Iota</code>", "Uppercase iota"],
+  ["Κ", "<code>Kappa</code>", "Upper Greek", "<code>Kappa</code>", "Uppercase kappa"],
+  ["Λ", "<code>Lambda</code>", "Upper Greek", "<code>Lambda</code>", "Uppercase lambda"],
+  ["Μ", "<code>Mu</code>", "Upper Greek", "<code>Mu</code>", "Uppercase mu"],
+  ["Ν", "<code>Nu</code>", "Upper Greek", "<code>Nu</code>", "Uppercase nu"],
+  ["Ξ", "<code>Xi</code>", "Upper Greek", "<code>Xi</code>", "Uppercase xi"],
+  ["Ο", "<code>Omicron</code>", "Upper Greek", "<code>Omicron</code>", "Uppercase omicron"],
+  ["Π", "<code>Pi</code>", "Upper Greek", "<code>Pi</code>", "Uppercase pi"],
+  ["Ρ", "<code>Rho</code>", "Upper Greek", "<code>Rho</code>", "Uppercase rho"],
+  ["Σ", "<code>Sigma</code>", "Upper Greek", "<code>sum i=1..n of i^2</code>", "Summation operator"],
+  ["Τ", "<code>Tau</code>", "Upper Greek", "<code>Tau</code>", "Uppercase tau"],
+  ["Υ", "<code>Upsilon</code>", "Upper Greek", "<code>Upsilon</code>", "Uppercase upsilon"],
+  ["Φ", "<code>Phi</code>", "Upper Greek", "<code>Phi</code>", "Uppercase phi"],
+  ["Χ", "<code>Chi</code>", "Upper Greek", "<code>Chi</code>", "Uppercase chi"],
+  ["Ψ", "<code>Psi</code>", "Upper Greek", "<code>Psi(x, t)</code>", "Wave function"],
+  ["Ω", "<code>Omega</code>", "Upper Greek", "<code>Omega</code>", "Ohms and solid angle"],
   ["ℏ", "<code>hbar</code>", "Physics name", "<code>i hbar frac(partial, partial t) Psi(x, t)</code>", "Reduced Planck constant"],
   ["∂", "<code>partial</code>", "Physics name", "<code>frac(partial, partial t)</code>", "Partial derivative"],
   ["∇", "<code>nabla</code>", "Physics name", "<code>nabla^2</code>", "Laplacian operator"],
+  ["∞", "<code>infinity</code>", "Physics name", "<code>integral x=0..infinity of exp(-x^2) dx</code>", "Unbounded limit"],
   ["∅", "<code>emptyset</code>", "Physics name", "<code>emptyset</code>", "Empty set"],
 ];
 
@@ -543,13 +582,31 @@ const transformRows = [
   ["Multi-index", "<code>G_(mu, nu)</code>", "One subscript group", "Tensor indices"],
   ["Fraction", "<code>frac(1, n)</code>", "Numerator, denominator", "Rational expression"],
   ["Root", "<code>sqrt(x)</code>", "Radicand", "Square root"],
-  ["Bounded sum", "<code>sum i=1..n of i^2</code>", "Bound, then <code>of</code>, then body", "Finite series"],
-  ["Bounded product", "<code>product k=1..m of k</code>", "Bound, then <code>of</code>, then body", "Finite product"],
-  ["Integral", "<code>integral x=0..L of f(x) dx</code>", "Differential matches the bound name", "Definite integral"],
-  ["Quantifier", "<code>forall e in R of body</code>", "Name, set, then <code>of</code>", "Universal claim"],
-  ["Set relation", "<code>x in R</code>", "Membership operators", "Set membership"],
-  ["Matrix", "<code>pmatrix [[a, b], [c, d]]</code>", "Rows are bracket groups", "Parenthesized matrix"],
-  ["Cases", "<code>cases(a when b; c otherwise)</code>", "Branches separated by <code>;</code>", "Piecewise definition"],
+  ["Nth root", "<code>root(n, x)</code>", "Index, radicand", "Cube and higher roots"],
+  ["Absolute", "<code>abs(x)</code>", "Single argument", "Absolute value"],
+  ["Bounded sum", "<code>sum i=1..n of i^2</code>", "Bound <code>i=1..n</code>, then <code>of</code>, then body", "Finite series with Σ"],
+  ["Bounded product", "<code>product k=1..m of k</code>", "Bound <code>k=1..m</code>, then <code>of</code>, then body", "Finite product with Π"],
+  ["Integral", "<code>integral x=0..L of f(x) dx</code>", "Bound <code>x=0..L</code>, then <code>of</code>, then body; differential matches the bound name", "Definite integral with ∫"],
+  ["Unbounded integral", "<code>integral x=0..infinity of exp(-x^2) dx</code>", "<code>infinity</code> as the upper bound", "Improper integral"],
+  ["Limit", "<code>limit n-&gt;infinity of V_0</code>", "Variable, arrow, target, then <code>of</code>", "Approach a value"],
+  ["Universal quantifier", "<code>forall e in R of body</code>", "Name, set, then <code>of</code>", "For every element, with ∀"],
+  ["Existential quantifier", "<code>exists M in R of body</code>", "Name, set, then <code>of</code>", "There exists, with ∃"],
+  ["Membership", "<code>x in R</code>", "Element, then set", "Set membership with ∈"],
+  ["Non-membership", "<code>x notin S</code>", "Element, then set", "Exclusion with ∉"],
+  ["Subset", "<code>A subset B</code>", "Two sets", "Strict inclusion with ⊂"],
+  ["Subset or equal", "<code>A subseteq B</code>", "Two sets", "Inclusion with ⊆"],
+  ["Superset", "<code>A supset B</code>", "Two sets", "Strict containment with ⊃"],
+  ["Union", "<code>A union B</code>", "Two sets", "Combined sets with ∪"],
+  ["Intersection", "<code>A intersect B</code>", "Two sets", "Shared elements with ∩"],
+  ["Equivalence", "<code>A equiv B</code>", "Two expressions", "Logical equivalence with ≡"],
+  ["Vector", "<code>vector [x, y]</code>", "Bracket list; one item is an arrow vector", "Bold tuple or arrow vector"],
+  ["Matrix", "<code>matrix [[a, b], [c, d]]</code>", "Rows are bracket groups", "Plain matrix"],
+  ["Parenthesized matrix", "<code>pmatrix [[cos theta, -sin theta], [sin theta, cos theta]]</code>", "Rows are bracket groups", "Rotation matrix"],
+  ["Determinant matrix", "<code>vmatrix [[a, b], [c, d]]</code>", "Rows are bracket groups", "Determinant bars"],
+  ["Cases", "<code>cases(w_k x^k when k &lt; m; 0 otherwise)</code>", "Branches separated by <code>;</code>, conditions with <code>when</code>", "Piecewise definition"],
+  ["Sine", "<code>sin theta</code>", "Angle argument", "Trigonometric function"],
+  ["Cosine", "<code>cos theta</code>", "Angle argument", "Trigonometric function"],
+  ["Exponential", "<code>exp(-x^2)</code>", "Exponent argument", "Natural exponential"],
 ];
 
 const artifactRows = [
@@ -625,7 +682,7 @@ function codexTable(id, title, head, rows) {
 }
 
 const codexContent = `<h1>Notation codex.</h1>
-<p class="lede">Every spelling below is verified against the pinned ${VERSION} compiler Sources and generated grammar. Copy the AzeMark column verbatim; do not invent near-miss keys.</p>
+<p class="lede">AzeForge is a library for both humans and AI agents. People read this page to author valid AzeMark; agents treat it as the human companion to <a href="${DOCS_ROOT}/ai/grammar.json">grammar.json</a> and the <a href="${DOCS_ROOT}/ai-authoring/">AI-authoring contract</a>. Every spelling below is verified against the pinned ${VERSION} compiler Sources and generated grammar. Copy the AzeMark column verbatim; do not invent near-miss keys.</p>
 <div class="warning"><strong>Closed grammar.</strong> Unknown words of three or more letters are diagnostics, not new functions. Use only the registered names on this page.</div>
 ${codexTable("symbols", "Symbols and Greek names", ["Rendered", "AzeMark", "Kind", "Example", "Reads as"], symbolRows)}
 ${codexTable("transforms", "Subscripts, superscripts, and expression forms", ["Form", "AzeMark", "Rule", "Reads as"], transformRows)}
