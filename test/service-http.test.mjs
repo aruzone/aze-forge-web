@@ -96,6 +96,30 @@ describe("access boundary", () => {
     assert.equal((await call(service.base, "GET", "/app.js", { token: null })).status, 404);
   });
 
+  test("serves the practitioner landing page with install and proof sequence", async () => {
+    const home = await call(service.base, "GET", "/", { token: null });
+    assert.equal(home.status, 200);
+    assert.match(home.text, /AzeForge is the compiler and renderer for AzeMark/);
+    assert.match(home.text, />Install AzeForge<\/a>/);
+    assert.match(home.text, /<code id="install-command">npm install @aruzone\/aze-forge<\/code>/);
+    assert.match(home.text, /data-copy="#install-command"/);
+    assert.match(home.text, /href="\/docs\/[^"]+\/"/);
+    assert.match(home.text, /href="\/playground"/);
+    assert.match(home.text, /href="\/#examples"/);
+
+    const sections = ["id=\"capabilities\"", "id=\"use-cases\"", "id=\"examples\"", "home-continue"];
+    let position = -1;
+    for (const section of sections) {
+      const next = home.text.indexOf(section);
+      assert.ok(next > position, `expected ${section} in proof order`);
+      position = next;
+    }
+
+    assert.match(home.text, /ohms-law\.aze\.md/);
+    assert.match(home.text, /azemark: 2/);
+    assert.match(home.text, /:::: equation/);
+  });
+
   test("serves versioned AzeMark documentation with generated grammar data", async () => {
     const docs = await call(service.base, "GET", "/docs/0.6.2/", { token: null });
     assert.equal(docs.status, 200);

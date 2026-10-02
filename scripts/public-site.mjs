@@ -299,7 +299,7 @@ const home = page({
     <h1>Technical documents, built from plain text.</h1>
     <p class="lede">AzeForge is the compiler and renderer for AzeMark. Validate structured technical Source, then render HTML, SVG, PNG, or PDF.</p>
     <div class="action-row"><a class="button primary" href="#install-command">Install AzeForge</a><a class="button" href="${DOCS_ROOT}/">Read the docs</a></div>
-    ${copyCommand("install-command", "npm install -g @aruzone/aze-forge")}
+    ${copyCommand("install-command", "npm install @aruzone/aze-forge")}
   </div>
   <aside class="hero-side" aria-label="AzeForge summary">
     <p class="eyebrow">Built for structured work</p>
