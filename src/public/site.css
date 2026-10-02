@@ -440,6 +440,15 @@ h3 {
   font-size: 17px;
 }
 
+.use-case-list code {
+  display: block;
+  width: fit-content;
+}
+
+.use-case-list code + code {
+  margin-top: 4px;
+}
+
 .source-figure {
   margin: 34px 0 0;
 }
