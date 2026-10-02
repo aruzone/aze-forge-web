@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AzeForge Web</title>
-<link rel="icon" href="/azeforge-logo-transparent.png" type="image/png">
-<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="/playground/azeforge-logo-transparent.png" type="image/png">
+<link rel="stylesheet" href="/playground/app.css">
 </head>
 <body>
 <a class="skip-link" href="#cell-canvas">Skip to editor</a>
@@ -13,7 +13,7 @@
 <a class="skip-link" href="#document-navigation">Skip to Current document navigation</a>
 <div id="workspace" class="workspace" hidden>
   <nav class="app-rail" aria-label="Application">
-    <img src="/azeforge-logo-transparent.png" alt="AzeForge" width="36" height="36">
+    <img src="/playground/azeforge-logo-transparent.png" alt="AzeForge" width="36" height="36">
     <button class="rail-destination" type="button" aria-current="page"><span aria-hidden="true">▤</span><span class="visually-hidden">Author workspace</span></button>
     <span class="rail-spacer"></span>
     <button id="service-health" class="rail-destination" type="button" aria-haspopup="dialog"><span aria-hidden="true">●</span><span class="visually-hidden">Service details</span></button>
@@ -52,7 +52,7 @@
     <section id="document-preview" class="document-preview" aria-labelledby="preview-title" tabindex="-1">
       <header><div><p>Document preview</p><h1 id="preview-title">Untitled document</h1></div><div class="preview-actions"><strong id="preview-state">Preview not generated</strong><button id="view-preview-diagnostics" type="button" hidden>View diagnostics</button><button id="refresh-preview" type="button">Refresh preview</button><button id="expand-preview" type="button" disabled>Expand</button></div></header>
       <div id="preview-frame" class="preview-frame"><iframe id="preview" title="Document preview — not generated" sandbox="allow-same-origin" hidden></iframe><p id="preview-placeholder">Preview not generated. Refresh when the Current document is ready.</p></div>
-      <div id="preview-separator" class="preview-separator" role="separator" aria-label="Resize Document preview" aria-orientation="horizontal" tabindex="0">•••</div>
+      <div id="preview-separator" class="preview-separator" role="separator" aria-label="Resize Document preview" aria-orientation="horizontal" aria-valuemin="160" aria-valuemax="600" aria-valuenow="240" tabindex="0">•••</div>
     </section>
 
     <section id="cell-canvas" class="cell-canvas" aria-labelledby="cells-title" tabindex="-1">
@@ -94,7 +94,7 @@
 
 <dialog id="service-dialog" aria-labelledby="service-title"><h2 id="service-title">Service details</h2><p id="service-meta">Connecting…</p><button id="close-service" type="button">Close</button></dialog>
 
-<div class="gate" id="gate"><form class="gate-card" id="gate-form"><img src="/azeforge-logo-transparent.png" alt="" width="48" height="48"><h1>Open AzeForge Web</h1><p>Enter the deployment access token.</p><label>Access token<input id="gate-token" type="password" autocomplete="current-password"></label><p id="gate-error" class="error" role="alert"></p><button type="submit">Enter workspace</button></form></div>
-<script type="module" src="/app.js"></script>
+<div class="gate" id="gate"><form class="gate-card" id="gate-form" aria-labelledby="gate-title"><img src="/playground/azeforge-logo-transparent.png" alt="" width="48" height="48"><h1 id="gate-title">Open AzeForge Web</h1><p>Enter the deployment access token.</p><label>Access token<input id="gate-token" type="password" autocomplete="current-password"></label><p id="gate-error" class="error" role="alert"></p><button type="submit">Enter workspace</button></form></div>
+<script type="module" src="/playground/app.js"></script>
 </body>
 </html>

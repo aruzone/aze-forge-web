@@ -4,6 +4,18 @@ AzeForge Web is the hosted authoring and rendering context for AzeMark documents
 
 ## Language
 
+**AzeForge**:
+The installable compiler and renderer for AzeMark Source.
+_Avoid_: AzeForge Web when referring to the product rather than its hosted authoring context
+
+**AzeMark**:
+The source language that AzeForge parses and renders.
+_Avoid_: AzeMark Source when referring to the language rather than a particular editable document
+
+**Playground**:
+The hosted AzeForge Web entry at `/playground`, where a user supplies an access token to author and render the Current document.
+_Avoid_: Anonymous compiler, public renderer
+
 **Current document**:
 The sole AzeMark document being authored in the present ephemeral session.
 _Avoid_: Project, saved document

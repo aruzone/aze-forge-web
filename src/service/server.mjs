@@ -1,10 +1,9 @@
 /**
  * HTTP surface.
- *
- * `/v1` is the protocol major. Everything informative lives behind the bearer
- * token; only the two detail-free health endpoints and the inert frontend are
- * reachable without it. Response bodies are always JSON envelopes or Artifact
- * bytes, never server paths, stack traces or credentials.
+ * `/v1` is the protocol major and remains behind the bearer token. The public
+ * site, versioned documentation, Playground shell, and two detail-free health
+ * endpoints are open. Response bodies are JSON envelopes, static assets, or
+ * Artifact bytes, never server paths, stack traces, or credentials.
  */
 
 import { createServer } from "node:http";
@@ -14,7 +13,6 @@ import { buildWebCapabilities } from "./capabilities.mjs";
 import { ERROR_CODES, ServiceError, serviceErrorBody, statusForErrorCode } from "./errors.mjs";
 import { validateJobRequest } from "./protocol.mjs";
 import { publicJob } from "./jobs.mjs";
-import { FRONTEND_CONTENT_SECURITY_POLICY } from "./static.mjs";
 
 const BASE_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
@@ -45,7 +43,7 @@ const ARTIFACT_CONTENT_SECURITY_POLICY = [
  *   assets: import("./assets.mjs").AssetStore,
  *   jobs: import("./jobs.mjs").JobManager,
  *   authoringProvider: { generate: (description: string, options?: { signal?: AbortSignal }) => Promise<{ kind: string, text?: string, title?: string, blockType?: string, question?: string, reason?: string, code?: string }> } | null,
- *   webAssets: Map<string, { body: Buffer, contentType: string }>,
+ *   webAssets: Map<string, { body: Buffer, contentType: string, contentSecurityPolicy: string }>,
  *   now?: () => number,
  * }} deps
  */
@@ -161,12 +159,12 @@ export function createService(deps) {
     }
     if (webAssets.has(pathname)) {
       if (method !== "GET") throw methodNotAllowed("GET");
-      const asset = /** @type {{ body: Buffer, contentType: string }} */ (webAssets.get(pathname));
+      const asset = /** @type {{ body: Buffer, contentType: string, contentSecurityPolicy: string }} */ (webAssets.get(pathname));
       res.writeHead(200, {
         ...BASE_HEADERS,
         "Content-Type": asset.contentType,
         "Content-Length": asset.body.byteLength,
-        "Content-Security-Policy": FRONTEND_CONTENT_SECURITY_POLICY,
+        "Content-Security-Policy": asset.contentSecurityPolicy,
       });
       res.end(asset.body);
       return;

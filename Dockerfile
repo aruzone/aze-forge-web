@@ -70,6 +70,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY src ./src
+COPY public ./public
 COPY scripts/image-manifest.mjs ./scripts/
 
 # The pinned browser cache belongs to the non-root user that launches it, and

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">A collage of technical notation</title>
+  <desc id="description">Equations, geometric constructions, circuit traces, plots, and connected diagram nodes.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#f2eee8" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#f2eee8" fill-opacity="0.42"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#grid)"/>
+
+  <g fill="none" stroke="#f2eee8" stroke-opacity="0.28" stroke-width="2">
+    <path d="M760 92H1035"/>
+    <path d="M760 108H944"/>
+    <path d="M1110 76h130v72h-130zM1285 76h130v72h-130z"/>
+    <path d="M1240 112h45" marker-end="url(#arrow)"/>
+    <path d="M1175 148v76h175v-76" marker-end="url(#arrow)"/>
+
+    <circle cx="1060" cy="374" r="148"/>
+    <circle cx="1060" cy="374" r="82"/>
+    <path d="M916 412l182-175 99 238z"/>
+    <path d="M916 412l281 63M1098 237l-38 137-144 38"/>
+    <path d="M1028 374a32 32 0 0 1 24-31"/>
+    <circle cx="916" cy="412" r="5" fill="#ff2419" fill-opacity="0.72" stroke="none"/>
+    <circle cx="1098" cy="237" r="5" fill="#ff2419" fill-opacity="0.72" stroke="none"/>
+    <circle cx="1197" cy="475" r="5" fill="#ff2419" fill-opacity="0.72" stroke="none"/>
+
+    <path d="M690 688h120l15-24 30 48 30-48 30 48 30-48 15 24h86"/>
+    <path d="M1026 647v82M1045 647v82M1045 688h92"/>
+    <circle cx="690" cy="688" r="6" fill="#f2eee8" fill-opacity="0.4"/>
+    <circle cx="1137" cy="688" r="6" fill="#f2eee8" fill-opacity="0.4"/>
+    <path d="M1137 688h65v-86h75M1277 602h70l26-30 26 60 26-60 26 60 26-30h64"/>
+    <path d="M1277 602v142h214M1384 744v44M1354 788h60M1364 800h40M1375 812h18"/>
+
+    <path d="M744 514v-205h226"/>
+    <path d="M768 484c42-4 57-43 90-64 33-21 56-13 86-71"/>
+    <path d="M775 460l54-80 45 28 67-74" stroke="#ff2419" stroke-opacity="0.48"/>
+    <path d="M795 514v-12M846 514v-12M897 514v-12M948 514v-12"/>
+
+    <path d="M1314 274h104v62h-104zM1260 404h104v62h-104zM1430 404h104v62h-104z"/>
+    <path d="M1366 336v37h-54v31M1366 373h116v31" marker-end="url(#arrow)"/>
+  </g>
+
+  <g fill="#f2eee8" fill-opacity="0.34" font-family="JetBrains Mono, ui-monospace, monospace">
+    <text x="735" y="195" font-size="38">∫₀∞ e⁻ˣ² dx = √π / 2</text>
+    <text x="742" y="252" font-size="28">Σ n⁻² = π² / 6</text>
+    <text x="1118" y="119" font-size="18">SOURCE</text>
+    <text x="1306" y="119" font-size="18">DOCUMENT</text>
+    <text x="997" y="353" font-size="18">θ</text>
+    <text x="728" y="541" font-size="16">0</text>
+    <text x="946" y="541" font-size="16">t</text>
+    <text x="712" y="676" font-size="16">V</text>
+    <text x="849" y="649" font-size="16">R</text>
+    <text x="1021" y="636" font-size="16">C</text>
+    <text x="1334" y="566" font-size="16">R₂</text>
+    <text x="1341" y="312" font-size="16">parse</text>
+    <text x="1278" y="442" font-size="16">validate</text>
+    <text x="1451" y="442" font-size="16">render</text>
+  </g>
+
+  <g fill="#f2eee8" fill-opacity="0.2" font-family="Playfair Display, Georgia, serif">
+    <text x="1235" y="228" font-size="54">E = mc²</text>
+    <text x="720" y="820" font-size="42">f(x) = a₀ + Σ aₙ cos(nπx/L)</text>
+  </g>
+</svg>

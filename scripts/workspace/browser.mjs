@@ -83,7 +83,7 @@ export async function startBrowser(executablePath) {
 export async function openWorkspace(browser, { base, token, width, height }) {
   const page = await browser.newPage();
   await page.setViewport({ width, height });
-  await page.goto(`${base}/`, { waitUntil: "networkidle0" });
+  await page.goto(`${base.replace(/\/$/, "")}/playground`, { waitUntil: "networkidle0" });
   await page.type("#gate-token", token);
   await Promise.all([
     page.waitForSelector("#workspace:not([hidden])", { timeout: 30_000 }),
