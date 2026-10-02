@@ -809,6 +809,10 @@ details .code-block {
   margin: 0;
 }
 
+.open-source-note .heart {
+  color: var(--red);
+}
+
 .site-footer nav {
   display: flex;
   gap: 18px;
@@ -959,6 +963,10 @@ details .code-block {
 
   .site-footer nav {
     margin-top: 14px;
+  }
+
+  .open-source-note {
+    margin-top: 10px;
   }
 }
 

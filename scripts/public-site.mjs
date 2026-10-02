@@ -152,6 +152,7 @@ function header(current) {
     <a href="${DOCS_ROOT}/"${current === "docs" ? ' aria-current="page"' : ""}>Docs</a>
     <a href="/#examples">Examples</a>
     <a href="/playground">Playground</a>
+    <a href="https://github.com/aruzone/aze-forge">GitHub</a>
     <a class="install-link" href="/#install-command">Install AzeForge</a>
   </nav>
 </header>`;
@@ -160,6 +161,7 @@ function header(current) {
 function footer() {
   return `<footer class="site-footer">
   <p>AzeForge ${VERSION} documentation. AzeMark language version 2.</p>
+  <p class="open-source-note">We <span class="heart" aria-label="love">♥</span> open source. AzeForge is MIT licensed: <a href="https://github.com/aruzone/aze-forge">github.com/aruzone/aze-forge</a>.</p>
   <nav aria-label="Footer"><a href="${DOCS_ROOT}/ai-authoring/">AI authoring</a><a href="${DOCS_ROOT}/reference/versioning/">Version contract</a></nav>
 </footer>`;
 }

@@ -106,6 +106,9 @@ describe("access boundary", () => {
     assert.match(home.text, /href="\/docs\/[^"]+\/"/);
     assert.match(home.text, /href="\/playground"/);
     assert.match(home.text, /href="\/#examples"/);
+    assert.match(home.text, /href="https:\/\/github\.com\/aruzone\/aze-forge">GitHub<\/a>/);
+    assert.match(home.text, /We.*open source/);
+    assert.match(home.text, /MIT licensed/);
 
     const sections = ["id=\"capabilities\"", "id=\"use-cases\"", "id=\"examples\"", "home-continue"];
     let position = -1;
