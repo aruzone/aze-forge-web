@@ -64,7 +64,7 @@ Draft Gate. Command Code's live `/provider/v1/models` response is authoritative
 for model and endpoint availability.
 
 The public bundle and Playground use the supplied AzeForge mark. The public
-bundle includes local Playfair Display, Geist, and Geist Mono files, so no
+bundle includes local Playfair Display, Geist, and JetBrains Mono files, so no
 page needs a font CDN.
 
 ## What the service is responsible for
