@@ -8,7 +8,7 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createOpenAIAuthoringProvider } from "./authoring.mjs";
+import { createAuthoringProvider } from "./authoring.mjs";
 import { AssetStore } from "./assets.mjs";
 import { AccessBoundary } from "./auth.mjs";
 import { ArtifactCache } from "./cache.mjs";
@@ -85,11 +85,12 @@ export async function createApplication({
   const jobs = new JobManager({ config, assets, cache, executor, compilerFacts, log, now, rendererProbe });
   const provider =
     authoringProvider === undefined
-      ? config.openAiApiKey === undefined
+      ? config.authoringApiKey === undefined
         ? null
-        : createOpenAIAuthoringProvider({
-            apiKey: config.openAiApiKey,
-            model: config.openAiModel,
+        : createAuthoringProvider({
+            apiKey: config.authoringApiKey,
+            baseUrl: config.authoringBaseUrl,
+            model: config.authoringModel,
             catalogue: ["mathematics", "geometry", "chemistry"],
             timeoutMs: config.authoringDeadlineMs,
           })

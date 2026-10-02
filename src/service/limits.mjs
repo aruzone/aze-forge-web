@@ -66,8 +66,13 @@ export const KNOBS = Object.freeze({
     max: 10,
   },
   authoringDeadlineMs: { env: "AUTHORING_DEADLINE_MS", default: 30_000, min: 1_000, max: 30_000 },
-  openAiApiKey: { env: "OPENAI_API_KEY", kind: "string", secret: true },
-  openAiModel: { env: "OPENAI_MODEL", default: "gpt-4o-mini", kind: "string" },
+  authoringApiKey: { env: "AUTHORING_API_KEY", kind: "string", secret: true },
+  authoringBaseUrl: {
+    env: "AUTHORING_BASE_URL",
+    default: "https://api.commandcode.ai/provider/v1",
+    kind: "string",
+  },
+  authoringModel: { env: "AUTHORING_MODEL", default: "deepseek/deepseek-v4-flash", kind: "string" },
 
 
   deadlineAnalyzeMs: { env: "DEADLINE_ANALYZE_MS", default: MINUTE_MS, min: 1_000, max: MINUTE_MS },

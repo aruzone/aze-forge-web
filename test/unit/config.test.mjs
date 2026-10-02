@@ -18,6 +18,29 @@ test("applies the envelope defaults when nothing is configured", () => {
   assert.equal(overriddenKnobs(config).length, 0);
 });
 
+test("configures the Command Code authoring endpoint and model", () => {
+  const config = loadConfig({
+    ...minimal,
+    AZEWEB_AUTHORING_API_KEY: "command-code-secret",
+    AZEWEB_AUTHORING_BASE_URL: "https://api.commandcode.ai/provider/v1/",
+    AZEWEB_AUTHORING_MODEL: "gpt-5.4-mini",
+  });
+  assert.equal(config.authoringApiKey, "command-code-secret");
+  assert.equal(config.authoringBaseUrl, "https://api.commandcode.ai/provider/v1/");
+  assert.equal(config.authoringModel, "gpt-5.4-mini");
+  assert.deepEqual(overriddenKnobs(config), [
+    "AZEWEB_AUTHORING_BASE_URL",
+    "AZEWEB_AUTHORING_MODEL",
+  ]);
+});
+
+test("rejects a non-HTTPS authoring endpoint", () => {
+  assert.throws(
+    () => loadConfig({ ...minimal, AZEWEB_AUTHORING_BASE_URL: "http://example.test/provider/v1" }),
+    (error) => error instanceof ConfigurationError && /must use https/.test(error.message),
+  );
+});
+
 test("accepts a lower value for every ceilinged knob", () => {
   const config = loadConfig({
     ...minimal,

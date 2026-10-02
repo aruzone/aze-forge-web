@@ -122,7 +122,7 @@ if (typeof options["base-url"] === "string") {
     AZEWEB_PORT: "0",
     AZEWEB_SCRATCH_DIR: scratchDir,
     // Advertise the authoring capability; the stub provider serves the call.
-    AZEWEB_OPENAI_API_KEY: "audit-stub-key",
+    AZEWEB_AUTHORING_API_KEY: "audit-stub-key",
   });
   const application = await createApplication({
     config,

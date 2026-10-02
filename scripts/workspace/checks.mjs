@@ -518,6 +518,19 @@ async function targets(ctx) {
       }
       return rows;
     });
+    const themeControls = await page.evaluate(() => {
+      const theme = document.getElementById("theme");
+      const diagnostics = document.getElementById("diagnostics-toggle");
+      if (theme === null || diagnostics === null) return null;
+      return {
+        theme: Math.round(theme.getBoundingClientRect().height),
+        diagnostics: Math.round(diagnostics.getBoundingClientRect().height),
+      };
+    });
+    expect(
+      themeControls !== null && themeControls.theme === themeControls.diagnostics,
+      `${state.name}: Theme selector height ${themeControls?.theme ?? "missing"} does not match diagnostics control ${themeControls?.diagnostics ?? "missing"}`,
+    );
     const menus = await page.evaluate(() => {
       /** @type {{ id: string, w: number, h: number }[]} */
       const rows = [];

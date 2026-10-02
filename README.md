@@ -36,7 +36,12 @@ odd-numbered and newer lines.
 
 ```bash
 npm install
-AZEWEB_ACCESS_TOKEN=$(openssl rand -hex 24) npm start
+cp .env.example .env
+# Edit .env and add the Command Code key.
+set -a
+source .env
+set +a
+npm run start
 # then open http://127.0.0.1:8080 and paste the token
 ```
 
@@ -44,6 +49,18 @@ The service refuses to start with an invalid configuration, and reports not-read
 until it can prove the compiler registry constructs, the pinned browser engine is
 present, scratch storage is writable, and a real compile of a trivial Source
 succeeds in an isolated child process.
+
+The authoring Generate action uses the Command Code Provider API when
+`AZEWEB_AUTHORING_API_KEY` is set. The default endpoint is
+`https://api.commandcode.ai/provider/v1`; the default model is
+`deepseek/deepseek-v4-flash`, which the provider currently advertises on the
+OpenAI Responses endpoint. Keep the key in the deployment secret store, never
+in the repository or browser.
+
+The service uses the OpenAI-compatible Responses adapter, so the configured
+model must support `/responses` and the strict JSON-schema request used by the
+Draft Gate. Command Code's live `/provider/v1/models` response is authoritative
+for model and endpoint availability.
 
 The frontend uses `src/web/azeforge-logo-transparent.png` for the access gate, application rail, and browser favicon.
 
@@ -143,7 +160,7 @@ ceiling is an owner decision, not a configuration change.
 | `AZEWEB_NODE_HEAP_MB` | `1024` | the Node heap ceiling the image pins for the service and every job worker |
 | `AZEWEB_JOB_SUBMISSIONS_PER_MINUTE`, `AZEWEB_ASSET_UPLOADS_PER_MINUTE` | `30`, `60` | per client context |
 | `AZEWEB_AUTHORING_GENERATIONS_PER_MINUTE`, `AZEWEB_AUTHORING_DEADLINE_MS` | `10`, `30000` | per client context; the deadline bounds the model call, then the failure names network, provider, timeout, or compiler-analysis cause |
-| `AZEWEB_OPENAI_API_KEY`, `AZEWEB_OPENAI_MODEL` | unset, `gpt-4o-mini` | Description-to-Source drafts; without the key the Generate action is disabled and drafts return `service-unavailable`. The SDK also honours `OPENAI_BASE_URL` for a compatible gateway; there is no `AZEWEB_` equivalent for the base URL. |
+| `AZEWEB_AUTHORING_API_KEY`, `AZEWEB_AUTHORING_BASE_URL`, `AZEWEB_AUTHORING_MODEL` | unset, `https://api.commandcode.ai/provider/v1`, `deepseek/deepseek-v4-flash` | Description-to-Source drafts through Command Code's OpenAI-compatible Provider API; without the key the Generate action is disabled and drafts return `service-unavailable`. Use a model advertised with `/responses` and verify strict JSON-schema support before deployment. |
 | `AZEWEB_DEADLINE_ANALYZE_MS`, `AZEWEB_DEADLINE_COMPILE_MS` | `60000`, `300000` | measured from admission, queue time included |
 | `AZEWEB_TERMINATION_GRACE_MS` | `5000` | SIGTERM, then SIGKILL, for the whole process group |
 | `AZEWEB_POLL_AFTER_MS` | `2000` | polling guidance returned with each job |

@@ -25,8 +25,9 @@ import { isImmutableRendererImage, isRendererIdentity } from "./tex-renderer.mjs
  * @property {number} rateLimitWindowMs
  * @property {number} authoringGenerationsPerMinute
  * @property {number} authoringDeadlineMs
- * @property {string} [openAiApiKey]
- * @property {string} openAiModel
+ * @property {string} [authoringApiKey]
+ * @property {string} authoringBaseUrl
+ * @property {string} authoringModel
  * @property {number} deadlineAnalyzeMs
  * @property {number} deadlineCompileMs
  * @property {number} terminationGraceMs
@@ -122,6 +123,17 @@ export function loadConfig(env = process.env) {
     }
     if (/\s/.test(token)) {
       problems.push(`${envNameFor("accessToken")} must not contain whitespace.`);
+    }
+  }
+  const authoringBaseUrl = raw.authoringBaseUrl;
+  if (typeof authoringBaseUrl === "string") {
+    try {
+      const parsed = new URL(authoringBaseUrl);
+      if (parsed.protocol !== "https:") {
+        problems.push(`${envNameFor("authoringBaseUrl")} must use https.`);
+      }
+    } catch {
+      problems.push(`${envNameFor("authoringBaseUrl")} must be an absolute URL.`);
     }
   }
 

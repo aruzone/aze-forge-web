@@ -1,7 +1,7 @@
 # Provider selection for owner-configured AzeMark authoring
 
 **Question:** [issue #7](https://github.com/aruzone/aze-forge-web/issues/7)  
-**Decision status:** recommended for owner approval; no product code is changed by this note.  
+**Decision status:** prior recommendation; superseded for the current authoring deployment by the Command Code Provider API cutover documented in [`research/commandcode-provider.md`](commandcode-provider.md).
 **Researched:** 2026-09-26. All external citations below are first-party provider documentation.
 
 ## Guardrails that are not provider choices

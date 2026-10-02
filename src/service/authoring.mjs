@@ -213,10 +213,15 @@ export function authoringInstruction(catalogue) {
   ].join(" ");
 }
 
-/** @param {{ apiKey: string, model: string, catalogue: readonly string[], timeoutMs?: number }} config */
-export function createOpenAIAuthoringProvider(config) {
+/** @param {{ apiKey: string, baseUrl: string, model: string, catalogue: readonly string[], timeoutMs?: number }} config */
+export function createAuthoringProvider(config) {
   const timeoutMs = config.timeoutMs ?? 30_000;
-  const client = new OpenAI({ apiKey: config.apiKey, timeout: timeoutMs, maxRetries: 0 });
+  const client = new OpenAI({
+    apiKey: config.apiKey,
+    baseURL: config.baseUrl,
+    timeout: timeoutMs,
+    maxRetries: 0,
+  });
   const instruction = authoringInstruction(config.catalogue);
   return Object.freeze({
     /** @param {string} description @param {{ signal?: AbortSignal }} [options] */
