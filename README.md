@@ -67,6 +67,9 @@ The public bundle and Playground use the supplied AzeForge mark. The public
 bundle includes local Playfair Display, Geist, and JetBrains Mono files, so no
 page needs a font CDN.
 
+The public bundle may not emit any `/playground` route. Startup rejects that
+configuration instead of allowing either asset tree to shadow the other.
+
 ## What the service is responsible for
 
 | Area | Behaviour |

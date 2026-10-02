@@ -61,13 +61,20 @@ export const FRONTEND_CONTENT_SECURITY_POLICY = [
  * @returns {Promise<Map<string, StaticAsset>>}
  */
 export async function loadWebAssets({ publicRoot, playgroundRoot }) {
-  const publicAssets = await loadDirectory(publicRoot, "", PUBLIC_CONTENT_SECURITY_POLICY);
+  const assets = await loadDirectory(publicRoot, "", PUBLIC_CONTENT_SECURITY_POLICY);
+  for (const route of assets.keys()) {
+    if (route === "/playground" || route.startsWith("/playground/")) {
+      throw new Error(`public asset route ${route} is reserved for the Playground`);
+    }
+  }
+
   const playgroundAssets = await loadDirectory(
     playgroundRoot,
     "/playground",
     FRONTEND_CONTENT_SECURITY_POLICY,
   );
-  return new Map([...publicAssets, ...playgroundAssets]);
+  for (const [route, asset] of playgroundAssets) assets.set(route, asset);
+  return assets;
 }
 
 /**
