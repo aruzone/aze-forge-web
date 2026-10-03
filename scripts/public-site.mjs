@@ -199,6 +199,7 @@ ${header(current)}
 ${main}
 ${footer()}
 </div>
+<script src="/assets/site.js" defer></script>
 </body>
 </html>
 `;
