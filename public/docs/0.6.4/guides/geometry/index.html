@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Declare primitives, constructions, and marks in authored order. Unresolved or ambiguous references produce diagnostics.">
+<title>Geometry · AzeForge docs</title>
+<link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/inter-diagram.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site-shell">
+<header class="site-header">
+  <a class="brand" href="/" aria-label="AzeForge home"><img src="/assets/azeforge-mark.png" alt=""><span>Aze<span class="brand-accent">Forge</span></span></a>
+  <button class="site-navigation-toggle" type="button" aria-expanded="false" aria-controls="public-navigation" data-site-navigation-toggle>Menu</button>
+  <nav class="site-nav" id="public-navigation" aria-label="Public" data-site-navigation>
+    <a href="/docs/0.6.4/" aria-current="page">Docs</a>
+    <a href="/#examples">Examples</a>
+    <a href="/playground">Playground</a>
+    <a class="github-link" href="https://github.com/aruzone/aze-forge"><svg class="github-mark" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><span>GitHub</span></a>
+    <a class="install-link" href="/#install-command">Install AzeForge</a>
+  </nav>
+</header>
+<nav class="docs-header-row" aria-label="Documentation menu"><p>AzeForge 0.6.4</p><button class="navigation-toggle" type="button" aria-expanded="false" data-navigation-toggle>Documentation menu</button></nav>
+<main class="docs-layout" id="main-content">
+<nav class="docs-nav" aria-label="Documentation" data-navigation>
+<p>Start here</p>
+<a href="/docs/0.6.4/">Documentation home</a>
+<a href="/docs/0.6.4/getting-started/">Install and first document</a>
+<p>Language</p>
+<a href="/docs/0.6.4/language/">Foundations</a>
+<a href="/docs/0.6.4/notation/">Notation codex</a>
+<a href="/docs/0.6.4/examples/">Example corpus</a>
+<p>Family guides</p>
+<a href="/docs/0.6.4/guides/mathematics/">Mathematics</a>
+<a href="/docs/0.6.4/guides/science/">Science</a>
+<a href="/docs/0.6.4/guides/engineering/">Engineering</a>
+<a href="/docs/0.6.4/guides/data/">Data</a>
+<a href="/docs/0.6.4/guides/geometry/" aria-current="page">Geometry</a>
+<a href="/docs/0.6.4/guides/software/">Software</a>
+<a href="/docs/0.6.4/guides/documents/">Documents</a>
+<a href="/docs/0.6.4/guides/diagrams/">Diagrams and escape hatches</a>
+<p>Reference</p>
+<a href="/docs/0.6.4/reference/directives/">26 directives</a>
+<a href="/docs/0.6.4/reference/front-matter/">Front matter</a>
+<a href="/docs/0.6.4/reference/operations/">Operations</a>
+<a href="/docs/0.6.4/reference/formats-themes/">Formats and themes</a>
+<a href="/docs/0.6.4/reference/diagnostics/">Diagnostics</a>
+<a href="/docs/0.6.4/reference/limits/">Limits</a>
+<a href="/docs/0.6.4/reference/versioning/">Versioning</a>
+<p>AI authoring</p>
+<a href="/docs/0.6.4/ai-authoring/">Agent contract</a>
+</nav>
+<article class="docs-content">
+<p class="version-label">AzeMark 2 · AzeForge 0.6.4</p>
+<h1>Geometry.</h1>
+<p class="lede">Declare primitives, constructions, and marks in authored order. Unresolved or ambiguous references produce diagnostics.</p>
+<h2 id="directives">Directives</h2>
+<div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Directive</th><th>Generated reference</th></tr></thead><tbody><tr><td><code>geometry</code></td><td><a href="/docs/0.6.4/reference/directives/#geometry">Fields, body schema, and limits</a></td></tr></tbody></table></div>
+<h2 id="showcase">Source and rendered output</h2>
+<p>Excerpt from <code>04-geometry.aze.md</code> in the upstream <code>docs/language</code> library, compiled with the pinned 0.6.4 compiler. The full file ships as a canonical Source below.</p>
+<figure class="source-figure"><figcaption><span>04-geometry.aze.md · Optics wedge</span><span>AzeMark Source</span></figcaption><pre class="code-block"><code class="language-azemark">:::: geometry
+id: optics-wedge
+number: true
+----
+- kind: point
+  name: vertex
+  label: O
+  x: 0
+  y: 0
+- kind: point
+  name: arm-flat
+  label: A
+  x: 4
+  y: 0
+- kind: point
+  name: arm-raised
+  label: B
+  x: 1.5
+  y: 3.5
+- kind: segment
+  name: flat-arm
+  from: vertex
+  to: arm-flat
+- kind: segment
+  name: raised-arm
+  from: vertex
+  to: arm-raised
+- kind: polygon
+  name: wedge
+  vertices:
+    - vertex
+    - arm-flat
+    - arm-raised
+::::</code></pre></figure>
+<figure class="source-figure"><figcaption><span>04-geometry.aze.md · rendered output</span><span>Document preview</span></figcaption><div class="artifact-shot" role="img" aria-label="Rendered optics wedge"><figure class="aze-geometry" id="fam-geometry-aeb4513e" data-geometry-id="optics-wedge" data-geometry-number="true"><svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img"><title>Geometry optics-wedge with 6 declarations</title><desc>geometry with 3 points, 1 polygon, 2 segments</desc><circle cx="137.143" cy="360" r="3.3" fill="#171717"/><circle cx="502.857" cy="360" r="3.3" fill="#171717"/><circle cx="274.286" cy="40" r="3.3" fill="#171717"/><line x1="137.143" y1="360" x2="502.857" y2="360" stroke="#171717" stroke-width="1.5"/><line x1="137.143" y1="360" x2="274.286" y2="40" stroke="#171717" stroke-width="1.5"/><polygon points="137.143,360 502.857,360 274.286,40" fill="none" stroke="#171717" stroke-width="1.5"/><text x="122.326" y="351.558" text-anchor="middle" font-size="15" fill="#171717">O</text><text x="517.394" y="351.838" text-anchor="middle" font-size="15" fill="#171717">A</text><text x="288.689" y="31.972" text-anchor="middle" font-size="15" fill="#171717">B</text></svg></figure></div></figure>
+<h2 id="sources">Canonical Sources</h2>
+<p>These files come from the compiler's verified example library. Keep the document envelope and directive spellings intact when adapting them.</p>
+<ul class="link-list"><li><a href="/docs/0.6.4/examples/geometry.aze.md"><strong>Geometry primitives, constructions, and marks</strong><span>Download the complete canonical Source.</span></a></li><li><a href="/docs/0.6.4/examples/showcase.aze.md"><strong>Geometry theorem and rendering showcase</strong><span>Download the complete canonical Source.</span></a></li></ul>
+
+<h2 id="workflow">Authoring workflow</h2>
+<ol><li>Start from the smallest relevant block in the canonical Source.</li><li>Give referenced declarations stable kebab-case identifiers.</li><li>Run <code>azeforge validate</code> before rendering.</li><li>Apply diagnostic suggestions to the reported location rather than guessing at a replacement field.</li></ol>
+</article>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#directives">Directives</a><a href="#sources">Canonical Sources</a><a href="#workflow">Workflow</a></aside>
+</main>
+<footer class="site-footer">
+  <p>AzeForge 0.6.4 documentation. AzeMark language version 2.</p>
+  <p class="open-source-note">We <span class="heart" aria-label="love">♥</span> open source. AzeForge is MIT licensed: <a href="https://github.com/aruzone/aze-forge">github.com/aruzone/aze-forge</a>.</p>
+  <nav aria-label="Footer"><a href="/docs/0.6.4/ai-authoring/">AI authoring</a><a href="/docs/0.6.4/reference/versioning/">Version contract</a></nav>
+</footer>
+</div>
+<script src="/assets/site.js" defer></script>
+</body>
+</html>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Current AzeForge documentation, pinned to 0.6.4.">
-<title>Documentation · AzeForge docs</title>
+<meta name="description" content="Verified AzeMark 2 front-matter keys and boundaries.">
+<title>Front matter · AzeForge docs</title>
 <link rel="icon" href="/assets/azeforge-mark.png" type="image/png">
 <link rel="stylesheet" href="/assets/site.css">
 <link rel="stylesheet" href="/assets/inter-diagram.css">
@@ -44,7 +44,7 @@
 <a href="/docs/0.6.4/guides/diagrams/">Diagrams and escape hatches</a>
 <p>Reference</p>
 <a href="/docs/0.6.4/reference/directives/">26 directives</a>
-<a href="/docs/0.6.4/reference/front-matter/">Front matter</a>
+<a href="/docs/0.6.4/reference/front-matter/" aria-current="page">Front matter</a>
 <a href="/docs/0.6.4/reference/operations/">Operations</a>
 <a href="/docs/0.6.4/reference/formats-themes/">Formats and themes</a>
 <a href="/docs/0.6.4/reference/diagnostics/">Diagnostics</a>
@@ -55,18 +55,35 @@
 </nav>
 <article class="docs-content">
 <p class="version-label">AzeMark 2 · AzeForge 0.6.4</p>
-<h1>Write valid AzeMark Source.</h1>
-<p class="lede">This documentation is pinned to AzeForge 0.6.4, AzeMark language version 2, document schema version 3, and grammar schema <code>azeforge.grammar/v1</code>.</p>
-<div class="callout"><strong>Versioned by design.</strong> Future compiler releases receive separate documentation. This reference does not silently track the latest package.</div>
-<h2 id="start">Start here</h2>
-<ul class="link-list"><li><a href="/docs/0.6.4/getting-started/"><strong>Install and render a first document</strong><span>Install the CLI, validate Source, render HTML, and run the formatter.</span></a></li><li><a href="/docs/0.6.4/language/"><strong>Language foundations</strong><span>Front matter, fences, identifiers, composition, and rendering rules.</span></a></li><li><a href="/docs/0.6.4/notation/"><strong>Notation codex</strong><span>Symbols, subscripts, superscripts, directive bodies, geometry, and circuit declarations.</span></a></li></ul>
-<h2 id="guides">Family guides</h2>
-<ul class="link-list"><li><a href="/docs/0.6.4/guides/mathematics/"><strong>Mathematics</strong><span>equation, derivation</span></a></li><li><a href="/docs/0.6.4/guides/science/"><strong>Science</strong><span>formula, reaction, structure</span></a></li><li><a href="/docs/0.6.4/guides/engineering/"><strong>Engineering</strong><span>circuit, timing, control, free-body</span></a></li><li><a href="/docs/0.6.4/guides/data/"><strong>Data</strong><span>plot, chart</span></a></li><li><a href="/docs/0.6.4/guides/geometry/"><strong>Geometry</strong><span>geometry</span></a></li><li><a href="/docs/0.6.4/guides/software/"><strong>Software</strong><span>sequence, state, entity, class</span></a></li><li><a href="/docs/0.6.4/guides/documents/"><strong>Documents</strong><span>table, algorithm, statement, example, bibliography, figure, callout</span></a></li><li><a href="/docs/0.6.4/guides/diagrams/"><strong>Diagrams and escape hatches</strong><span>diagram, mermaid, tex</span></a></li></ul>
-<h2 id="reference">Reference and agent data</h2>
-<p>The directive reference and JSON artifacts are generated from the installed compiler. The prose pages state only behavior verified for 0.6.4.</p>
-<ul class="link-list"><li><a href="/docs/0.6.4/reference/directives/"><strong>All 26 directives</strong><span>Header fields, body schema, enum values, and limits.</span></a></li><li><a href="/docs/0.6.4/ai-authoring/"><strong>AI-authoring contract</strong><span>Hard rules plus grammar, capabilities, and version documents.</span></a></li></ul>
+<h1>Front matter.</h1>
+<p class="lede">A 0.6.4 Source declares AzeMark language version 2 in YAML front matter.</p>
+<div class="reference-table-wrap"><table class="reference-table"><thead><tr><th>Key</th><th>Type</th><th>Verified values or rule</th></tr></thead><tbody>
+<tr><td><code>azemark</code></td><td>integer</td><td><code>2</code></td></tr>
+<tr><td><code>title</code></td><td>text</td><td>Document title</td></tr>
+<tr><td><code>author</code></td><td>string list</td><td>One or more author names</td></tr>
+<tr><td><code>theme</code></td><td>text</td><td><code>default</code>, <code>academic</code>, <code>dark-presentation</code></td></tr>
+<tr><td><code>outputs</code></td><td>string list</td><td><code>html</code>, <code>svg</code>, <code>png</code>, <code>pdf</code>; full semantics undocumented</td></tr>
+<tr><td><code>defaults</code></td><td>record</td><td>Accepted shape; semantics undocumented</td></tr>
+<tr><td><code>citation-style</code></td><td>enum</td><td><code>numeric</code> or <code>author-year</code></td></tr>
+</tbody></table></div>
+<h2 id="example">Complete envelope</h2><pre class="code-block"><code class="language-azemark">---
+azemark: 2
+title: Sample variance
+---
+
+# Sample variance
+
+Spread of a sample around its mean.
+
+:::: equation
+id: sample-variance
+number: true
+----
+sigma^2 = frac(1, n) sum i=1..n of (x_i - mu)^2
+::::</code></pre>
+<h2 id="boundaries">Boundaries</h2><p>Do not document custom metadata as a general language feature. The canonical circuit Source uses <code>x-circuit-symbol-convention: iec</code>, but 0.6.4 does not publish that key in the front-matter grammar.</p>
 </article>
-<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#start">Start here</a><a href="#guides">Family guides</a><a href="#reference">Reference</a></aside>
+<aside class="docs-toc" aria-label="On this page"><strong>On this page</strong><a href="#example">Envelope</a><a href="#boundaries">Boundaries</a></aside>
 </main>
 <footer class="site-footer">
   <p>AzeForge 0.6.4 documentation. AzeMark language version 2.</p>

@@ -18,7 +18,7 @@ const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUTPUT = join(REPO, "public");
 const PUBLIC_SOURCE = join(REPO, "src", "public");
 const PLAYGROUND_SOURCE = join(REPO, "src", "web");
-const VERSION = "0.6.3";
+const VERSION = "0.6.4";
 const DOCS_ROOT = `/docs/${VERSION}`;
 
 /** @typedef {{ id: string, name: string, source: string }} Example */
@@ -99,7 +99,7 @@ const families = [
     directives: ["table", "algorithm", "statement", "example", "bibliography", "figure", "callout"],
     examples: ["document-basics", "structured-content", "composition"],
     summary: "Combine typed tables and algorithms with theorem-family statements, worked examples, figures, callouts, and references.",
-    note: "Citation and endnote forms are demonstrated by the canonical composition Source. The 0.6.2 grammar does not publish a complete syntax for either form, so this guide does not infer one.",
+    note: `Citation and endnote forms are demonstrated by the canonical composition Source. The ${VERSION} grammar does not publish a complete syntax for either form, so this guide does not infer one.`,
   },
   {
     slug: "diagrams",
@@ -814,7 +814,7 @@ for (const family of families) {
   await writeRoute(`docs/${VERSION}/guides/${family.slug}`, docsPage({ title: family.title, description: family.summary, path: `${DOCS_ROOT}/guides/${family.slug}/`, content: familyContent(family), toc: [["directives", "Directives"], ["sources", "Canonical Sources"], ["workflow", "Workflow"]] }));
 }
 
-await writeRoute(`docs/${VERSION}/examples`, docsPage({ title: "Example corpus", description: "The verified AzeMark Source corpus for AzeForge 0.6.2.", path: `${DOCS_ROOT}/examples/`, content: examplesContent }));
+await writeRoute(`docs/${VERSION}/examples`, docsPage({ title: "Example corpus", description: `The verified AzeMark Source corpus for AzeForge ${VERSION}.`, path: `${DOCS_ROOT}/examples/`, content: examplesContent }));
 await writeRoute(`docs/${VERSION}/reference/directives`, docsPage({ title: "Directive reference", description: `Generated reference for all ${grammar.directives.length} AzeMark directives in AzeForge ${VERSION}.`, path: `${DOCS_ROOT}/reference/directives/`, content: directivesContent, toc: [["index", "Directive index"], ...grammar.directives.map((directive) => /** @type {[string, string]} */ ([directive.type, directive.type]))]}));
 await writeRoute(`docs/${VERSION}/reference/front-matter`, docsPage({ title: "Front matter", description: "Verified AzeMark 2 front-matter keys and boundaries.", path: `${DOCS_ROOT}/reference/front-matter/`, content: frontMatterContent, toc: [["example", "Envelope"], ["boundaries", "Boundaries"]] }));
 await writeRoute(`docs/${VERSION}/reference/operations`, docsPage({ title: "Operations", description: `Analyze, compile, and format operations in AzeForge ${VERSION}.`, path: `${DOCS_ROOT}/reference/operations/`, content: operationsContent, toc: [["cli", "CLI commands"]] }));

@@ -11,7 +11,7 @@ compiler source is copied, and there is no monorepo coupling.
 ## Scope
 
 This repository implements the standalone public bundle at `/` and
-`/docs/0.6.3/...`, the edit-preview-export Playground at `/playground`, and its
+`/docs/0.6.4/...`, the edit-preview-export Playground at `/playground`, and its
 `/v1` compiler service. It also packages the deployable image, environment
 schema, and deployment acceptance smoke suite specified by
 [Package the AzeForge Web image, env schema, and smoke suite](https://github.com/aruzone/aze-forge-web/issues/2)
@@ -125,7 +125,7 @@ in a browser.
 | Method and path | Contract |
 | --- | --- |
 | `GET /` | Standalone public AzeForge site. |
-| `GET /docs/0.6.3/...` | Direct static pages for the pinned human and AI documentation, generated grammar and capabilities, and canonical example Sources. Unknown documentation paths return `404`; there is no client-side route fallback. |
+| `GET /docs/0.6.4/...` | Direct static pages for the pinned human and AI documentation, generated grammar and capabilities, and canonical example Sources. Unknown documentation paths return `404`; there is no client-side route fallback. |
 | `GET /playground`, `GET /playground/...` | Authenticated authoring application shell and its static assets. The shell is open; `/v1` remains token-gated. |
 | `GET /healthz`, `GET /readyz` | Unauthenticated and detail-free: liveness and readiness only. Everything informative lives behind the token. |
 | `GET /v1/capabilities` | The installed compiler's capability document, embedded verbatim, plus this deployment's effective policy, limits, deadlines and retention. |
