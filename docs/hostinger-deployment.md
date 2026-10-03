@@ -2,6 +2,10 @@
 
 The `azeweb` container is owned by `aze-forge-web.service`. Do not run `docker stop`, `docker start`, or `docker rm` for this container. The service has `Restart=always`, so systemd recreates it with the image tag in `/etc/systemd/system/aze-forge-web.service`.
 
+## TLS compatibility
+
+`/etc/caddy/Caddyfile` sets `key_type rsa2048` for `azeforge.com` and `www.azeforge.com`. Keep it unless the affected corporate TLS-inspection network confirms it accepts the default ECDSA certificate chain.
+
 ## Deploy
 
 ```bash
